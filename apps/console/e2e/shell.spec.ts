@@ -23,12 +23,15 @@ test.describe('console shell', () => {
     await expect(page.getByRole('banner')).toContainText('لوحة المنصة');
     await expect(page.getByRole('contentinfo')).toHaveText('بدعم من فيرتكس شفا');
 
-    // Right to left: the product name starts at the right edge of the header.
+    // Right to left: the Vertex Shifa mark starts at the right edge of the header, the product
+    // name follows it to the left.
     const header = await page.getByRole('banner').boundingBox();
+    const mark = await page.getByRole('banner').locator('svg').first().boundingBox();
     const product = await page.getByRole('banner').getByText('فيرتكس شفا').boundingBox();
-    expect(header && product).toBeTruthy();
-    if (header && product) {
-      expect(header.x + header.width - (product.x + product.width)).toBeLessThan(40);
+    expect(header && mark && product).toBeTruthy();
+    if (header && mark && product) {
+      expect(header.x + header.width - (mark.x + mark.width)).toBeLessThan(40);
+      expect(product.x + product.width).toBeLessThanOrEqual(mark.x);
     }
     await expect(page.locator('body')).not.toHaveText(/[٠-٩]/);
 

@@ -16,6 +16,7 @@
   "dependencies": {
     "@tanstack/react-router": "^1.170.41",
     "@vertex-shifa/i18n": "workspace:*",
+    "@vertex-shifa/ui": "workspace:*",
     "i18next": "^26.4.2",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
+    "@tailwindcss/vite": "^4.3.3",
     "@tanstack/router-plugin": "^1.168.42",
     "@types/node": "^24.19.1",
     "@types/react": "^19.3.0",
@@ -30,6 +32,7 @@
     "@vertex-shifa/config": "workspace:*",
     "@vitejs/plugin-react": "^6.1.2",
     "electron": "^44.7.0",
+    "tailwindcss": "^4.3.3",
     "typescript": "~6.0.3",
     "vite": "^8.3.3",
     "vitest": "^5.0.3"

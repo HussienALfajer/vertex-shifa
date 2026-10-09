@@ -1,6 +1,7 @@
 'use client';
 
 import { defaultLanguage, textDirection } from '@vertex-shifa/i18n';
+import { DirectionProvider } from '@vertex-shifa/ui';
 import { useEffect } from 'react';
 import { AppShell } from '../components/app-shell';
 import { ErrorState } from '../components/error-state';
@@ -15,9 +16,11 @@ export default function GlobalError({ error, retry }: { error: Error; retry: () 
     <html lang={defaultLanguage} dir={textDirection}>
       <body>
         <title>{i18n.t('productName')}</title>
-        <AppShell>
-          <ErrorState onRetry={retry} />
-        </AppShell>
+        <DirectionProvider direction={textDirection}>
+          <AppShell>
+            <ErrorState onRetry={retry} />
+          </AppShell>
+        </DirectionProvider>
       </body>
     </html>
   );

@@ -20,8 +20,9 @@ test.describe('patient shell', () => {
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('أهلًا بك في فيرتكس شفا');
     await expect(page.getByRole('banner')).toHaveText('فيرتكس شفا');
-    // The device's color scheme applies (the web export is rendered ahead in light).
-    const surface = testInfo.project.name === 'dark' ? 'rgb(27, 33, 39)' : 'rgb(255, 255, 255)';
+    // The device's color scheme applies (the web export is rendered ahead in light): the surface
+    // token is white in light and green-900 in dark (packages/tokens).
+    const surface = testInfo.project.name === 'dark' ? 'rgb(11, 45, 40)' : 'rgb(255, 255, 255)';
     await expect(page.getByRole('banner')).toHaveCSS('background-color', surface);
 
     // Right to left: the product name starts at the right edge of the header.

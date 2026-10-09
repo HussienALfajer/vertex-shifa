@@ -25,7 +25,7 @@ Read these on demand. For a feature, read its spec, the ADRs it lists, and its s
 
 ## Stack (ADR 0002, 0003)
 
-pnpm workspaces + Turborepo · TypeScript (strict) · Node 24 · PostgreSQL 17. The workspace, shared configuration, `packages/db`, `packages/contracts`, `packages/i18n`, `apps/api`, `apps/worker`, `apps/whatsapp-gateway`, `apps/clinic`, `apps/console`, `apps/site` and `apps/patient` (shells only) exist; the other apps and packages arrive with their Phase 0 roadmap items.
+pnpm workspaces + Turborepo · TypeScript (strict) · Node 24 · PostgreSQL 17. The workspace, shared configuration, `packages/db`, `packages/contracts`, `packages/i18n`, `packages/tokens`, `packages/ui`, `packages/ui-native` (base), `brand/`, `apps/api`, `apps/worker`, `apps/whatsapp-gateway`, `apps/clinic`, `apps/console`, `apps/site` and `apps/patient` (shells only) exist; the other apps and packages arrive with their Phase 0 roadmap items.
 
 - `apps/api` NestJS core API · `apps/worker` NestJS jobs (pg-boss, outbox dispatcher) · `apps/whatsapp-gateway` WhatsApp sessions behind a transport interface
 - `apps/clinic` React + Vite, packaged with Electron, offline-first · `apps/console` platform back office (React + Vite) · `apps/site` Next.js public clinic pages · `apps/patient` React Native + Expo
