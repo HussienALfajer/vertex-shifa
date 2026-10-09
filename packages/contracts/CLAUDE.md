@@ -7,6 +7,7 @@ Zod schemas and pure rules shared by every app, the patient app included (ADR 00
 - `errors.ts`: stable error codes with their HTTP status, `errorResponseSchema`, `DomainError`. The pattern to copy for a schema: `errorResponseSchema`.
 - `money.ts`: currencies, `moneySchema`, `exchangeRateSchema`, arithmetic, conversion, parsing and formatting (ADR 0014).
 - `arabic-names.ts`: `normalizeArabicName`, the key for name search and duplicate matching (ADR 0006).
+- `health-check.ts`: the answer of `GET /api/health`.
 
 ## Rules
 - Schemas `<thing>Schema`, types `Thing = z.infer<…>`, inputs `create<Thing>Schema`; every schema the API exposes has a stable `.meta({ id })`.

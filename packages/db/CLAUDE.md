@@ -9,6 +9,7 @@ Drizzle schema, migrations, RLS policies and the tenant context (ADR 0004, ADR 0
 - `src/client.ts`: `createDatabase(url)`. `src/tenant-context.ts`: `withTenant(db, tenantId, work)`.
 - `migrations/`: generated SQL plus custom migrations (RLS, triggers, grants, backfills). Never read or edit `migrations/meta/`.
 - `scripts/setup-local.ts`: the local PostgreSQL setup (`pnpm db:setup-local`).
+- `src/testing.ts` (`@vertex-shifa/db/testing`): `createTestDatabase()`, a fresh migrated database for one test run, used by this package's and the apps' test global setups.
 - `test/`: run against a fresh database per run (`test/global-setup.ts`); `conventions.test.ts` reads the rules below from the migrated database.
 
 ## Roles

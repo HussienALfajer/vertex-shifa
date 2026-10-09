@@ -18,6 +18,7 @@ export const errorStatus = {
   INVALID_AMOUNT: 422,
   RATE_LIMITED: 429,
   INTERNAL_ERROR: 500,
+  SERVICE_UNAVAILABLE: 503,
 } as const satisfies Record<string, number>;
 
 export type ErrorCode = keyof typeof errorStatus;
