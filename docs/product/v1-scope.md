@@ -69,7 +69,7 @@ Roles are presets with adjustable permissions within limits (F02).
 
 **F05 — Appointments and booking.** Two booking modes per doctor and branch: timed slots and queue sessions with capacity (ADR 0009). Channel pools (online, reception, shared). Day and week calendars per doctor. Create, move, cancel, mark no-show. Appointment states from booked to completed. Walk-ins join the queue directly.
 
-**F06 — Offline booking policy and conflict inbox.** Per-clinic policy while offline: strict partition, shared pool frozen in the cloud, or app bookings as requests awaiting confirmation (ADR 0009). The conflict inbox at reception, automatic alternative suggestions, and notification of the moved patient.
+**F06 — Offline booking policy and conflict inbox.** Per-clinic policy while offline: strict partition, shared pool frozen in the cloud, or app bookings as requests awaiting confirmation; optionally the reception pool split per reception device (ADR 0009). The conflict inbox at reception, automatic alternative suggestions, and notification of the moved patient.
 
 **F07 — Reception and live queue.** ★ Check-in, call next, recall, move up or down, skip with reason, send in to the doctor, finish. Expected waiting time from the doctor's real average duration. Works offline.
 
@@ -101,13 +101,13 @@ Roles are presets with adjustable permissions within limits (F02).
 
 **F21 — Clinic WhatsApp link.** The clinic links its own WhatsApp number by scanning a QR code; connection status, re-link, per-clinic message templates within limits, sending limits, opt-out handling (ADR 0012).
 
-**F22 — Offline operation and sync status.** ★ Every clinic workflow above works offline (ADR 0008). A permanent sync indicator (last sync time, pending changes), a sync problems view, safe app updates.
+**F22 — Offline operation and sync status.** ★ Every clinic workflow above works offline, except what ADR 0008 lists as needing a connection (configuration changes such as structure, staff and permissions, prices, templates, custom fields and the WhatsApp link; first sign-in on a new device). A permanent sync indicator (last sync time, pending changes), a sync problems view, safe app updates.
 
 **F23 — Audit, backup and data export.** Audit log of changes and of medical-record reads, viewable by the owner; daily server backups; the clinic can export all its data (ADR 0016).
 
 ### Patient app (Vertex Shifa, Android and iOS)
 
-**F24 — Account and family.** Sign-up and sign-in by phone with a WhatsApp OTP (ADR 0012); automatic link to files that clinics created for the same phone after verification; family members managed by one account; account deletion inside the app.
+**F24 — Account and family.** Sign-up and sign-in by phone with a WhatsApp OTP (ADR 0012); after verification, the app proposes links to charts that clinics created for the same phone and the patient confirms each one (phones are shared by families, ADR 0006); family members managed by one account; account deletion inside the app.
 
 **F25 — Find clinics and doctors.** Clinics and doctors on the platform by specialty, area and name; clinic page with doctors, hours and location.
 
@@ -162,7 +162,7 @@ Lab, pharmacy and hospital products · online payment · insurance · video cons
 ## 7. Non-functional requirements
 
 - **Offline:** a full clinic day offline without data loss; sync of a day's work in under a minute on a weak connection.
-- **Devices:** Windows 10 and later on modest PCs for the clinic app; Android 8+ and iOS 16+ for the patient app.
+- **Devices:** Windows 10 and later on modest PCs for the clinic app; recent Android and iOS versions for the patient app. Exact minimums follow the Electron and Expo versions pinned in Phase 0 and the clinics' hardware (Q8).
 - **Performance:** search and queue actions feel instant (local reads); public pages light enough for slow mobile data.
 - **Security and privacy:** ADR 0016; Syrian Law No. 12 of 2024 respected; legal review before the pilot (Q2).
 - **App stores:** privacy policy, in-app account deletion, health-app declarations, data-safety forms.

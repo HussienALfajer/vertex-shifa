@@ -4,6 +4,8 @@ How Vertex Shifa is built with Claude Code (Opus 5.5). `AGENTS.md` holds the rul
 
 ## Why it works this way
 
+Prices, cache lifetimes, model names and version numbers below are from Anthropic's documentation as checked on 2026-10-09 (References); re-check them when a new model or Claude Code release changes the guidance.
+
 - **Context is the scarcest resource.** Every turn resends the whole conversation, and quality drops as context fills.
 - **Cost ≈ turns × context size.** Cache reads cost 5% of fresh input on Opus 5.5 as long as the cache stays warm (one hour on a subscription).
 - **Output costs five times input**, and thinking is output: effort is the main cost lever.

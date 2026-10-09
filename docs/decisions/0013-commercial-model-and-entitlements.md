@@ -15,7 +15,7 @@ The owner sells each customer on negotiated terms: the same features can sell at
 - **Private features:** a feature built for one clinic is a normal catalog feature, disabled by default and granted to that clinic by an override; offering it to others is a catalog or package change. **One codebase for all customers: no branches or forks per customer.**
 - **Release flags** (gradual rollout of new code) are a separate mechanism from entitlements.
 - **Perpetual license:** the contract states what is perpetual (the purchased features) and what is recurring (hosting and domain, optional yearly updates and support).
-- **Non-payment:** reminder → grace period → read-only with export → suspension. Medical data is never deleted and never made unreadable by its clinic because of billing.
+- **Non-payment:** reminder → grace period → suspension, and suspension means read-only with export: no new bookings, visits or messages, while every record stays readable and exportable. Medical data is never deleted and never made unreadable by its clinic because of billing.
 - **Offline:** devices cache the resolved entitlements with a validity lease and a grace period, so a clinic is never locked out by being offline.
 - Subscription invoices and payments follow ADR 0014.
 

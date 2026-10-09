@@ -3,7 +3,7 @@
 Status: Accepted · Date: 2026-10-09
 
 ## Context
-The whole system is built by the owner working with Claude Code (Opus 5.5). Knowledge must survive session resets, compaction, account switches and tool switches. Cost is driven by turns × context size; output tokens cost five times input and cache reads cost 5% of input on Opus 5.5. The method follows Anthropic's published guidance for Opus 5.5 and Claude Code and the method proven in the owner's Vertex Digital project.
+The whole system is built by the owner working with Claude Code (Opus 5.5). Knowledge must survive session resets, compaction, account switches and tool switches. Cost is driven by turns × context size; per Anthropic's published Opus 5.5 pricing (checked 2026-10-09), output tokens cost five times input and cache reads cost 5% of input. The method follows Anthropic's published guidance for Opus 5.5 and Claude Code and the method proven in the owner's Vertex Digital project.
 
 ## Decision
 - **Knowledge lives in files, not chat:** scope, ADRs, specs, roadmap, open questions, glossary and `TASKS.md`. A new session starts from files and git.

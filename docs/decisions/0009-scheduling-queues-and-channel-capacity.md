@@ -17,5 +17,6 @@ Many clinics in Syria work by queue ("الدور") within a session, others by e
 - **Queue estimate:** the expected wait uses the practitioner's recent real visit durations; shown to reception and in the patient app.
 
 ## Consequences
-- In the online and reception pools, conflicts are impossible by construction; only the shared pool can conflict, in the minutes before the cloud notices a clinic is offline.
+- Between channels, conflicts are impossible by construction except in the shared pool, in the minutes before the cloud notices a clinic is offline.
+- Inside the reception channel, two clinic devices that are both offline can book the same timed slot or the last reception capacity, because they don't see each other's changes until one reconnects (ADR 0008). Such overlaps go to the conflict inbox with the same rules. A clinic with several reception devices can split its reception pool per device (an option set in the clinic settings) to make even these conflicts impossible.
 - Clinics configure pool sizes; sensible defaults come from the onboarding wizard.

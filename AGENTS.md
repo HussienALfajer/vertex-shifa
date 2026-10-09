@@ -47,7 +47,7 @@ None yet. The PR that adds a command adds it to this table and keeps it true.
 - **Scheduling (ADR 0009):** capacity belongs to channels and a channel books only from its pool; conflicts go to the conflict inbox and the moved patient is told, with alternatives.
 - **Money (ADR 0014):** integer minor units, always with a currency; no floats; the exchange rate is stored on every conversion; payments are append-only and corrected by reversals.
 - **One validation source:** Zod schemas in `packages/contracts`, reused by every app including the patient app.
-- **Authorization and entitlements are server-side (ADR 0005, 0013):** every endpoint and command declares its access and the feature it needs. UI checks are cosmetic.
+- **Authorization and entitlements are server-side (ADR 0005, 0013):** every endpoint and command declares its access and the feature it needs. UI checks are cosmetic; on clinic devices, the server-side replication scope decides which data a device holds (ADR 0008).
 - **Never lock medical data for non-payment (ADR 0013):** suspension means read-only plus export.
 - **Messaging (ADR 0012):** in-app push and WhatsApp only. WhatsApp carries OTPs and consented, transactional messages without medical content, throttled per number.
 - **Audit; archive, don't delete:** every change to clinical, money, access or contract data writes an audit entry in the same transaction; business records are archived; audit rows are never updated or deleted.
@@ -85,7 +85,7 @@ When a task's work is done (a spec approved, a `/feature-slice` PR accepted, a f
 1. **Branch:** not `main`. `TASKS.md` has no open items for this PR.
 2. **Docs:** update `docs/ROADMAP.md` and every doc the change made stale (`docs/architecture.md`, a folder `CLAUDE.md`, `docs/open-questions.md`, the commands table above).
 3. **Secrets and data:** `git status` and `git diff --stat` show no `.env`, key, WhatsApp session file, real phone number or medical data; fixtures are synthetic.
-4. **Checks:** lint, typecheck, test and build, plus E2E when a front end or `packages/ui*` changed and migration drift when `packages/db` changed, run through the `checker` subagent. From Phase 0 on, `node scripts/check-record.mjs status <checks…>` first: run only the checks marked `needed`. Documentation-only changes run no local checks.
+4. **Checks:** lint, typecheck, test and build, plus E2E when a front end or `packages/ui*` changed and migration drift when `packages/db` changed, run through the `checker` subagent. Once `scripts/check-record.mjs` exists (Phase 0 scaffold), run `node scripts/check-record.mjs status <checks…>` first and run only the checks marked `needed`. Documentation-only changes run no local checks.
 5. **Review:** for feature, sync, security and clinical work, the `reviewer` subagent has run and its blocking findings are fixed.
 6. **Commit:** stage the intended files only; Conventional Commit subject, a body with what and why, ending with the session's attribution line.
 7. **Pull request:** `git push -u origin <branch>`, `gh pr create --base main` with `## Summary` and `## Test plan` (ticked checks, each marked run now or reused from the record), ending with the session's attribution line; then `gh pr merge <number> --auto --merge`. Exception: a PR that changes `v1-scope.md` or adds or changes an ADR waits for the owner's approval before auto-merge is enabled.

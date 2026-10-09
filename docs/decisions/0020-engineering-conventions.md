@@ -25,7 +25,7 @@ Many sessions build many modules (ADR 0019). Without one written shape each sess
 - Contracts hold shapes and pure rules only (money math, state transitions, queue estimates, matching normalization): no I/O, fully unit-tested.
 
 ### Data
-- Business table: UUIDv7 `id`, `tenant_id` for tenant data, fields, `created_at`, `updated_at`, `archived_at`. Append-only tables (audit, payments, clinical versions, outbox) have no `updated_at` or `archived_at` and refuse `UPDATE`/`DELETE`.
+- Business table: UUIDv7 `id`, `tenant_id` for tenant data, fields, `created_at`, `updated_at`, `archived_at`. Append-only tables (audit, payments, clinical versions, the sync command log) have no `updated_at` or `archived_at` and refuse `UPDATE`/`DELETE`. Work queues are not append-only: an outbox row's dispatch status and a message's delivery status change as they are processed, and their history lives in the audit log or in append-only receipt rows.
 - RLS policy, forced, on every table with `tenant_id`; indexes start with `tenant_id`; every foreign key indexed; `timestamptz` in UTC, displayed in `Asia/Damascus`; no floating-point columns; money per ADR 0014.
 - Unique indexes for idempotency keys, command ids and external references: the database is the last line against duplicates.
 - Migrations are generated and never edited; hand-written SQL (RLS policies, triggers, grants, backfills) goes in custom migrations; expand, then contract.

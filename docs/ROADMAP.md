@@ -4,9 +4,9 @@ Status legend: `[ ]` not started · `[~]` in progress · `[x]` done. Feature IDs
 
 ## Phase 0 — Foundation
 - [x] Product vision and V1 scope, decisions 0001–0020, glossary, working method, Claude Code setup (subagents `checker`, `reviewer`, `explorer`; skills `spec`, `feature-slice`, `db-migration`)
-- [ ] Spike A — offline sync: PowerSync self-hosted, Electron + SQLite, a booking made offline on two sides, server re-execution, conflict recorded → confirm or amend ADR 0008
+- [ ] Spike A — offline sync: PowerSync self-hosted, Electron + SQLite, a booking made offline on two sides (cloud vs reception, and two offline reception devices), server re-execution, conflict recorded, encrypted local database, a local read-audit command uploaded on reconnect → confirm or amend ADR 0008
 - [ ] Spike B — WhatsApp gateway: Baileys maintenance status, QR link, send, receive, reconnect after restart, OTP round trip, rate limits; push delivery to a phone in Syria → confirm or amend ADR 0012, 0003
-- [ ] Monorepo scaffold: pnpm, Turborepo, TypeScript, Biome and its Claude Code hook, `packages/config`, check record script, CI (typecheck, lint, test, build, gitleaks, migration drift), folder `CLAUDE.md` files
+- [ ] Monorepo scaffold: pnpm, Turborepo, TypeScript, Biome and its Claude Code hook, `packages/config`, check record script, CI (typecheck, lint, test, build, gitleaks, migration drift), folder `CLAUDE.md` files; GitHub settings with the owner's approval: auto-merge allowed, merge commits only, `main` protected with required CI checks (needed by "Finishing a task" in `AGENTS.md`)
 - [ ] `packages/db`: Drizzle, owner and app roles, tenant context, RLS convention test, audit and outbox tables; `packages/contracts`: money, error codes, Arabic name normalization, with full unit tests
 - [ ] App skeletons: api (health, access decorators, architecture test), worker (pg-boss, outbox dispatcher), whatsapp-gateway (transport interface, fake transport), clinic (Vite + Electron shell, RTL), console, site, patient (Expo, RTL)
 - [ ] Brand and design system: `brand/` from Vertex Hub with the SHIFA logo, `packages/tokens`, `packages/ui` copied and adapted, `packages/ui-native` base (ADR 0018)
@@ -49,7 +49,7 @@ Status legend: `[ ]` not started · `[~]` in progress · `[x]` done. Feature IDs
 - [ ] Production deploy of Phase 5; patient app submitted to both stores
 
 ## Phase 6 — Console
-- [ ] S22 Tenants, catalog, quotes, contracts, billing and support access: F32 · F33 · F35 · F39
+- [ ] S22 Tenants, catalog, quotes, contracts, billing, entitlement and override screens, and support access: F32 · F33 · F34 (console screens) · F35 · F39
 - [ ] S23 Monitoring and global templates: F37 · F38 (templates)
 - [ ] Production deploy of Phase 6
 

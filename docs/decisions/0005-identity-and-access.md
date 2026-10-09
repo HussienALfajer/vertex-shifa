@@ -10,7 +10,7 @@ A doctor may work in two clinics and also be a patient. Staff sign in on shared 
 - **Staff sign-in:** phone + password, with a WhatsApp OTP on a new device. Sessions are per device and per tenant.
 - **Patient sign-in:** phone + WhatsApp OTP (ADR 0012); long-lived sessions on a trusted device, with biometric unlock where the device offers it.
 - **Platform staff (console):** separate accounts with mandatory TOTP and re-authentication for sensitive actions.
-- **Devices (clinic app):** a device is registered to a tenant and branch by an owner or manager. Offline sign-in uses a per-user PIN on a registered device, limited to an offline session window; revocation applies on the next connection and wipes the local data.
+- **Devices (clinic app):** a device is registered to a tenant and branch by the owner or a staff member with the device-management permission. Offline sign-in uses a per-user PIN on a registered device, limited to an offline session window; revocation applies on the next connection and wipes the local data.
 - **Authorization:** role presets (owner, doctor, reception, nurse, accountant) map to permissions; owners adjust permissions within limits. Rules also use context: branch scope, and care relationship for clinical reads where the clinic enables it. Every endpoint and sync command declares the permission and the entitlement it needs.
 - **Break-glass:** a doctor may open a record outside their normal scope with a stated reason; the access is flagged in the audit log.
 - **Recovery without email:** staff passwords are reset by their clinic owner; an owner recovers through Vertex support after identity checks; patients recover with a WhatsApp OTP.

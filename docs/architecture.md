@@ -69,7 +69,7 @@ docs/                 product, decisions, specs, roadmap, workflow
 | platform | files | files, attachments | ADR 0016 |
 | platform | audit | audit_entries (append-only) | ADR 0016 |
 | platform | domains | domains, certificates | ADR 0015 |
-| platform | sync | devices sync state, number_ranges, command_log | ADR 0008 |
+| platform | sync | device_sync_state, number_ranges, command_log (append-only), replication scopes | ADR 0008 |
 | health | people | persons, related_persons | ADR 0006 |
 | health | patient-index | patient_charts, person_chart_links, match_candidates | ADR 0006 |
 | health | practitioners | practitioners, practitioner_roles | ADR 0004 |

@@ -14,7 +14,7 @@ Claude Code writes the whole system (ADR 0019). One language across server, desk
 - **Patient app (`apps/patient`):** React Native + Expo (ADR 0003).
 - **Shared packages:** `contracts` (schemas, error codes, pure rules), `db` (schema, migrations, RLS policies, shared write paths), `sync` (command definitions and sync rules), `tokens` (design tokens), `ui` (web components), `ui-native` (React Native components), `i18n` (Arabic catalog), `config` (TypeScript, Biome, test presets).
 - **Quality:** Biome (lint and format), Vitest, Playwright (E2E with RTL screenshots), architecture and convention tests, GitHub Actions CI with gitleaks.
-- **Exact versions** are pinned in the Phase 0 scaffold, the newest stable at that time.
+- **Exact versions** of libraries and tools are pinned in the Phase 0 scaffold, the newest stable at that time. PostgreSQL stays on 17, the version of the owner's existing servers, until a deliberate upgrade.
 
 ## Consequences
 - One Zod schema validates the same payload in the API, the desktop app, the console and the patient app.

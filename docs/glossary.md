@@ -66,7 +66,10 @@ One name per concept. Code, contracts and tables use the English term; the Arabi
 | المزامنة | sync | Exchange of commands and changes with the server |
 | الأمر (مزامنة) | command | A queued change validated by the server |
 | رمز التحقق | OTP | One-time code sent by WhatsApp |
-| ربط واتساب | WhatsApp link | A clinic's WhatsApp session linked by QR |
+| ربط واتساب | WhatsApp link | Linking a clinic's WhatsApp number by scanning a QR code |
+| جلسة واتساب | WhatsApp session | A linked WhatsApp number running in the gateway (clinic or platform) |
+| نطاق المزامنة | replication scope | The data a device receives, decided on the server by tenant, branch and role |
+| أُدخل خطأً | entered in error | A version that withdraws an earlier clinical version |
 | الإشعار | notification | A push or WhatsApp message |
 | لوحة المنصة | console | The platform back office |
 | سجل التدقيق | audit log | Append-only record of changes and reads |

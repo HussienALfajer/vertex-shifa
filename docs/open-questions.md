@@ -16,6 +16,7 @@ Decisions that belong to the owner. Agents must not guess answers to these. When
 | Q10 | Push notification delivery (FCM, APNs) to phones in Syria | Spike B | Test on real devices in Azaz |
 | Q11 | Arabic and Latin fonts of the Vertex identity: license covers desktop app, mobile app and printed documents | Brand phase | Check Vertex Hub's font licenses; use the same fallbacks |
 | Q12 | Exchange rates in clinics: each clinic enters its own rates, or the platform publishes a daily suggestion | S16 | Each clinic enters its rates; the platform may suggest later |
+| Q13 | The Syrian pound after the 2026 redenomination: ISO 4217 code and minor-unit exponent used in software and on invoices | S16 | Confirm with the Central Bank of Syria publications; until then `SYP` with exponent 2 (ADR 0014) |
 
 ## Resolved
 

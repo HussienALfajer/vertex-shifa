@@ -10,7 +10,7 @@ Prescriptions need a medication list. A list per clinic would duplicate the same
   - **Substance:** active ingredient (INN), ATC code.
   - **Product:** trade name, manufacturer, dosage form, strength, pack, country of origin (`SY`, `TR`, other), barcode when known, status (active, withdrawn).
   - **Favorites:** per-doctor favorite products and prescription sets (tenant data).
-- **Sources:**
+- **Sources** (as found on 2026-10-09; each import job re-checks its source's publisher, format and update rhythm):
   1. The Syrian National Drug List (Ministry of Health, published through the Syrian Pharmacists Syndicate): substances and approved forms.
   2. The Turkish TİTCK detailed drug price list (official, updated weekly): Turkish trade names, barcodes, active substances, ATC codes.
   3. Syrian trade names from third-party drug guides only with the publisher's written permission (Q3); never scraped.

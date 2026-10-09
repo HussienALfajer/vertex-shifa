@@ -3,7 +3,7 @@
 Status: Accepted (library to be confirmed by Spike B) · Date: 2026-10-09
 
 ## Context
-The owner chose in-app notifications and WhatsApp only: no SMS and no email (owner, 2026-10-09). Meta's WhatsApp Business Platform is not available to businesses in Syria, and users in Syria cannot receive its messages. The only path is an unofficial WhatsApp Web client library, which breaks WhatsApp's terms and can get a number banned; the design must keep the system working when that happens. OTPs go through WhatsApp only in V1 (owner, 2026-10-09).
+The owner chose in-app notifications and WhatsApp only: no SMS and no email (owner, 2026-10-09). Meta's WhatsApp Business Platform support page (checked 2026-10-09) lists Syria among the locations whose businesses are not eligible and whose users cannot receive its messages; if Meta lifts this, the official transport becomes the preferred option. The only path is an unofficial WhatsApp Web client library, which breaks WhatsApp's terms and can get a number banned; the design must keep the system working when that happens. OTPs go through WhatsApp only in V1 (owner, 2026-10-09).
 
 ## Decision
 - **Channels:** push notifications in the patient app (and in-app notification center), and WhatsApp messages. Nothing else.
