@@ -20,6 +20,11 @@
         "DATABASE_JOBS_URL",
         "DATABASE_QUEUE_URL"
       ]
+    },
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": []
     }
   }
 }

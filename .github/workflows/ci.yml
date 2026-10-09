@@ -15,8 +15,9 @@ concurrency:
 
 # Third-party actions are pinned to full commit SHAs (the tag in the comment); Dependabot proposes
 # updates (.github/dependabot.yml). The job names are the required checks on main: renaming one
-# means updating the branch protection too. Steps arrive with their first subject (E2E with the
-# first front end). OpenAPI drift is an apps/api test (openapi.test.ts), run by pnpm test.
+# means updating the branch protection too. Steps arrive with their first subject. OpenAPI drift is
+# an apps/api test (openapi.test.ts), run by pnpm test. E2E runs the built front ends in Playwright's
+# Chromium and uploads their RTL screenshots.
 jobs:
   checks:
     name: Typecheck, lint, test, build
@@ -42,6 +43,8 @@ jobs:
       DATABASE_APP_URL: postgres://shifa_app:ci-only-app-password@localhost:5432/vertex_shifa
       DATABASE_JOBS_URL: postgres://shifa_jobs:ci-only-jobs-password@localhost:5432/vertex_shifa
       DATABASE_QUEUE_URL: postgres://shifa_queue:ci-only-queue-password@localhost:5432/vertex_shifa
+      # No check launches Electron: typecheck, tests and the build need only its types.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -60,6 +63,17 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      - name: Playwright browser
+        run: pnpm --filter @vertex-shifa/clinic exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - name: E2E screenshots and traces
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-results
+          path: apps/*/test-results/
+          if-no-files-found: ignore
+          retention-days: 14
       # Migrations are generated from the Drizzle schema and never edited (ADR 0020): generating
       # again must change nothing.
       - name: Migrations match the schema
