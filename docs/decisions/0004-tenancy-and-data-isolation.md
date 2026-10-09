@@ -1,6 +1,6 @@
 # 0004 — Tenancy: one organization model, row-level security, a silo option
 
-Status: Accepted · Date: 2026-10-09
+Status: Accepted · Date: 2026-10-09 · Sync-service exception in [0021](0021-sync-engine-confirmed-by-spike-a.md)
 
 ## Context
 Customers range from a solo doctor to multi-branch medical centers, and later labs, pharmacies and hospitals. Medical data of one customer must never be visible to another. Isolation that depends on every query remembering a `WHERE tenant_id` clause is too fragile for a system written across many AI sessions.

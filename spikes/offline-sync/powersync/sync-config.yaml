@@ -1,0 +1,18 @@
+# Replication scope (ADR 0008): the server decides what a device holds, from the signed device token.
+# A device receives its own tenant and branch only; command results only for its own commands.
+config:
+  edition: 3
+
+streams:
+  branch:
+    auto_subscribe: true
+    queries:
+      - SELECT * FROM slots WHERE tenant_id = auth.parameter('tenant_id') AND branch_id = auth.parameter('branch_id')
+      - SELECT * FROM patients WHERE tenant_id = auth.parameter('tenant_id') AND branch_id = auth.parameter('branch_id')
+      - SELECT * FROM appointments WHERE tenant_id = auth.parameter('tenant_id') AND branch_id = auth.parameter('branch_id')
+      - SELECT * FROM booking_conflicts WHERE tenant_id = auth.parameter('tenant_id') AND branch_id = auth.parameter('branch_id')
+      - SELECT * FROM visit_notes WHERE tenant_id = auth.parameter('tenant_id') AND branch_id = auth.parameter('branch_id')
+
+  device_commands:
+    auto_subscribe: true
+    query: SELECT id, type, outcome, outcome_detail, received_at FROM command_log WHERE tenant_id = auth.parameter('tenant_id') AND device_id = auth.parameter('device_id')

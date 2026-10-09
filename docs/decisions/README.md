@@ -11,7 +11,7 @@ Short records of decisions that shape the system. Each has a status: **Accepted*
 | [0005](0005-identity-and-access.md) | One account per person with roles in many tenants; devices and offline PIN; no email or SMS | Accepted |
 | [0006](0006-patient-identity-and-consent.md) | Platform person, a chart per clinic, patient index with Arabic matching, family links, consent | Accepted |
 | [0007](0007-clinical-data-and-terminologies.md) | FHIR-aligned relational model; ICD-10, LOINC, ATC, UCUM; append-only records with snapshots | Accepted |
-| [0008](0008-offline-first-clinic-and-sync.md) | Offline-first clinic app: local SQLite, commands validated by the server, PowerSync candidate (Spike A) | Accepted |
+| [0008](0008-offline-first-clinic-and-sync.md) | Offline-first clinic app: local SQLite, commands validated by the server; sync engine confirmed in 0021 | Accepted, amended by 0021 |
 | [0009](0009-scheduling-queues-and-channel-capacity.md) | Timed slots and queue sessions; capacity pools per channel; offline policies; conflict inbox | Accepted |
 | [0010](0010-templates-specialties-and-custom-fields.md) | Versioned templates with inheritance; general and dental packs in V1; bounded custom fields | Accepted |
 | [0011](0011-medication-catalog.md) | One platform medication catalog from official Syrian and Turkish sources and reviewed clinic suggestions | Accepted |
@@ -24,6 +24,7 @@ Short records of decisions that shape the system. Each has a status: **Accepted*
 | [0018](0018-brand-and-design-system.md) | The Vertex Hub identity and logo with SHIFA; components copied and adapted; "Vertex" always visible | Accepted |
 | [0019](0019-ai-assisted-development.md) | Claude Code (Opus 5.5) as the primary developer: files as memory, skills, subagents, enforcement | Accepted |
 | [0020](0020-engineering-conventions.md) | Engineering conventions: layout, module anatomy, access, data, errors, tests, enforcement | Accepted |
+| [0021](0021-sync-engine-confirmed-by-spike-a.md) | Spike A confirms PowerSync self-hosted (PostgreSQL bucket storage); commands, never-blocking command endpoint, encryption, RLS exception for the sync service, revocation | Accepted |
 
 Template:
 

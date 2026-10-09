@@ -17,7 +17,7 @@ You review a branch of Vertex Shifa, a multi-tenant health platform whose clinic
 
 ## Check — tenant isolation and access (block on any doubt)
 
-- Every new table with tenant data has `tenant_id`, an enabled and forced RLS policy, and indexes starting with `tenant_id`; no query or job bypasses RLS except the audited platform role.
+- Every new table with tenant data has `tenant_id`, an enabled and forced RLS policy, and indexes starting with `tenant_id`; no query or job bypasses RLS except the audited platform role and the sync service's read-only replication role (ADR 0021); every sync stream query filters on `tenant_id` from the device token.
 - Tenant context comes from the authenticated session, never from client input; no endpoint or command accepts a `tenant_id` it then trusts.
 - Every route and sync command declares its access and its entitlement; console routes only under `/api/console/` with TOTP; patients reach only their own and their family's data (try another tenant's and another patient's ids in your head for every read and action).
 - Break-glass access is audited; support access requires the clinic's permission.
