@@ -34,7 +34,7 @@ A module depends only on modules in its own layer or below, through their `index
 
 ```
 apps/
-  api/                NestJS API: modules/<platform|health|clinic>/<module>/
+  api/                NestJS API: core/, modules/<platform|health|clinic>/<module>/ (exists)
   worker/             NestJS jobs: jobs/<area>/<name>.job.ts
   whatsapp-gateway/   WhatsApp transport, sessions, sending
   clinic/             React + Vite + TanStack; electron/ shell; local SQLite + sync client

@@ -16,7 +16,7 @@ concurrency:
 # Third-party actions are pinned to full commit SHAs (the tag in the comment); Dependabot proposes
 # updates (.github/dependabot.yml). The job names are the required checks on main: renaming one
 # means updating the branch protection too. Steps arrive with their first subject (E2E with the
-# first front end, OpenAPI drift with apps/api).
+# first front end). OpenAPI drift is an apps/api test (openapi.test.ts), run by pnpm test.
 jobs:
   checks:
     name: Typecheck, lint, test, build

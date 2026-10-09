@@ -9,7 +9,7 @@ Status legend: `[ ]` not started · `[~]` in progress · `[x]` done. Feature IDs
 - [x] Monorepo scaffold: pnpm, Turborepo, TypeScript, Biome and its Claude Code hook, `packages/config`, check record script, CI (typecheck, lint, test, build, gitleaks, migration drift), folder `CLAUDE.md` files
 - [x] GitHub settings with the owner's approval: auto-merge allowed, merge commits only, `main` protected with required CI checks (needed by "Finishing a task" in `AGENTS.md`)
 - [x] `packages/db`: Drizzle, owner and app roles, tenant context, RLS convention test, audit and outbox tables; `packages/contracts`: money, error codes, Arabic name normalization, with full unit tests. Done: local setup script, CI PostgreSQL service and migration drift step
-- [ ] App skeletons: api (health, access decorators, architecture test), worker (pg-boss, outbox dispatcher), whatsapp-gateway (transport interface, fake transport), clinic (Vite + Electron shell, RTL), console, site, patient (Expo, RTL)
+- [~] App skeletons: api (health, access decorators, architecture test), worker (pg-boss, outbox dispatcher), whatsapp-gateway (transport interface, fake transport), clinic (Vite + Electron shell, RTL), console, site, patient (Expo, RTL). Done: api (also the core database module, error mapping, OpenAPI from the contracts with a drift test)
 - [ ] Brand and design system: `brand/` from Vertex Hub with the SHIFA logo, `packages/tokens`, `packages/ui` copied and adapted, `packages/ui-native` base (ADR 0018)
 - [ ] Deploy skeleton (needs Q1)
 

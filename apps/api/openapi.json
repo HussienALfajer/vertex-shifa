@@ -1,0 +1,138 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Vertex Shifa API",
+    "version": "0.0.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "operationId": "HealthCheckController.check",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthCheck"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CurrencyCode": {
+        "type": "string",
+        "enum": [
+          "USD",
+          "TRY",
+          "SYP"
+        ]
+      },
+      "ErrorCode": {
+        "type": "string",
+        "enum": [
+          "VALIDATION_FAILED",
+          "UNAUTHENTICATED",
+          "FORBIDDEN",
+          "NOT_ENTITLED",
+          "TENANT_SUSPENDED",
+          "NOT_FOUND",
+          "CONFLICT",
+          "CURRENCY_MISMATCH",
+          "INVALID_AMOUNT",
+          "RATE_LIMITED",
+          "INTERNAL_ERROR",
+          "SERVICE_UNAVAILABLE"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "ExchangeRate": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/CurrencyCode"
+          },
+          "to": {
+            "$ref": "#/components/schemas/CurrencyCode"
+          },
+          "rate": {
+            "type": "string",
+            "pattern": "^(0|[1-9]\\d*)(\\.\\d+)?$"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "rate"
+        ],
+        "additionalProperties": false
+      },
+      "HealthCheck": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok"
+          },
+          "database": {
+            "type": "string",
+            "const": "ok"
+          }
+        },
+        "required": [
+          "status",
+          "database"
+        ],
+        "additionalProperties": false
+      },
+      "Money": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "currency": {
+            "$ref": "#/components/schemas/CurrencyCode"
+          }
+        },
+        "required": [
+          "amount",
+          "currency"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
+}
