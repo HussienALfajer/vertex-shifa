@@ -35,7 +35,7 @@ A module depends only on modules in its own layer or below, through their `index
 ```
 apps/
   api/                NestJS API: core/, modules/<platform|health|clinic>/<module>/ (exists)
-  worker/             NestJS jobs: jobs/<area>/<name>.job.ts
+  worker/             NestJS jobs: core/ (pg-boss, outbox dispatcher), jobs/<area>/<name>.job.ts (exists)
   whatsapp-gateway/   WhatsApp transport, sessions, sending
   clinic/             React + Vite + TanStack; electron/ shell; local SQLite + sync client
   console/            React + Vite + TanStack; platform back office
@@ -99,7 +99,7 @@ Table names are indicative; each spec fixes them.
 
 ## Data conventions
 
-UUIDv7 ids (checked by the database), `tenant_id` with forced RLS on tenant data (one policy per table against `current_tenant_id()`, set per transaction by `withTenant`; roles `shifa_owner`, `shifa_app` and the audited platform-jobs role `shifa_jobs`, none bypassing RLS; the jobs role reaches across tenants only through its own policies on the tables granted to it, today claiming `outbox_events`), `timestamptz` in UTC displayed in `Asia/Damascus`, integer money with currency, append-only clinical, payment and audit data, archive instead of delete. Full rules: ADR 0020.
+UUIDv7 ids (checked by the database), `tenant_id` with forced RLS on tenant data (one policy per table against `current_tenant_id()`, set per transaction by `withTenant`; roles `shifa_owner`, `shifa_app`, the audited platform-jobs role `shifa_jobs` and the pg-boss role `shifa_queue`, none bypassing RLS; the jobs role reaches across tenants only through its own policies on the tables granted to it, today claiming `outbox_events` of subscribed types and handing each event to pg-boss in the same transaction, its statements logged without parameter values; pg-boss lives in schema `pgboss`, owned by the queue role, which reaches no tenant table), `timestamptz` in UTC displayed in `Asia/Damascus`, integer money with currency, append-only clinical, payment and audit data, archive instead of delete. Full rules: ADR 0020.
 
 ## Deployment
 

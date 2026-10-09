@@ -39,7 +39,7 @@
   },
   "overrides": [
     {
-      "includes": ["apps/api/**"],
+      "includes": ["apps/api/**", "apps/worker/**"],
       "javascript": {
         "parser": {
           "unsafeParameterDecoratorsEnabled": true
