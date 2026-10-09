@@ -109,7 +109,7 @@ Roles are presets with adjustable permissions within limits (F02).
 
 **F24 — Account and family.** Sign-up and sign-in by phone with a WhatsApp OTP (ADR 0012); after verification, the app proposes links to charts that clinics created for the same phone and the patient confirms each one (phones are shared by families, ADR 0006); family members managed by one account; account deletion inside the app.
 
-**F25 — Find clinics and doctors.** Clinics and doctors on the platform by specialty, area and name; clinic page with doctors, hours and location.
+**F25 — Find clinics and doctors.** Clinics and doctors on the platform, as a list and as a map with clustered markers per branch, with the same filters: specialty, city, name, near me (the patient's location stays on the phone), open now, booking type (time or queue ticket) and online booking available, doctor's gender (recorded with the practitioner, S02); clinic page with doctors, hours, location, directions (opens the phone's maps app) and call. Only clinics Vertex staff list in the directory appear (S01) (ADR 0023).
 
 **F26 — Booking.** Book a time or a queue ticket from the online pool; clear states (confirmed or awaiting confirmation); cancel or move within the clinic's policy.
 

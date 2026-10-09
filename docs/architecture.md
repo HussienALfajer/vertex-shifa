@@ -62,7 +62,7 @@ docs/                 product, decisions, specs, roadmap, workflow
 | Layer | Module | Owns (main tables) | Notes |
 |---|---|---|---|
 | platform | identity | accounts, sessions, devices, otp_challenges | ADR 0005 |
-| platform | tenancy | tenants, facilities, units, tenant_catalog | ADR 0004 |
+| platform | tenancy | tenants (the tenant catalog, with `data_location`), tenant_logos, facilities, areas; units later | ADR 0004, S01 |
 | platform | access | roles, role_permissions, staff_memberships | ADR 0005 |
 | platform | commercial | catalog_items, packages, quotes, contracts, contract_items, platform_invoices, platform_payments | ADR 0013, 0014 |
 | platform | entitlements | entitlement_overrides, resolved cache | ADR 0013 |

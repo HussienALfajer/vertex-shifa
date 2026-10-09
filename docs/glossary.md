@@ -8,6 +8,13 @@ One name per concept. Code, contracts and tables use the English term; the Arabi
 | العميل / الجهة | tenant | The contracting customer (a doctor, a clinic group, later a lab or pharmacy) |
 | الفرع / المنشأة | facility | A branch or site of a tenant; type `clinic` in V1 |
 | القسم | unit | A department inside a facility (optional) |
+| حالة العميل | tenant status | `onboarding` (قيد الإعداد), `active` (نشط), `suspended` (معلّق: قراءة وتصدير فقط), `closed` (مغلق) |
+| معالج الإعداد | onboarding wizard | The owner's first-run steps that make a tenant active |
+| هوية العيادة | clinic profile | A tenant's names and logo |
+| المنطقة | area | A place in the address list: governorate (المحافظة) or city (المدينة) |
+| أيام العمل | working days | The weekdays a branch opens |
+| العملة الافتراضية | default currency | The currency a branch uses for new prices and invoices |
+| صيغة الاسم على الشاشة | display name format | What the waiting-room display shows of a patient: ticket only, or first name and father's initial |
 | الطبيب | practitioner | A health professional |
 | دور الطبيب في الفرع | practitioner role | A practitioner working at a facility with a schedule |
 | الموظف | staff member | A person with a role in a tenant |
