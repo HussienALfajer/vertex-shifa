@@ -42,8 +42,8 @@ apps/
   site/               Next.js; clinic public pages, subdomains and custom domains
   patient/            React Native + Expo
 packages/
-  contracts/          Zod schemas, error codes, state tables, money and matching rules
-  db/                 Drizzle schema, migrations, RLS policies, shared write paths
+  contracts/          Zod schemas, error codes, state tables, money and matching rules (exists)
+  db/                 Drizzle schema, migrations, RLS policies, shared write paths (exists)
   sync/               command definitions, sync rules, conflict policies
   tokens/             design tokens (web and native)
   ui/                 web components (from Vertex Hub, adapted)
@@ -70,6 +70,7 @@ docs/                 product, decisions, specs, roadmap, workflow
 | platform | messaging | message_templates, messages, whatsapp_sessions (with lease), send_counters, known_recipients, whatsapp_lid_map, push_tokens (Expo and native), opt_outs | ADR 0012, 0022 |
 | platform | files | files, attachments | ADR 0016 |
 | platform | audit | audit_entries (append-only) | ADR 0016 |
+| platform | events | outbox_events (work queue) | ADR 0012, 0020 |
 | platform | domains | domains, certificates | ADR 0015 |
 | platform | sync | device_sync_state, number_ranges, command_log (append-only), replication scopes | ADR 0008 |
 | health | people | persons, related_persons | ADR 0006 |
@@ -98,7 +99,7 @@ Table names are indicative; each spec fixes them.
 
 ## Data conventions
 
-UUIDv7 ids, `tenant_id` with forced RLS on tenant data, `timestamptz` in UTC displayed in `Asia/Damascus`, integer money with currency, append-only clinical, payment and audit data, archive instead of delete. Full rules: ADR 0020.
+UUIDv7 ids (checked by the database), `tenant_id` with forced RLS on tenant data (one policy per table against `current_tenant_id()`, set per transaction by `withTenant`; roles `shifa_owner` and `shifa_app`, neither bypassing RLS), `timestamptz` in UTC displayed in `Asia/Damascus`, integer money with currency, append-only clinical, payment and audit data, archive instead of delete. Full rules: ADR 0020.
 
 ## Deployment
 

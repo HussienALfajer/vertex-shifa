@@ -15,13 +15,31 @@ concurrency:
 
 # Third-party actions are pinned to full commit SHAs (the tag in the comment); Dependabot proposes
 # updates (.github/dependabot.yml). The job names are the required checks on main: renaming one
-# means updating the branch protection too. Steps arrive with their first subject (database
-# services with packages/db, E2E with the first front end).
+# means updating the branch protection too. Steps arrive with their first subject (E2E with the
+# first front end, OpenAPI drift with apps/api).
 jobs:
   checks:
     name: Typecheck, lint, test, build
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    # A throwaway PostgreSQL 17 for the packages/db tests; the passwords are fake and exist only
+    # for this job.
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: ci-only-admin-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 30
+    env:
+      DATABASE_ADMIN_URL: postgres://postgres:ci-only-admin-password@localhost:5432/postgres
+      DATABASE_OWNER_URL: postgres://shifa_owner:ci-only-owner-password@localhost:5432/vertex_shifa
+      DATABASE_APP_URL: postgres://shifa_app:ci-only-app-password@localhost:5432/vertex_shifa
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -33,17 +51,17 @@ jobs:
       - name: No known high-severity advisory in production dependencies
         run: pnpm audit --prod --audit-level=high
       - run: pnpm lint
+      - name: Database roles and development database
+        run: pnpm db:setup-local
+      - name: Migrations apply to the development database
+        run: pnpm db:migrate
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
-      # Migrations are generated from the Drizzle schema and never edited (ADR 0020). Until
-      # packages/db exists there is nothing to compare, and the check passes with a notice.
+      # Migrations are generated from the Drizzle schema and never edited (ADR 0020): generating
+      # again must change nothing.
       - name: Migrations match the schema
         run: |
-          if [ ! -f packages/db/package.json ]; then
-            echo "::notice::packages/db does not exist yet; no migrations to compare"
-            exit 0
-          fi
           pnpm db:generate
           git diff --exit-code -- packages/db/migrations
           test -z "$(git status --porcelain -- packages/db/migrations)"
