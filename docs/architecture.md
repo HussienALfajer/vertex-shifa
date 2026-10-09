@@ -45,14 +45,14 @@ packages/
   contracts/          Zod schemas, error codes, state tables, money and matching rules (exists)
   db/                 Drizzle schema, migrations, RLS policies, shared write paths (exists)
   sync/               command definitions, sync rules, conflict policies
-  tokens/             design tokens (web and native)
-  ui/                 web components (from Vertex Hub, adapted)
-  ui-native/          React Native components
+  tokens/             design tokens from brand/identity.md, shared by web and native (exists)
+  ui/                 web design system: Tailwind CSS v4 theme, Base UI components from Vertex Hub, adapted, logo (exists)
+  ui-native/          React Native theme provider and base components (exists)
   i18n/               Arabic catalog by namespace, error code texts, locale (Latin digits) (exists)
   config/             TypeScript, Biome and test presets (exists)
 scripts/              repository scripts (check record) (exists)
 .github/              CI and Dependabot (exists)
-brand/                identity, logo files (brand phase)
+brand/                identity, Vertex Shifa logo files (exists)
 deploy/               server configuration and release scripts
 docs/                 product, decisions, specs, roadmap, workflow
 ```

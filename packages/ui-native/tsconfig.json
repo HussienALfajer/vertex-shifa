@@ -1,0 +1,4 @@
+{
+  "extends": "@vertex-shifa/config/tsconfig/expo.json",
+  "include": ["src"]
+}

@@ -1,3 +1,4 @@
+import { ThemeProvider } from '@vertex-shifa/ui-native';
 import { type ErrorBoundaryProps, Slot } from 'expo-router';
 import Head from 'expo-router/head';
 import { StatusBar } from 'expo-status-bar';
@@ -11,7 +12,6 @@ import { logErrorLabel, redactConsoleErrors } from '../lib/error-logging';
 import { i18n } from '../lib/i18n';
 import { redactNativeErrorReports } from '../lib/native-error-reports';
 import { forceRightToLeft } from '../lib/rtl';
-import { ColorsProvider } from '../lib/theme';
 
 // Errors may carry patient data: nothing in the app logs or reports their message (ADR 0016).
 redactConsoleErrors(console);
@@ -26,9 +26,9 @@ function Frame({ children }: { children: ReactNode }) {
           <title>{i18n.t('productName')}</title>
         </Head>
         <StatusBar style="auto" />
-        <ColorsProvider>
+        <ThemeProvider>
           <AppShell>{children}</AppShell>
-        </ColorsProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
     </I18nextProvider>
   );
