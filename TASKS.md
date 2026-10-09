@@ -1,21 +1,20 @@
-# TASKS — Phase 0 site skeleton
+# TASKS — Phase 0 patient skeleton
 
-Branch `feat/site-skeleton`. The `site` part of "App skeletons" (after `feat/console-skeleton`). Adds `apps/site`: the public clinic pages as a Next.js (App Router) app, Arabic-first RTL (ADR 0018, ADR 0020). No API calls, tenant subdomains or custom domains yet: they arrive with the public booking pages (Phase 5).
+Branch `feat/patient-skeleton`. The `patient` part of "App skeletons" (after `feat/site-skeleton`). Adds `apps/patient`: the Vertex Shifa patient app as React Native + Expo (ADR 0003), Arabic-first RTL (ADR 0018, ADR 0020). No API calls, sign-in, secure storage or push yet: they arrive with S19 (account, booking, notifications).
 
 Design:
-- **Layout (ADR 0020):** thin `src/app/` routes (App Router: root layout, home page, not-found and error files), `features/<area>/`, app-wide `components/` and `lib/`, copied from `apps/console` where it fits Next.js. Server components by default; client components only where Next.js needs them (the error boundary).
-- **RTL and i18n:** `<html lang="ar" dir="rtl">` in the root layout; every text through i18next from `packages/i18n` with a new `site` namespace, used directly (no `react-i18next`: server components have no React context); page title from the catalog through Next.js metadata; Latin digits. Logical CSS only, pinned by the same source test with samples. Local light and dark colors until `packages/tokens` and `packages/ui` (ADR 0018). System fonts only (`next/font/google` would fetch at build time).
-- **Errors:** logged by name only, on the server (`instrumentation.ts` redacts `console.error`/`warn` before Next.js logs a request error) and in the browser (`instrumentation-client.ts`, and the error boundary logs the label), with a marker test.
-- **Headers:** no `X-Powered-By`; security headers are set by the host at the first deploy (as for the console).
-- **Ports:** dev 5175, `next start` 4175, so the clinic, console and site E2E servers run side by side under Turborepo.
-- **E2E:** Playwright against `next start` after `next build`: shell RTL in Arabic with Latin digits, title from i18n, not-found state (HTTP 404); screenshots light and dark as attachments, uploaded by CI (`apps/*/test-results/`).
+- **Expo SDK 57** (latest stable), managed workflow, Expo Router with thin routes in `src/app/` (`_layout.tsx` with the shell and the route `ErrorBoundary`, `index.tsx` re-exporting `features/home/`, `+not-found.tsx`), app-wide `components/` and `lib/` (ADR 0020), copied from `apps/console` where it fits React Native. Native projects stay generated (`android/`, `ios/` git-ignored); EAS builds arrive with the store release.
+- **RTL forced on start:** `extra.supportsRTL` and `extra.forcesRTL` in the app config (native, through `expo-localization`) and `I18nManager.allowRTL`/`forceRTL` at start (`lib/rtl.ts`, unit-tested with a fake manager). On web, `+html.tsx` sets `<html lang="ar" dir="rtl">`.
+- **i18n:** a new `patient` namespace in `packages/i18n`; `react-i18next` with the same instance shape as the console; app name from the catalog in `app.config.ts`; Latin digits through `formatLocale`.
+- **Errors:** logged by name only: `redactConsoleErrors(console)` and an `ErrorUtils` global handler that logs the label and passes on a redacted error; the route `ErrorBoundary` logs the label and never shows the message. Marker test.
+- **Styles:** local light and dark colors (`useColorScheme`) and spacing until `packages/tokens` and `packages/ui-native` (ADR 0018); logical style properties only (`marginInlineStart`, `paddingBlock`, `insetInlineStart`…), pinned by a source test with samples. System fonts.
+- **Checks:** typecheck (local React Native tsconfig), Vitest (pure modules and source tests), `build` = `expo export` for Android, iOS and web, so every bundle compiles. The web export exists only for tests (no PWA, ADR 0003): Playwright against `expo serve` on port 4176 (dev server 5176), RTL in Arabic, light and dark screenshots, not-found state.
 
 Checklist:
-- [x] `packages/i18n`: `site` namespace, `CLAUDE.md`
-- [x] `apps/site`: package, tsconfigs, Next.js and Vitest config, `CLAUDE.md`
-- [x] App: root layout (shell, metadata), home page, `features/home/`, not-found and error files, `lib/i18n.ts`, `lib/error-logging.ts`, instrumentation (server and client), styles light and dark
-- [x] Tests: error logging marker test; logical-CSS source test
-- [x] E2E: Playwright config, RTL shell test with light and dark screenshots
-- [x] Look at the screenshots (light, dark)
-- [x] Docs: `docs/architecture.md`, `AGENTS.md` (stack line, commands), `docs/ROADMAP.md`; CI and Turborepo pass `NEXT_TELEMETRY_DISABLED`; `next-env.d.ts` git-ignored
+- [x] `packages/i18n`: `patient` namespace, `CLAUDE.md`
+- [x] `apps/patient`: package (Expo SDK 57 versions via `expo install`), app config, tsconfigs, Metro/Babel defaults, Vitest config, `CLAUDE.md`
+- [x] App: `_layout.tsx` (shell, error boundary), `index.tsx`, `+not-found.tsx`, `+html.tsx`, `features/home/`, components (shell, states), `lib/i18n.ts`, `lib/error-logging.ts`, `lib/rtl.ts`, `lib/theme.ts`
+- [x] Tests: error logging marker test; RTL start test; logical-style source test
+- [x] E2E: Playwright config, a static server for the web export (`expo serve` has no not-found page), RTL shell test with light and dark screenshots; look at them
+- [x] Docs: `docs/architecture.md`, `AGENTS.md` (stack line, commands), `docs/ROADMAP.md`; `packages/config` (Expo preset)
 - [x] Checks through `checker`; `reviewer`; PR with auto-merge

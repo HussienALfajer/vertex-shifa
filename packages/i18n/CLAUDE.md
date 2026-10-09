@@ -3,7 +3,7 @@
 The Arabic text of every front end (ADR 0018, ADR 0020): plain catalogs and locale constants, no i18n library and no I/O, so the clinic, console and site apps and the patient app all read the same files. Each app wires its own i18n library to `ar`.
 
 ## Layout
-- `src/ar/<namespace>.ts`, collected in `src/ar/index.ts` (`ar`, `Catalog`): `common` (shared by every product), `clinic` (`apps/clinic`), `console` (`apps/console`), `site` (`apps/site`), `errors` (the text of each error code of `packages/contracts`). A new app or area adds a namespace file.
+- `src/ar/<namespace>.ts`, collected in `src/ar/index.ts` (`ar`, `Catalog`): `common` (shared by every product), `clinic` (`apps/clinic`), `console` (`apps/console`), `site` (`apps/site`), `patient` (`apps/patient`), `errors` (the text of each error code of `packages/contracts`). A new app or area adds a namespace file.
 - `src/locale.ts`: `defaultLanguage` (`ar`), `textDirection` (`rtl`), `formatLocale` (`ar-u-nu-latn`, Arabic with Latin digits) for every `Intl` formatter.
 - `src/catalog.test.ts`: no empty text, no Arabic-Indic digit, a text for every error code.
 

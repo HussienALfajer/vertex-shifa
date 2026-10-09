@@ -41,6 +41,18 @@ describe('shared tsconfig', () => {
     });
   });
 
+  it('expo extends base and resolves modules as Metro does, with React Native first', () => {
+    const config = readJson('tsconfig/expo.json');
+    expect(config.extends).toBe('./base.json');
+    expect(config.compilerOptions).toMatchObject({
+      module: 'Preserve',
+      moduleResolution: 'Bundler',
+      customConditions: ['react-native'],
+      jsx: 'react-jsx',
+      noEmit: true,
+    });
+  });
+
   it('nest extends node with the legacy decorators and no decorator metadata', () => {
     const config = readJson('tsconfig/nest.json');
     expect(config.extends).toBe('./node.json');
