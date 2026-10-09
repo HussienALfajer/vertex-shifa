@@ -1,0 +1,5 @@
+# Standalone workspace for the throwaway spike; not part of the product monorepo.
+packages: []
+allowBuilds:
+  baileys: false
+  protobufjs: false

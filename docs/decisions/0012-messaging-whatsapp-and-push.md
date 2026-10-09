@@ -1,6 +1,6 @@
 # 0012 — Messaging: in-app push and WhatsApp only, through our own gateway
 
-Status: Accepted (library to be confirmed by Spike B) · Date: 2026-10-09
+Status: Accepted · Date: 2026-10-09 · Baileys and push confirmed by Spike B and amended by [0022](0022-messaging-confirmed-by-spike-b.md)
 
 ## Context
 The owner chose in-app notifications and WhatsApp only: no SMS and no email (owner, 2026-10-09). Meta's WhatsApp Business Platform support page (checked 2026-10-09) lists Syria among the locations whose businesses are not eligible and whose users cannot receive its messages; if Meta lifts this, the official transport becomes the preferred option. The only path is an unofficial WhatsApp Web client library, which breaks WhatsApp's terms and can get a number banned; the design must keep the system working when that happens. OTPs go through WhatsApp only in V1 (owner, 2026-10-09).

@@ -13,7 +13,6 @@ Decisions that belong to the owner. Agents must not guess answers to these. When
 | Q7 | Medical advisor (a doctor) who reviews templates, documents and prescription forms | S11 | A doctor from the pilot clinics |
 | Q8 | Clinic hardware baseline: Windows versions, RAM, printers (A4, A5, thermal), TVs for the waiting-room display | S13, and a sync volume test on pilot hardware (ADR 0021) | Collect from the pilot clinics |
 | Q9 | Apple and Google developer accounts for publishing the patient app | S19 | Owner's accounts, opened early (Apple review takes time) |
-| Q10 | Push notification delivery (FCM, APNs) to phones in Syria | Spike B | Test on real devices in Azaz |
 | Q11 | Arabic and Latin fonts of the Vertex identity: license covers desktop app, mobile app and printed documents | Brand phase | Check Vertex Hub's font licenses; use the same fallbacks |
 | Q12 | Exchange rates in clinics: each clinic enters its own rates, or the platform publishes a daily suggestion | S16 | Each clinic enters its rates; the platform may suggest later |
 | Q13 | The Syrian pound after the 2026 redenomination: ISO 4217 code and minor-unit exponent used in software and on invoices | S16 | Confirm with the Central Bank of Syria publications; until then `SYP` with exponent 2 (ADR 0014) |
@@ -37,5 +36,6 @@ Decisions that belong to the owner. Agents must not guess answers to these. When
 | OTP | WhatsApp only in V1 (ADR 0012) | 2026-10-09 |
 | Clinic WhatsApp | Each clinic links its own number by QR (ADR 0012) | 2026-10-09 |
 | Patient app | React Native + Expo on both stores, no PWA (ADR 0003) | 2026-10-09 |
+| Push in Syria (Q10) | FCM and APNs reach devices in Azaz: Expo push to an iPad, Expo and direct FCM to an Android phone, direct FCM on MTN Syria cellular with the app closed (ADR 0022, Spike B) | 2026-10-09 |
 | Brand | Vertex Hub identity and logo with SHIFA; components copied and adapted at the brand phase (ADR 0018) | 2026-10-09 |
 | Development method | Claude Code (Opus 5.5) with the method in ADR 0019 and `docs/workflow.md` | 2026-10-09 |
