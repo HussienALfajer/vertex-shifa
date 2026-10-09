@@ -25,7 +25,7 @@ Read these on demand. For a feature, read its spec, the ADRs it lists, and its s
 
 ## Stack (ADR 0002, 0003)
 
-pnpm workspaces + Turborepo · TypeScript (strict) · Node 24 · PostgreSQL 17. The scaffold arrives in Phase 0; until then the repository holds documents only.
+pnpm workspaces + Turborepo · TypeScript (strict) · Node 24 · PostgreSQL 17. The workspace and shared configuration exist; apps and domain packages arrive with their Phase 0 roadmap items.
 
 - `apps/api` NestJS core API · `apps/worker` NestJS jobs · `apps/whatsapp-gateway` WhatsApp sessions behind a transport interface
 - `apps/clinic` React + Vite, packaged with Electron, offline-first · `apps/console` platform back office (React + Vite) · `apps/site` Next.js public clinic pages · `apps/patient` React Native + Expo
@@ -33,10 +33,16 @@ pnpm workspaces + Turborepo · TypeScript (strict) · Node 24 · PostgreSQL 17. 
 
 ## Commands
 
-None yet. The PR that adds a command adds it to this table and keeps it true.
+The PR that adds a command adds it to this table and keeps it true. Run from the repository root.
 
 | Task | Command |
 |---|---|
+| Install | `pnpm install` |
+| Lint (Biome) | `pnpm lint` · fix: `pnpm lint:fix` · one path: `pnpm exec biome check --error-on-warnings <path>` |
+| Typecheck | `pnpm typecheck` · one package: `pnpm --filter @vertex-shifa/<name> typecheck` |
+| Test | `pnpm test` · one package: `pnpm --filter @vertex-shifa/<name> test` |
+| Build | `pnpm build` |
+| Check record | `node scripts/check-record.mjs status <checks…>` (also `fingerprint`, `record <tree> <checks…>`) |
 
 ## Non-negotiable conventions
 
@@ -85,7 +91,7 @@ When a task's work is done (a spec approved, a `/feature-slice` PR accepted, a f
 1. **Branch:** not `main`. `TASKS.md` has no open items for this PR.
 2. **Docs:** update `docs/ROADMAP.md` and every doc the change made stale (`docs/architecture.md`, a folder `CLAUDE.md`, `docs/open-questions.md`, the commands table above).
 3. **Secrets and data:** `git status` and `git diff --stat` show no `.env`, key, WhatsApp session file, real phone number or medical data; fixtures are synthetic.
-4. **Checks:** lint, typecheck, test and build, plus E2E when a front end or `packages/ui*` changed and migration drift when `packages/db` changed, run through the `checker` subagent. Once `scripts/check-record.mjs` exists (Phase 0 scaffold), run `node scripts/check-record.mjs status <checks…>` first and run only the checks marked `needed`. Documentation-only changes run no local checks.
+4. **Checks:** lint, typecheck, test and build, plus E2E when a front end or `packages/ui*` changed and migration drift when `packages/db` changed, run through the `checker` subagent. Run `node scripts/check-record.mjs status <checks…>` first and run only the checks marked `needed`. Documentation-only changes run no local checks.
 5. **Review:** for feature, sync, security and clinical work, the `reviewer` subagent has run and its blocking findings are fixed.
 6. **Commit:** stage the intended files only; Conventional Commit subject, a body with what and why, ending with the session's attribution line.
 7. **Pull request:** `git push -u origin <branch>`, `gh pr create --base main` with `## Summary` and `## Test plan` (ticked checks, each marked run now or reused from the record), ending with the session's attribution line; then `gh pr merge <number> --auto --merge`. Exception: a PR that changes `v1-scope.md` or adds or changes an ADR waits for the owner's approval before auto-merge is enabled.
@@ -108,3 +114,14 @@ Talk to the owner in Arabic, including the report and its headings. Write everyt
 ## Servers
 
 No server exists yet; hosting is open (`docs/open-questions.md` Q1, ADR 0017). Never run commands on a server without explicit approval in the current conversation.
+
+<!-- BEGIN:turborepo-agent-rules -->
+
+# This is NOT the Turborepo you know
+
+Turborepo configuration, task behavior, and CLI commands can vary between installed versions and may differ from your training data. Resolve the `turbo` package from this file's directory or relevant workspace; in monorepos, it may not be visible from the repository root. For example, run `node -p "require.resolve('turbo/package.json')"` from a workspace that depends on `turbo`.
+
+Read `docs/README.md` inside that installed package first, then read the relevant pages from its `docs/` directory before changing Turborepo configuration or commands. Heed deprecation notices. These bundled docs match the installed package version and are available without network access.
+
+This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": false` in the root `turbo.json` or `turbo.jsonc` to opt out; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
+<!-- END:turborepo-agent-rules -->

@@ -1,0 +1,23 @@
+{
+  "name": "vertex-shifa",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.4.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "biome check --error-on-warnings .",
+    "lint:fix": "biome check --write .",
+    "test": "turbo run test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.0",
+    "@types/node": "^24.19.0",
+    "@vertex-shifa/config": "workspace:*",
+    "turbo": "^2.11.0",
+    "typescript": "~6.0.3"
+  }
+}
