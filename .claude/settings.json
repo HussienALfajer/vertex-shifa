@@ -120,5 +120,20 @@
       "Bash(*drizzle-kit push*)",
       "Bash(*drizzle-kit drop*)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/biome-format.mjs\"",
+            "timeout": 30,
+            "statusMessage": "Biome"
+          }
+        ]
+      }
+    ]
   }
 }

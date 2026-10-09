@@ -50,7 +50,7 @@ Each rule lives in one place and loads only when it is needed.
 | Product and decisions | `docs/product/`, `docs/decisions/`, `docs/specs/`, `docs/glossary.md` | On demand, the parts the task needs |
 | Workflows | `.claude/skills/`: `spec`, `feature-slice`, `db-migration` | When invoked |
 | Subagents | `.claude/agents/`: `checker` (Haiku 5.5), `reviewer` (Opus 5.5), `explorer` (Sonnet 5.5) | In their own context; only their summary returns |
-| Enforcement | Biome hook, architecture and convention tests, CI, gitleaks *(Phase 0)* | Always, without costing context |
+| Enforcement | Biome hook, architecture and convention tests, CI, gitleaks | Always, without costing context |
 | Guard rails | `.claude/settings.json`: model and effort, permissions, denied reads of secrets and generated files | Always |
 
 A rule a machine can check belongs in a test, lint rule or hook, not in prose. A rule for one folder belongs in that folder's `CLAUDE.md`.

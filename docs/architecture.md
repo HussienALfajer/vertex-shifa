@@ -1,6 +1,6 @@
 # Architecture
 
-The map of the system. Decisions and their reasons live in `docs/decisions/`; this file shows how the parts fit. Paths marked *(Phase 0)* arrive with the scaffold.
+The map of the system. Decisions and their reasons live in `docs/decisions/`; this file shows how the parts fit. Paths marked *(Phase 0)* arrive with their Phase 0 roadmap item.
 
 ## Layers (ADR 0001)
 
@@ -30,7 +30,7 @@ The map of the system. Decisions and their reasons live in `docs/decisions/`; th
 
 A module depends only on modules in its own layer or below, through their `index.ts` or their events.
 
-## Repository layout *(Phase 0)*
+## Repository layout
 
 ```
 apps/
@@ -49,7 +49,9 @@ packages/
   ui/                 web components (from Vertex Hub, adapted)
   ui-native/          React Native components
   i18n/               Arabic catalog
-  config/             TypeScript, Biome and test presets
+  config/             TypeScript, Biome and test presets (exists)
+scripts/              repository scripts (check record) (exists)
+.github/              CI and Dependabot (exists)
 brand/                identity, logo files (brand phase)
 deploy/               server configuration and release scripts
 docs/                 product, decisions, specs, roadmap, workflow
