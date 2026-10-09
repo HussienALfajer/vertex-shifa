@@ -26,6 +26,7 @@ Short records of decisions that shape the system. Each has a status: **Accepted*
 | [0020](0020-engineering-conventions.md) | Engineering conventions: layout, module anatomy, access, data, errors, tests, enforcement | Accepted |
 | [0021](0021-sync-engine-confirmed-by-spike-a.md) | Spike A confirms PowerSync self-hosted (PostgreSQL bucket storage); commands, never-blocking command endpoint, encryption, RLS exception for the sync service, revocation | Accepted |
 | [0022](0022-messaging-confirmed-by-spike-b.md) | Spike B confirms Baileys and Expo push in Syria; disconnect-code states, session lease, LID and `append` intake, durable rate limits, OTP budget, two push tokens | Accepted |
+| [0023](0023-maps-openstreetmap-self-hosted.md) | Maps: OpenStreetMap vector tiles served by us with MapLibre; one provider-neutral map component; coordinates owned by us; paste-a-link fallback; Google later | Accepted |
 
 Template:
 

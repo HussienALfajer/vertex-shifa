@@ -39,3 +39,4 @@ Decisions that belong to the owner. Agents must not guess answers to these. When
 | Push in Syria (Q10) | FCM and APNs reach devices in Azaz: Expo push to an iPad, Expo and direct FCM to an Android phone, direct FCM on MTN Syria cellular with the app closed (ADR 0022, Spike B) | 2026-10-09 |
 | Brand | Vertex Hub identity and logo with SHIFA; components copied and adapted at the brand phase (ADR 0018) | 2026-10-09 |
 | Development method | Claude Code (Opus 5.5) with the method in ADR 0019 and `docs/workflow.md` | 2026-10-09 |
+| Map provider | OpenStreetMap vector tiles served by us with MapLibre; Google Maps refused billing from Syria (`OR_BACR2_59`), kept as a later option behind the map component; coordinates stored by us; paste-a-link fallback (ADR 0023) | 2026-10-10 |
