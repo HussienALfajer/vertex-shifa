@@ -39,7 +39,7 @@
   },
   "overrides": [
     {
-      "includes": ["apps/api/**", "apps/worker/**"],
+      "includes": ["apps/api/**", "apps/worker/**", "apps/whatsapp-gateway/**"],
       "javascript": {
         "parser": {
           "unsafeParameterDecoratorsEnabled": true

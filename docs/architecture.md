@@ -36,7 +36,7 @@ A module depends only on modules in its own layer or below, through their `index
 apps/
   api/                NestJS API: core/, modules/<platform|health|clinic>/<module>/ (exists)
   worker/             NestJS jobs: core/ (pg-boss, outbox dispatcher), jobs/<area>/<name>.job.ts (exists)
-  whatsapp-gateway/   WhatsApp transport, sessions, sending
+  whatsapp-gateway/   NestJS: transport/ (interface, fake), sessions/, sending/ (exists)
   clinic/             React + Vite + TanStack; electron/ shell; local SQLite + sync client
   console/            React + Vite + TanStack; platform back office
   site/               Next.js; clinic public pages, subdomains and custom domains
