@@ -63,6 +63,7 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      # One Chromium serves every app's E2E: they share the @playwright/test version and its cache.
       - name: Playwright browser
         run: pnpm --filter @vertex-shifa/clinic exec playwright install --with-deps chromium
       - run: pnpm test:e2e
