@@ -39,7 +39,7 @@ apps/
   whatsapp-gateway/   NestJS: transport/ (interface, fake), sessions/, sending/ (exists)
   clinic/             React + Vite + TanStack Router; electron/ shell (app:// protocol, locked-down window) (exists; local SQLite + sync client with S04)
   console/            React + Vite + TanStack Router; platform back office (exists; shell only, API and sign-in with S22)
-  site/               Next.js; clinic public pages, subdomains and custom domains
+  site/               Next.js App Router; clinic public pages (exists; shell only, subdomains, custom domains and booking in Phase 5)
   patient/            React Native + Expo
 packages/
   contracts/          Zod schemas, error codes, state tables, money and matching rules (exists)

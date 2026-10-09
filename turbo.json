@@ -2,7 +2,7 @@
   "$schema": "https://turborepo.com/schema.json",
   "ui": "stream",
   "globalDependencies": [".node-version"],
-  "globalPassThroughEnv": ["CI"],
+  "globalPassThroughEnv": ["CI", "NEXT_TELEMETRY_DISABLED"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
