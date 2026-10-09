@@ -25,7 +25,7 @@ Read these on demand. For a feature, read its spec, the ADRs it lists, and its s
 
 ## Stack (ADR 0002, 0003)
 
-pnpm workspaces + Turborepo · TypeScript (strict) · Node 24 · PostgreSQL 17. The workspace, shared configuration, `packages/db`, `packages/contracts`, `apps/api` and `apps/worker` exist; the other apps and packages arrive with their Phase 0 roadmap items.
+pnpm workspaces + Turborepo · TypeScript (strict) · Node 24 · PostgreSQL 17. The workspace, shared configuration, `packages/db`, `packages/contracts`, `apps/api`, `apps/worker` and `apps/whatsapp-gateway` exist; the other apps and packages arrive with their Phase 0 roadmap items.
 
 - `apps/api` NestJS core API · `apps/worker` NestJS jobs (pg-boss, outbox dispatcher) · `apps/whatsapp-gateway` WhatsApp sessions behind a transport interface
 - `apps/clinic` React + Vite, packaged with Electron, offline-first · `apps/console` platform back office (React + Vite) · `apps/site` Next.js public clinic pages · `apps/patient` React Native + Expo
@@ -45,6 +45,7 @@ The PR that adds a command adds it to this table and keeps it true. Run from the
 | Local database | `pnpm db:setup-local` (roles and dev database; needs `.env` from `.env.example`) · migrate: `pnpm db:migrate` · generate: `pnpm db:generate` |
 | API | start (after `pnpm build`): `pnpm --filter @vertex-shifa/api start` (reads `.env`) · regenerate `apps/api/openapi.json`: `pnpm --filter @vertex-shifa/api exec vitest run -u test/openapi.test.ts` |
 | Worker | start (after `pnpm build`): `pnpm --filter @vertex-shifa/worker start` (reads `.env`) |
+| WhatsApp gateway | start (after `pnpm build`): `pnpm --filter @vertex-shifa/whatsapp-gateway start` (reads `.env`; fake transport only, exits after start until S03 runs sessions) |
 | Check record | `node scripts/check-record.mjs status <checks…>` (also `fingerprint`, `record <tree> <checks…>`) |
 
 ## Non-negotiable conventions
