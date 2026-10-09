@@ -8,6 +8,12 @@ import { connect } from './connections.js';
 
 const APP_ROLE = 'shifa_app';
 const OWNER_ROLE = 'shifa_owner';
+const JOBS_ROLE = 'shifa_jobs';
+// Everything the platform-jobs role may touch (ADR 0004): it reads the listed tables across tenants
+// through policies of its own and updates only the listed columns. Any other grant fails here.
+const JOBS_ACCESS: Record<string, { select: boolean; update: string[] }> = {
+  outbox_events: { select: true, update: ['dispatched_at', 'updated_at'] },
+};
 const FORBIDDEN_TYPES = ['timestamp without time zone', 'real', 'double precision', 'money'];
 const TENANT_POLICY = '(tenant_id = current_tenant_id())';
 const TENANT_FUNCTION = "SELECT nullif(current_setting('app.tenant_id', true), '')::uuid";
@@ -118,6 +124,39 @@ async function appPrivileges(table: string) {
   return privileges;
 }
 
+async function jobsPrivileges(table: string) {
+  const [tableWide] = await rows<Record<string, boolean>>(
+    `select has_table_privilege($1, $2, 'INSERT') as insert,
+            has_table_privilege($1, $2, 'UPDATE') as update,
+            has_table_privilege($1, $2, 'DELETE') as delete,
+            has_table_privilege($1, $2, 'TRUNCATE') as truncate,
+            has_table_privilege($1, $2, 'TRIGGER') as trigger,
+            has_table_privilege($1, $2, 'REFERENCES') as references`,
+    [JOBS_ROLE, table],
+  );
+  // Column privileges include the table-wide ones, so these lists show everything it can reach.
+  const perColumn = await rows<{ column: string; privilege: string }>(
+    `select a.attname as column, p.privilege
+     from pg_attribute a
+     cross join unnest(array['SELECT', 'INSERT', 'UPDATE', 'REFERENCES']) as p(privilege)
+     where a.attrelid = $2::regclass and a.attnum > 0 and not a.attisdropped
+       and has_column_privilege($1, $2, a.attname, p.privilege)
+     order by a.attname`,
+    [JOBS_ROLE, table],
+  );
+  const columnsWith = (privilege: string) =>
+    perColumn.filter((c) => c.privilege === privilege).map((c) => c.column);
+  return {
+    tableWide,
+    columns: {
+      select: columnsWith('SELECT'),
+      insert: columnsWith('INSERT'),
+      update: columnsWith('UPDATE'),
+      references: columnsWith('REFERENCES'),
+    },
+  };
+}
+
 describe('table registry', () => {
   it('lists exactly the tables in the database', () => {
     expect(tables.map((table) => table.name)).toEqual(Object.keys(registry).sort());
@@ -214,6 +253,29 @@ describe.each(tables)('$name', (table) => {
       expect(privileges).toMatchObject({ update: false, delete: false });
     }
   });
+
+  it('gives the jobs role exactly the access listed for it, and no table-wide write', async () => {
+    const expected = JOBS_ACCESS[table.name] ?? { select: false, update: [] };
+    const privileges = await jobsPrivileges(table.name);
+    expect(privileges.tableWide).toEqual({
+      insert: false,
+      update: false,
+      delete: false,
+      truncate: false,
+      trigger: false,
+      references: false,
+    });
+    expect(privileges.columns).toEqual({
+      select: expected.select
+        ? columnsOf(table.name)
+            .map((c) => c.name)
+            .sort()
+        : [],
+      insert: [],
+      update: [...expected.update].sort(),
+      references: [],
+    });
+  });
 });
 
 describe.each(tables.filter((table) => isTenant(table.name)))('tenant table $name', (table) => {
@@ -224,7 +286,7 @@ describe.each(tables.filter((table) => isTenant(table.name)))('tenant table $nam
 
   it('isolates by the transaction tenant, for every command and role, with nothing wider', () => {
     const own = policies.filter((policy) => policy.table === table.name);
-    expect(own.filter((p) => p.permissive === 'PERMISSIVE')).toEqual([
+    expect(own.filter((p) => p.permissive === 'PERMISSIVE' && p.roles.includes('public'))).toEqual([
       {
         table: table.name,
         permissive: 'PERMISSIVE',
@@ -234,6 +296,14 @@ describe.each(tables.filter((table) => isTenant(table.name)))('tenant table $nam
         check: TENANT_POLICY,
       },
     ]);
+  });
+
+  it('widens access only for the jobs role, on a table listed for it', () => {
+    const others = policies.filter(
+      (p) => p.table === table.name && p.permissive === 'PERMISSIVE' && !p.roles.includes('public'),
+    );
+    for (const policy of others) expect(policy.roles).toEqual([JOBS_ROLE]);
+    if (others.length > 0) expect(JOBS_ACCESS[table.name]).toBeDefined();
   });
 
   it('starts every secondary index with tenant_id', () => {
@@ -270,24 +340,43 @@ describe('current_tenant_id()', () => {
 });
 
 describe('roles', () => {
-  it('neither the app role nor the owner role can bypass row-level security', async () => {
+  it('neither the app, the owner nor the jobs role can bypass row-level security', async () => {
     const roles = await rows<{ name: string; superuser: boolean; bypass: boolean }>(
       `select rolname as name, rolsuper as superuser, rolbypassrls as bypass
        from pg_roles where rolname = any($1) order by 1`,
-      [[APP_ROLE, OWNER_ROLE]],
+      [[APP_ROLE, OWNER_ROLE, JOBS_ROLE]],
     );
     expect(roles).toEqual([
       { name: APP_ROLE, superuser: false, bypass: false },
+      { name: JOBS_ROLE, superuser: false, bypass: false },
       { name: OWNER_ROLE, superuser: false, bypass: false },
     ]);
   });
 
-  it('neither role is a member of another role, so neither can switch to one', async () => {
+  it('no role is a member of another role, so none can switch to one', async () => {
     const memberships = await rows<{ member: string; role: string }>(
       `select pg_get_userbyid(member) as member, pg_get_userbyid(roleid) as role
        from pg_auth_members where pg_get_userbyid(member) = any($1)`,
-      [[APP_ROLE, OWNER_ROLE]],
+      [[APP_ROLE, OWNER_ROLE, JOBS_ROLE]],
     );
     expect(memberships).toEqual([]);
+  });
+
+  it('the jobs role has no other power, and every statement it runs is logged', async () => {
+    const [jobs] = await rows<Record<string, unknown>>(
+      `select r.rolcreaterole as "createRole", r.rolcreatedb as "createDb",
+              r.rolreplication as replication, r.rolinherit as inherit,
+              coalesce((select s.setconfig from pg_db_role_setting s
+                        where s.setrole = r.oid and s.setdatabase = 0), '{}') as settings
+       from pg_roles r where r.rolname = $1`,
+      [JOBS_ROLE],
+    );
+    expect(jobs).toEqual({
+      createRole: false,
+      createDb: false,
+      replication: false,
+      inherit: false,
+      settings: ['log_statement=all'],
+    });
   });
 });

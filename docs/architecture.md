@@ -99,7 +99,7 @@ Table names are indicative; each spec fixes them.
 
 ## Data conventions
 
-UUIDv7 ids (checked by the database), `tenant_id` with forced RLS on tenant data (one policy per table against `current_tenant_id()`, set per transaction by `withTenant`; roles `shifa_owner` and `shifa_app`, neither bypassing RLS), `timestamptz` in UTC displayed in `Asia/Damascus`, integer money with currency, append-only clinical, payment and audit data, archive instead of delete. Full rules: ADR 0020.
+UUIDv7 ids (checked by the database), `tenant_id` with forced RLS on tenant data (one policy per table against `current_tenant_id()`, set per transaction by `withTenant`; roles `shifa_owner`, `shifa_app` and the audited platform-jobs role `shifa_jobs`, none bypassing RLS; the jobs role reaches across tenants only through its own policies on the tables granted to it, today claiming `outbox_events`), `timestamptz` in UTC displayed in `Asia/Damascus`, integer money with currency, append-only clinical, payment and audit data, archive instead of delete. Full rules: ADR 0020.
 
 ## Deployment
 

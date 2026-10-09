@@ -5,6 +5,7 @@ declare module 'vitest' {
   export interface ProvidedContext {
     ownerUrl: string;
     appUrl: string;
+    jobsUrl: string;
   }
 }
 
@@ -13,5 +14,6 @@ export default async function setup(project: TestProject) {
   const database = await createTestDatabase();
   project.provide('ownerUrl', database.ownerUrl);
   project.provide('appUrl', database.appUrl);
+  project.provide('jobsUrl', database.jobsUrl);
   return database.drop;
 }
