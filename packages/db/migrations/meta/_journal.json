@@ -22,6 +22,20 @@
       "when": 1791537703995,
       "tag": "0002_platform-jobs-outbox",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791540987772,
+      "tag": "0003_outbox-pending-index",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791540991779,
+      "tag": "0004_pgboss-schema",
+      "breakpoints": true
     }
   ]
 }

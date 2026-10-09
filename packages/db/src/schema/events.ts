@@ -1,4 +1,5 @@
-import { jsonb, pgTable, text } from 'drizzle-orm/pg-core';
+import { isNull } from 'drizzle-orm';
+import { index, jsonb, pgTable, text } from 'drizzle-orm/pg-core';
 import { createdAt, id, idIsUuidV7, tenantId, timestamptz, updatedAt } from './columns.js';
 
 /**
@@ -19,5 +20,10 @@ export const outboxEvents = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [idIsUuidV7('outbox_events', t.id)],
+  (t) => [
+    idIsUuidV7('outbox_events', t.id),
+    // The dispatcher's claim across tenants, oldest first (UUIDv7 ids sort by time). The one index
+    // on a tenant table that does not start with tenant_id: an exception in the convention test.
+    index('outbox_events_pending_idx').on(t.id).where(isNull(t.dispatchedAt)),
+  ],
 );

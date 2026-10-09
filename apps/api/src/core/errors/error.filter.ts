@@ -13,7 +13,7 @@ import {
   type ErrorResponse,
   errorStatus,
 } from '@vertex-shifa/contracts';
-import { describeForLog } from './describe-for-log.js';
+import { describeForLog } from '@vertex-shifa/db';
 
 /** The code of an HTTP error Nest or Express raised before a handler ran (no route, bad JSON). */
 function codeForStatus(status: number): ErrorCode {

@@ -4,11 +4,15 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { migrate } from 'drizzle-orm/node-postgres/migrator';
 import pg from 'pg';
 
-/** A migrated throwaway database: the owner, app and jobs role URLs for it, and how to drop it. */
+/**
+ * A migrated throwaway database: the owner, app, jobs and queue role URLs for it, and how to drop
+ * it.
+ */
 export type TestDatabase = {
   ownerUrl: string;
   appUrl: string;
   jobsUrl: string;
+  queueUrl: string;
   drop: () => Promise<void>;
 };
 
@@ -24,14 +28,15 @@ function url(name: string): URL {
 }
 
 /**
- * Creates a fresh database as the owner role (from `DATABASE_OWNER_URL`, `DATABASE_APP_URL` and
- * `DATABASE_JOBS_URL`) and applies every migration to it, so test runs never share or leave data
+ * Creates a fresh database as the owner role (from `DATABASE_OWNER_URL`, `DATABASE_APP_URL`,
+ * `DATABASE_JOBS_URL` and `DATABASE_QUEUE_URL`) and applies every migration to it, so test runs never share or leave data
  * behind. For a package's or app's test global setup; call `drop` when the run ends.
  */
 export async function createTestDatabase(): Promise<TestDatabase> {
   const owner = url('DATABASE_OWNER_URL');
   const app = url('DATABASE_APP_URL');
   const jobs = url('DATABASE_JOBS_URL');
+  const queue = url('DATABASE_QUEUE_URL');
   const name = `shifa_test_${Date.now()}_${randomBytes(3).toString('hex')}`;
 
   const admin = new pg.Client({ connectionString: owner.href });
@@ -45,6 +50,7 @@ export async function createTestDatabase(): Promise<TestDatabase> {
   owner.pathname = `/${name}`;
   app.pathname = `/${name}`;
   jobs.pathname = `/${name}`;
+  queue.pathname = `/${name}`;
   const pool = new pg.Pool({ connectionString: owner.href, max: 1 });
   try {
     await migrate(drizzle({ client: pool }), {
@@ -57,5 +63,5 @@ export async function createTestDatabase(): Promise<TestDatabase> {
     await pool.end();
   }
 
-  return { ownerUrl: owner.href, appUrl: app.href, jobsUrl: jobs.href, drop };
+  return { ownerUrl: owner.href, appUrl: app.href, jobsUrl: jobs.href, queueUrl: queue.href, drop };
 }

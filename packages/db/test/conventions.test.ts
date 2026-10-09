@@ -9,10 +9,21 @@ import { connect } from './connections.js';
 const APP_ROLE = 'shifa_app';
 const OWNER_ROLE = 'shifa_owner';
 const JOBS_ROLE = 'shifa_jobs';
+const QUEUE_ROLE = 'shifa_queue';
+// pg-boss's schema (migration 0004): it installs and owns its tables there as the queue role, so
+// they are left out of the table checks below; the worker's tests pin who may reach them.
+const QUEUE_SCHEMA = 'pgboss';
+// The only schemas besides PostgreSQL's own: the tables, Drizzle's migration journal, pg-boss.
+const SCHEMAS = ['drizzle', QUEUE_SCHEMA, 'public'];
 // Everything the platform-jobs role may touch (ADR 0004): it reads the listed tables across tenants
 // through policies of its own and updates only the listed columns. Any other grant fails here.
 const JOBS_ACCESS: Record<string, { select: boolean; update: string[] }> = {
   outbox_events: { select: true, update: ['dispatched_at', 'updated_at'] },
+};
+// Partial indexes on a tenant table that do not start with tenant_id, for the jobs role's claims
+// across tenants, on a table listed in JOBS_ACCESS only.
+const CROSS_TENANT_INDEXES: Record<string, string[]> = {
+  outbox_events: ['outbox_events_pending_idx'],
 };
 const FORBIDDEN_TYPES = ['timestamp without time zone', 'real', 'double precision', 'money'];
 const TENANT_POLICY = '(tenant_id = current_tenant_id())';
@@ -37,7 +48,13 @@ type Column = {
   nullable: boolean;
   default: string | null;
 };
-type Index = { table: string; name: string; primary: boolean; columns: string[] };
+type Index = {
+  table: string;
+  name: string;
+  primary: boolean;
+  partial: boolean;
+  columns: string[];
+};
 type Constraint = {
   table: string;
   type: string;
@@ -53,15 +70,15 @@ const attributeNames = (relation: string, keys: string) => `
         join pg_attribute a on a.attrelid = ${relation} and a.attnum = u.attnum
         order by u.position)`;
 
-// Every table outside the system schemas and Drizzle's migration journal, so a table in another
-// schema cannot escape the checks below.
+// Every table outside the system schemas, Drizzle's migration journal and pg-boss's schema, so a
+// table in another schema cannot escape the checks below.
 const tables = await rows<Table>(`
   select n.nspname as schema, c.relname as name, pg_get_userbyid(c.relowner) as owner,
          c.relrowsecurity as rls, c.relforcerowsecurity as forced
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace
   where c.relkind in ('r', 'p')
-    and n.nspname not in ('pg_catalog', 'information_schema', 'drizzle')
+    and n.nspname not in ('pg_catalog', 'information_schema', 'drizzle', '${QUEUE_SCHEMA}')
     and n.nspname not like 'pg\\_toast%' and n.nspname not like 'pg\\_temp%'
   order by 2`);
 const columns = await rows<Column>(`
@@ -71,7 +88,8 @@ const columns = await rows<Column>(`
   where table_schema = 'public'`);
 const indexes = await rows<Index>(`
   select i.indrelid::regclass::text as table, i.indexrelid::regclass::text as name,
-         i.indisprimary as primary, ${attributeNames('i.indrelid', 'i.indkey')} as columns
+         i.indisprimary as primary, i.indpred is not null as partial,
+         ${attributeNames('i.indrelid', 'i.indkey')} as columns
   from pg_index i
   join pg_class c on c.oid = i.indrelid
   where c.relnamespace = 'public'::regnamespace`);
@@ -254,6 +272,16 @@ describe.each(tables)('$name', (table) => {
     }
   });
 
+  it('gives the queue role no access at all', async () => {
+    const [privileges] = await rows<{ table: boolean; column: boolean }>(
+      `select has_table_privilege($1, $2,
+                'SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, TRIGGER') as table,
+              has_any_column_privilege($1, $2, 'SELECT, INSERT, UPDATE, REFERENCES') as column`,
+      [QUEUE_ROLE, table.name],
+    );
+    expect(privileges).toEqual({ table: false, column: false });
+  });
+
   it('gives the jobs role exactly the access listed for it, and no table-wide write', async () => {
     const expected = JOBS_ACCESS[table.name] ?? { select: false, update: [] };
     const privileges = await jobsPrivileges(table.name);
@@ -306,9 +334,12 @@ describe.each(tables.filter((table) => isTenant(table.name)))('tenant table $nam
     if (others.length > 0) expect(JOBS_ACCESS[table.name]).toBeDefined();
   });
 
-  it('starts every secondary index with tenant_id', () => {
+  it('starts every secondary index with tenant_id, but the listed cross-tenant claim indexes', () => {
+    const exceptions = CROSS_TENANT_INDEXES[table.name] ?? [];
+    if (exceptions.length > 0) expect(JOBS_ACCESS[table.name]).toBeDefined();
     for (const index of indexes.filter((i) => i.table === table.name && !i.primary)) {
-      expect(index.columns[0], index.name).toBe('tenant_id');
+      if (exceptions.includes(index.name)) expect(index.partial, index.name).toBe(true);
+      else expect(index.columns[0], index.name).toBe('tenant_id');
     }
   });
 });
@@ -339,17 +370,49 @@ describe('current_tenant_id()', () => {
   });
 });
 
+describe('schemas', () => {
+  it('are public, the migration journal and pg-boss, all owned by the owner role', async () => {
+    const schemas = await rows<{ name: string; owner: string }>(
+      `select nspname as name, pg_get_userbyid(nspowner) as owner from pg_namespace
+       where nspname not in ('pg_catalog', 'information_schema')
+         and nspname not like 'pg\\_toast%' and nspname not like 'pg\\_temp%'
+       order by 1`,
+    );
+    expect(schemas.map((schema) => schema.name)).toEqual(SCHEMAS);
+    for (const schema of schemas.filter((s) => s.name !== 'public')) {
+      expect(schema.owner, schema.name).toBe(OWNER_ROLE);
+    }
+  });
+
+  it('open pg-boss to the queue role, and only its use to the jobs role', async () => {
+    const grants = await rows<{ grantee: string; privilege: string }>(
+      `select case when a.grantee = 0 then 'PUBLIC' else pg_get_userbyid(a.grantee) end as grantee,
+              a.privilege_type as privilege
+       from pg_namespace n, aclexplode(n.nspacl) a
+       where n.nspname = $1 and a.grantee <> n.nspowner
+       order by 1, 2`,
+      [QUEUE_SCHEMA],
+    );
+    expect(grants).toEqual([
+      { grantee: JOBS_ROLE, privilege: 'USAGE' },
+      { grantee: QUEUE_ROLE, privilege: 'CREATE' },
+      { grantee: QUEUE_ROLE, privilege: 'USAGE' },
+    ]);
+  });
+});
+
 describe('roles', () => {
-  it('neither the app, the owner nor the jobs role can bypass row-level security', async () => {
+  it('neither the app, the owner, the jobs nor the queue role can bypass row-level security', async () => {
     const roles = await rows<{ name: string; superuser: boolean; bypass: boolean }>(
       `select rolname as name, rolsuper as superuser, rolbypassrls as bypass
        from pg_roles where rolname = any($1) order by 1`,
-      [[APP_ROLE, OWNER_ROLE, JOBS_ROLE]],
+      [[APP_ROLE, OWNER_ROLE, JOBS_ROLE, QUEUE_ROLE]],
     );
     expect(roles).toEqual([
       { name: APP_ROLE, superuser: false, bypass: false },
       { name: JOBS_ROLE, superuser: false, bypass: false },
       { name: OWNER_ROLE, superuser: false, bypass: false },
+      { name: QUEUE_ROLE, superuser: false, bypass: false },
     ]);
   });
 
@@ -357,17 +420,35 @@ describe('roles', () => {
     const memberships = await rows<{ member: string; role: string }>(
       `select pg_get_userbyid(member) as member, pg_get_userbyid(roleid) as role
        from pg_auth_members where pg_get_userbyid(member) = any($1)`,
-      [[APP_ROLE, OWNER_ROLE, JOBS_ROLE]],
+      [[APP_ROLE, OWNER_ROLE, JOBS_ROLE, QUEUE_ROLE]],
     );
     expect(memberships).toEqual([]);
   });
 
-  it('the jobs role has no other power, and every statement it runs is logged', async () => {
+  it('the queue role has no other power and no setting', async () => {
+    const [queue] = await rows<Record<string, unknown>>(
+      `select r.rolcreaterole as "createRole", r.rolcreatedb as "createDb",
+              r.rolreplication as replication, r.rolinherit as inherit,
+              exists (select 1 from pg_db_role_setting s where s.setrole = r.oid) as settings
+       from pg_roles r where r.rolname = $1`,
+      [QUEUE_ROLE],
+    );
+    expect(queue).toEqual({
+      createRole: false,
+      createDb: false,
+      replication: false,
+      inherit: false,
+      settings: false,
+    });
+  });
+
+  it('the jobs role has no other power, and every statement it runs is logged without values', async () => {
     const [jobs] = await rows<Record<string, unknown>>(
       `select r.rolcreaterole as "createRole", r.rolcreatedb as "createDb",
               r.rolreplication as replication, r.rolinherit as inherit,
-              coalesce((select s.setconfig from pg_db_role_setting s
-                        where s.setrole = r.oid and s.setdatabase = 0), '{}') as settings
+              array(select setting
+                    from pg_db_role_setting s, unnest(s.setconfig) as setting
+                    where s.setrole = r.oid and s.setdatabase = 0 order by 1) as settings
        from pg_roles r where r.rolname = $1`,
       [JOBS_ROLE],
     );
@@ -376,7 +457,7 @@ describe('roles', () => {
       createDb: false,
       replication: false,
       inherit: false,
-      settings: ['log_statement=all'],
+      settings: ['log_parameter_max_length=0', 'log_statement=all'],
     });
   });
 });

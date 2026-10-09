@@ -7,7 +7,7 @@ The NestJS API (ADR 0002, ADR 0020): REST under `/api`, Express, ESM, on Node 24
 - `src/core/config/`: the environment checked by Zod at start-up (`loadConfig`), provided as `CONFIG`.
 - `src/core/database/`: `DATABASE`, the one Drizzle database of the process, connected as the app role; the pool closes on shutdown.
 - `src/core/access/`: `@Public()`, `@PatientRoute()`, `@StaffRoute(permission)`, `@ConsoleRoute(permission)`, `@RequiresFeature(key)`, `@NoFeature()`, and `AccessGuard`, global and fail-closed.
-- `src/core/errors/`: `ErrorFilter` (every error leaves as `{ code, message }` with the status of its code) and `describeForLog` (what an unexpected error may write to the log).
+- `src/core/errors/`: `ErrorFilter` (every error leaves as `{ code, message }` with the status of its code). `describeForLog` (what an unexpected error may write to the log) comes from `@vertex-shifa/db`, shared with the worker.
 - `src/core/health/`: `GET /api/health` (in the core because `health` is a layer name).
 - `src/core/routes.ts` (`listRoutes`) and `src/core/openapi/` (`buildOpenApiDocument`): the routes with their declarations, and the OpenAPI 3.1 document built from them and the contracts.
 - `src/modules/<platform|health|clinic>/<module>/`: one folder per module (ADR 0020 anatomy). The pattern to copy is the first module, S01 tenancy; until then, `core/health/` shows a controller.

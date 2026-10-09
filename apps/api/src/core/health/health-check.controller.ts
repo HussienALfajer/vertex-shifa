@@ -1,10 +1,9 @@
 import { Controller, Get, Inject, Logger, SerializeOptions } from '@nestjs/common';
 import { DomainError, type HealthCheck, healthCheckSchema } from '@vertex-shifa/contracts';
-import type { Database } from '@vertex-shifa/db';
+import { type Database, describeForLog } from '@vertex-shifa/db';
 import { sql } from 'drizzle-orm';
 import { NoFeature, Public } from '../access/access.decorators.js';
 import { DATABASE } from '../database/database.module.js';
-import { describeForLog } from '../errors/describe-for-log.js';
 
 /** For the gateway and uptime monitors: the API is up and reaches its database. */
 @Controller('health')

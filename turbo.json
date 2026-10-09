@@ -14,7 +14,12 @@
     "test": {
       "dependsOn": ["^build"],
       "cache": false,
-      "passThroughEnv": ["DATABASE_OWNER_URL", "DATABASE_APP_URL", "DATABASE_JOBS_URL"]
+      "passThroughEnv": [
+        "DATABASE_OWNER_URL",
+        "DATABASE_APP_URL",
+        "DATABASE_JOBS_URL",
+        "DATABASE_QUEUE_URL"
+      ]
     }
   }
 }
