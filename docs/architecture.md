@@ -40,7 +40,7 @@ apps/
   clinic/             React + Vite + TanStack Router; electron/ shell (app:// protocol, locked-down window) (exists; local SQLite + sync client with S04)
   console/            React + Vite + TanStack Router; platform back office (exists; shell only, API and sign-in with S22)
   site/               Next.js App Router; clinic public pages (exists; shell only, subdomains, custom domains and booking in Phase 5)
-  patient/            React Native + Expo
+  patient/            React Native + Expo (SDK 57) + Expo Router (exists; shell only, account, booking and push with S19)
 packages/
   contracts/          Zod schemas, error codes, state tables, money and matching rules (exists)
   db/                 Drizzle schema, migrations, RLS policies, shared write paths (exists)
