@@ -16,7 +16,7 @@ The owner sells each customer on negotiated terms: the same features can sell at
 - **Release flags** (gradual rollout of new code) are a separate mechanism from entitlements.
 - **Perpetual license:** the contract states what is perpetual (the purchased features) and what is recurring (hosting and domain, optional yearly updates and support).
 - **Non-payment:** reminder → grace period → suspension, and suspension means read-only with export: no new bookings, visits or messages, while every record stays readable and exportable. Medical data is never deleted and never made unreadable by its clinic because of billing.
-- **Offline:** devices cache the resolved entitlements with a validity lease and a grace period, so a clinic is never locked out by being offline.
+- **Offline:** devices cache the resolved entitlements with a validity lease and a grace period, so a clinic is never locked out by being offline. Commands a device created before it learned of a suspension or an entitlement change are judged by the entitlements in force when they were created: clinical and payment records made in good faith are always accepted, never lost; only work created after the device learned of the change is refused.
 - Subscription invoices and payments follow ADR 0014.
 
 ## Consequences

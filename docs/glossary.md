@@ -68,7 +68,7 @@ One name per concept. Code, contracts and tables use the English term; the Arabi
 | رمز التحقق | OTP | One-time code sent by WhatsApp |
 | ربط واتساب | WhatsApp link | Linking a clinic's WhatsApp number by scanning a QR code |
 | جلسة واتساب | WhatsApp session | A linked WhatsApp number running in the gateway (clinic or platform) |
-| نطاق المزامنة | replication scope | The data a device receives, decided on the server by tenant, branch and role |
+| نطاق المزامنة | replication scope | The data a device receives: the union of what its registered users' roles may read in its tenant and branch, decided on the server |
 | أُدخل خطأً | entered in error | A version that withdraws an earlier clinical version |
 | الإشعار | notification | A push or WhatsApp message |
 | لوحة المنصة | console | The platform back office |

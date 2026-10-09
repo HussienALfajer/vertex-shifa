@@ -91,7 +91,7 @@ Sonnet and Haiku never write code. Avoid `max` unless a gain is measured. Agent 
 7. Disconnect connectors the task doesn't need (Hostinger only for DNS or hosting work); keep the `ui-ux-pro-max` plugin off, since the identity is fixed (ADR 0018).
 8. Let the `checker` subagent run long checks, so their output never enters the main context.
 9. Check `/usage` after each feature: cache share should be high; output should be small relative to the change.
-10. Run `/doctor prompt-audit` once per phase to prune instruction files.
+10. Run `/doctor prompt-audit` (Claude Code memory docs, "Audit your instruction files") once per phase to prune instruction files.
 11. Keep Claude Code updated (Haiku 5.5 subagents need v2.1.293 or later).
 
 ## Accounts and tools
