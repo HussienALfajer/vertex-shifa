@@ -37,7 +37,7 @@ apps/
   api/                NestJS API: core/, modules/<platform|health|clinic>/<module>/ (exists)
   worker/             NestJS jobs: core/ (pg-boss, outbox dispatcher), jobs/<area>/<name>.job.ts (exists)
   whatsapp-gateway/   NestJS: transport/ (interface, fake), sessions/, sending/ (exists)
-  clinic/             React + Vite + TanStack; electron/ shell; local SQLite + sync client
+  clinic/             React + Vite + TanStack Router; electron/ shell (app:// protocol, locked-down window) (exists; local SQLite + sync client with S04)
   console/            React + Vite + TanStack; platform back office
   site/               Next.js; clinic public pages, subdomains and custom domains
   patient/            React Native + Expo
@@ -48,7 +48,7 @@ packages/
   tokens/             design tokens (web and native)
   ui/                 web components (from Vertex Hub, adapted)
   ui-native/          React Native components
-  i18n/               Arabic catalog
+  i18n/               Arabic catalog by namespace, error code texts, locale (Latin digits) (exists)
   config/             TypeScript, Biome and test presets (exists)
 scripts/              repository scripts (check record) (exists)
 .github/              CI and Dependabot (exists)

@@ -29,6 +29,18 @@ describe('shared tsconfig', () => {
     });
   });
 
+  it('react extends base and resolves modules as a bundler does, with the DOM and JSX', () => {
+    const config = readJson('tsconfig/react.json');
+    expect(config.extends).toBe('./base.json');
+    expect(config.compilerOptions).toMatchObject({
+      module: 'ESNext',
+      moduleResolution: 'Bundler',
+      lib: ['ES2024', 'DOM', 'DOM.Iterable'],
+      jsx: 'react-jsx',
+      noEmit: true,
+    });
+  });
+
   it('nest extends node with the legacy decorators and no decorator metadata', () => {
     const config = readJson('tsconfig/nest.json');
     expect(config.extends).toBe('./node.json');

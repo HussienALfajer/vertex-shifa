@@ -12,3 +12,6 @@ allowBuilds:
   # Its install script only checks the platform binary, which the optional @esbuild/* package
   # already provides (used by drizzle-kit, tsx and vite).
   esbuild: false
+  # Downloads the Electron binary for apps/clinic (dev and start). CI typechecks, tests and builds
+  # without launching it and skips the download (ELECTRON_SKIP_BINARY_DOWNLOAD).
+  electron: true
