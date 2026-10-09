@@ -1,0 +1,38 @@
+# 0021 — Sync engine confirmed by Spike A: PowerSync self-hosted, with amendments to 0008
+
+Status: Accepted · Date: 2026-10-09 · Amends [0008](0008-offline-first-clinic-and-sync.md); adds a sync-service exception to [0004](0004-tenancy-and-data-isolation.md)
+
+## Context
+ADR 0008 chose PowerSync as the candidate sync engine, subject to Spike A. The spike ran every required scenario on Node and on Electron, and all passed: bookings made offline (cloud vs reception, two offline reception devices), server re-execution, recorded conflicts, an encrypted local database, and a read-audit command uploaded on reconnect. It also found behavior that ADR 0008 did not foresee. Report: [`docs/spikes/A-offline-sync.md`](../spikes/A-offline-sync.md). Items marked *(not tested)* are design decisions the spike did not exercise.
+
+## Decision
+
+### Engine and identity on the wire
+- **Engine confirmed:** PowerSync Open Edition (FSL-1.1-ALv2), self-hosted as a container. Bucket storage is in **PostgreSQL** (its own database), not MongoDB. Data selection uses Sync Streams. The fallback in ADR 0008 (our own command outbox) is dropped.
+- **Device tokens:** the API signs short-lived tokens (5 minutes or less; EdDSA; PowerSync reads the API's JWKS). The subject is the device; the claims are `tenant_id`, `branch_id` and `device_id`. **Every** stream query filters on `tenant_id` from these claims, including streams that also filter by device. A convention test fails any stream without that filter.
+- **The acting user is verified, never trusted** *(not tested)*: the device token identifies the device only. Every command carries the acting user and a per-user proof made in that user's PIN session on the device: a signature with a per-user device key, enrolled online at the user's first sign-in on that device, whose private key is unlocked by the PIN. The server checks the proof, the user's enrollment on that device, and the user's permission in the token's tenant and branch before running the command (ADR 0005). Details go to the identity spec.
+
+### Commands and outcomes
+- **Commands on the wire:** commands are rows of an insert-only `commands` table in the PowerSync upload queue. In the same local transaction, the device writes an **optimistic row** to the synced table. The connector uploads only commands. The server's next checkpoint replaces the optimistic row with the server's state.
+- **The command endpoint never blocks a device:** a device with a queued command receives no new data until the command is acknowledged. So every command gets an outcome (`accepted`, `adjusted`, `rejected`) in the append-only `command_log`, idempotent by command id and synced back to the issuing device. Business refusals return 2xx. A handler bug is recorded as `rejected: server_error`. Only infrastructure failures return 5xx, and the device retries those. The command endpoint runs next to the sync service and is health-checked with it. The clinic app shows "waiting to upload" separately from "offline".
+- **Nothing disappears silently** *(not tested)*: the device keeps a local-only journal of its commands (payload and outcome) that checkpoints do not touch. An `adjusted` or `rejected` outcome appears in the issuing user's "needs attention" list. For clinical and money commands, the content stays in the journal until a user re-submits it (edited) or discards it with a reason, which writes an audit entry. A `server_error` command can be re-run after the fix as a new command linked to the original; `command_log` stays append-only.
+
+### Data on servers and devices
+- **Sync service and RLS (exception to ADR 0004):** PowerSync's replication role has `REPLICATION`, `BYPASSRLS` and `SELECT` only, because its snapshot reads would otherwise return no rows under RLS. Besides the audited platform-jobs role of ADR 0004, it is the only role allowed to bypass RLS, and it cannot write. For data on devices, isolation rests on the stream filters above.
+- **Server-side copies are medical data (ADR 0016):** PowerSync's bucket storage holds copies of replicated rows, and `command_log` holds command payloads. Both get the protections of the primary database: encryption at rest and in backups, the same export and retention rules, and no direct access. Support may read them only with the clinic's permission, and each read writes an audit entry. A tenant moved to the silo option (ADR 0004) gets its own PowerSync instance and bucket storage.
+- **Local encryption:** SQLite3MultipleCiphers (`better-sqlite3-multiple-ciphers`, default cipher ChaCha20-Poly1305) with a random 256-bit database key per installation. The key is set in the database worker as the connection opens. The SDK's `initializeConnection` hook runs too late in `@powersync/node` 1.1.x: reopening an existing file fails. A test reopens an encrypted database until upstream fixes the order.
+- **Key bound to the device and the user session (ADR 0016):** the database key is stored only in key slots, one per enrolled user. Each slot nests two layers: `safeStorage(wrapWithPinKey(dbKey))`. The inner layer uses a key derived from the user's PIN (Argon2id); the outer layer is Electron `safeStorage`, which uses DPAPI on Windows and binds the slot to the device's Windows account. No copy wrapped only by `safeStorage` exists, so the database cannot be decrypted without a staff user's PIN. The device layer stays because a short PIN alone is easy to brute-force offline. The database closes when no staff session remains (sign-out or lock timeout), and sync pauses until the next sign-in. *(Not tested: the spike stored one key wrapped by `safeStorage` only.)*
+- **Durability:** the writer connection runs with `PRAGMA synchronous = FULL`; the SDK otherwise leaves `NORMAL`, which in WAL mode can lose the last commits on a power cut.
+- **Where the database lives:** in Electron's main process (or a utility process), with worker threads. The renderer reads and writes only through IPC.
+- **Local types:** booleans are integers, and timestamps and JSON are text, on the device. `packages/contracts` provides the codecs.
+
+### Revocation
+- The API refuses a revoked device at once. PowerSync has no revocation list, so it keeps streaming to a device that only downloads until its token expires (5 minutes at most). When the API refuses it, the device wipes its data (`disconnectAndClear`).
+- *(Not tested)* Before the wipe, the device uploads its pending `RecordAccessed` commands through an audit-only path. That path accepts only reads of entities in the device's scope, made before `revoked_at`, rate-limited, and stores them flagged as coming from a revoked device. What happens to the revoked device's pending clinical and money commands is an owner decision (Q14).
+
+## Consequences
+- The rest of ADR 0008 stands: commands re-executed by the server, UUIDv7 ids made on the device, conflict rules (ADR 0009), append-only clinical records, and work that is possible offline versus online-only.
+- The stack loses MongoDB. Production runs PostgreSQL 17 with two databases (source and PowerSync storage) or two servers (ADR 0017).
+- API downtime makes devices with pending commands stale even when they are online, so the API's availability target matters as much as the sync service's.
+- The `AGENTS.md` tenant-isolation rule and the reviewer checklist name the sync-service exception.
+- Open after the spike, for the specs that need them: a real power-cut test, clock skew and the hybrid clock, number ranges, protocol versioning and updates, scopes by role, volume on the pilot clinics' hardware (Q8), connectivity heartbeats, packaging, PowerSync operations (backups, re-replication), and the per-user command proof.

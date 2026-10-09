@@ -11,12 +11,13 @@ Decisions that belong to the owner. Agents must not guess answers to these. When
 | Q5 | Package contents, limits and list prices for Plus, Pro and Max | S22 (and before the first sale) | Spec interview |
 | Q6 | Pilot clinics: which two or three clinics in Azaz, which specialties, their working style (queue or times) | S09 | One dental, one general; interview them before S09 |
 | Q7 | Medical advisor (a doctor) who reviews templates, documents and prescription forms | S11 | A doctor from the pilot clinics |
-| Q8 | Clinic hardware baseline: Windows versions, RAM, printers (A4, A5, thermal), TVs for the waiting-room display | Spike A and S13 | Collect from the pilot clinics |
+| Q8 | Clinic hardware baseline: Windows versions, RAM, printers (A4, A5, thermal), TVs for the waiting-room display | S13, and a sync volume test on pilot hardware (ADR 0021) | Collect from the pilot clinics |
 | Q9 | Apple and Google developer accounts for publishing the patient app | S19 | Owner's accounts, opened early (Apple review takes time) |
 | Q10 | Push notification delivery (FCM, APNs) to phones in Syria | Spike B | Test on real devices in Azaz |
 | Q11 | Arabic and Latin fonts of the Vertex identity: license covers desktop app, mobile app and printed documents | Brand phase | Check Vertex Hub's font licenses; use the same fallbacks |
 | Q12 | Exchange rates in clinics: each clinic enters its own rates, or the platform publishes a daily suggestion | S16 | Each clinic enters its rates; the platform may suggest later |
 | Q13 | The Syrian pound after the 2026 redenomination: ISO 4217 code and minor-unit exponent used in software and on invoices | S16 | Confirm with the Central Bank of Syria publications; until then `SYP` with exponent 2 (ADR 0014) |
+| Q14 | A revoked clinic device has unsynced clinical or money commands (notes, prescriptions, payments made before the revocation): upload them to a quarantine that the clinic reviews, or drop them with the wipe | S02 (devices) | Quarantine: the server accepts them flagged as coming from a revoked device, applies nothing until a clinic owner reviews each one (ADR 0021) |
 
 ## Resolved
 

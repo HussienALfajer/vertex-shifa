@@ -1,0 +1,22 @@
+{
+  "name": "spike-offline-sync",
+  "private": true,
+  "type": "module",
+  "description": "Spike A: PowerSync self-hosted + Electron + encrypted SQLite. Throwaway code.",
+  "scripts": {
+    "server": "node server/server.mjs",
+    "scenarios": "node scenarios/run.mjs",
+    "scenarios:electron": "electron electron/main.mjs"
+  },
+  "dependencies": {
+    "@powersync/node": "1.1.0",
+    "better-sqlite3-multiple-ciphers": "13.0.3",
+    "jose": "6.2.12",
+    "pg": "8.23.1",
+    "uuid": "14.0.2",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "electron": "44.4.3"
+  }
+}

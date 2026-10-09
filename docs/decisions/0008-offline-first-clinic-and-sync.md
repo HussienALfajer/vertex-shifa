@@ -1,6 +1,6 @@
 # 0008 — Offline-first clinic app: local database, commands, server authority
 
-Status: Accepted (sync engine to be confirmed by Spike A) · Date: 2026-10-09
+Status: Accepted · Date: 2026-10-09 · Sync engine confirmed by Spike A and amended by [0021](0021-sync-engine-confirmed-by-spike-a.md)
 
 ## Context
 Power and internet cuts are frequent in Azaz. A clinic must work a full day without internet. While a clinic is offline, two places can change its data: the clinic's devices and the cloud (patient app bookings). No system can keep both writable and guarantee no conflict; the design must prevent conflicts where possible and resolve the rest visibly.

@@ -1,0 +1,31 @@
+# PowerSync Open Edition, self-hosted. Only PS_* environment variables can be substituted.
+telemetry:
+  disable_telemetry_sharing: true
+
+replication:
+  connections:
+    - type: postgresql
+      uri: !env PS_DATA_SOURCE_URI
+      sslmode: disable
+
+# Bucket storage in PostgreSQL (no MongoDB): a separate database on the same server.
+storage:
+  type: postgresql
+  uri: !env PS_STORAGE_SOURCE_URI
+  sslmode: disable
+
+port: !env PS_PORT
+
+sync_config:
+  path: sync-config.yaml
+
+client_auth:
+  # The spike API publishes an EdDSA public key; PowerSync verifies device tokens with it.
+  jwks_uri: !env PS_JWKS_URL
+  audience: ["vertex-shifa-sync"]
+  # Lets PowerSync fetch the JWKS from a private address (the host machine in this spike).
+  block_local_jwks: false
+
+api:
+  tokens:
+    - spike-only-admin-token

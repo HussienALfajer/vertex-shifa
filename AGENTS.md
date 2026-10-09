@@ -40,7 +40,7 @@ None yet. The PR that adds a command adds it to this table and keeps it true.
 
 ## Non-negotiable conventions
 
-- **Tenant isolation (ADR 0004):** every tenant-owned table has `tenant_id` and a PostgreSQL row-level security policy; apps connect as a role that cannot bypass RLS; tenant context is set per transaction. A cross-tenant read is a security incident.
+- **Tenant isolation (ADR 0004):** every tenant-owned table has `tenant_id` and a PostgreSQL row-level security policy; apps connect as a role that cannot bypass RLS (exceptions: the audited platform-jobs role, and the read-only replication role of the sync service, whose streams must filter on `tenant_id` — ADR 0021); tenant context is set per transaction. A cross-tenant read is a security incident.
 - **Medical data (ADR 0006, 0016):** never in logs, error messages, Sentry, analytics, WhatsApp messages, fixtures, screenshots or chat. It reaches a patient only through items the clinic shared, and another organization only with consent. Reading a medical record writes an audit entry.
 - **Clinical records are append-only (ADR 0007):** notes, diagnoses and prescriptions change by new versions, never by overwriting or deleting; a prescription keeps a snapshot of each medication.
 - **Offline-first (ADR 0008):** the clinic app reads and writes its local database; changes travel as commands the server validates and may accept, adjust or reject; ids are UUIDv7 made on the device; human-readable numbers come from pre-allocated ranges; a conflict is never resolved silently.
