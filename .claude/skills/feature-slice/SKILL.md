@@ -38,12 +38,12 @@ Layers a PR does not include are skipped. Helpers arrive with their first real u
 
 ## 3. Close each PR
 1. Walk the wiring checklist in `wiring.md` against the diff (`git diff main...HEAD --stat`).
-2. Full checks once, through `checker`: lint, typecheck, test, build; E2E when a front end or `packages/ui*` changed; migration drift when `packages/db` changed. The finishing steps reuse passes recorded on the same tree; any later fix invalidates the record.
-3. Run the `reviewer` subagent with the spec path. Fix every blocking finding, then re-run the affected gates.
+2. Start the full checks through `checker` in the background: lint, typecheck, test, build; E2E when a front end or `packages/ui*` changed; migration drift when `packages/db` changed.
+3. While they run, run the `reviewer` subagent with the spec path. Fix every blocking finding and every check failure, then run the checks again: Turbo's cache replays what the fixes did not touch, so the re-run costs only the changed packages.
 4. Owner acceptance, in Arabic:
    - PR with screens: turn the spec's "Acceptance" section into numbered steps (how to start the apps, which test account, what to click, what to see, how to simulate offline). Ask before `pnpm db:migrate` on the dev database.
    - PR without screens: summarize the endpoints, commands and jobs and their rules; the owner may try them at the API docs page.
-   Fix what the owner reports in the same session, then repeat steps 2–3 for what changed.
+   Fix what the owner reports in the same session, then run the checks again (only what changed runs) and the reviewer on the fix.
 5. Tick the PR's items in `TASKS.md`, then, as soon as the owner accepts, finish the PR in the same turn: follow "Finishing a task" in `AGENTS.md`.
 
 ## Stop and ask when
