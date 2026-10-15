@@ -35,7 +35,6 @@
       "Bash(pnpm --filter * build)",
       "Bash(pnpm --filter * test:e2e)",
       "Bash(pnpm --filter * exec vitest run*)",
-      "Bash(node scripts/check-record.mjs *)",
       "Bash(git status*)",
       "Bash(git diff*)",
       "Bash(git log*)",

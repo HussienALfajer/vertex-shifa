@@ -13,7 +13,46 @@
     },
     "test": {
       "dependsOn": ["^build"],
-      "cache": false,
+      "outputs": [],
+      "passThroughEnv": [
+        "DATABASE_OWNER_URL",
+        "DATABASE_APP_URL",
+        "DATABASE_JOBS_URL",
+        "DATABASE_QUEUE_URL"
+      ]
+    },
+    "@vertex-shifa/tokens#test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/brand/**"],
+      "outputs": [],
+      "passThroughEnv": [
+        "DATABASE_OWNER_URL",
+        "DATABASE_APP_URL",
+        "DATABASE_JOBS_URL",
+        "DATABASE_QUEUE_URL"
+      ]
+    },
+    "@vertex-shifa/ui#test": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/brand/**",
+        "$TURBO_ROOT$/apps/clinic/src/**",
+        "$TURBO_ROOT$/apps/console/src/**",
+        "$TURBO_ROOT$/apps/site/src/**"
+      ],
+      "outputs": [],
+      "passThroughEnv": [
+        "DATABASE_OWNER_URL",
+        "DATABASE_APP_URL",
+        "DATABASE_JOBS_URL",
+        "DATABASE_QUEUE_URL"
+      ]
+    },
+    "@vertex-shifa/ui-native#test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/patient/src/**"],
+      "outputs": [],
       "passThroughEnv": [
         "DATABASE_OWNER_URL",
         "DATABASE_APP_URL",

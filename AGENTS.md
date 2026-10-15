@@ -51,7 +51,6 @@ The PR that adds a command adds it to this table and keeps it true. Run from the
 | Console app | dev: `pnpm --filter @vertex-shifa/console dev` (port 5174) · built app (after `pnpm build`): `pnpm --filter @vertex-shifa/console preview` (port 4174) |
 | Site app | dev: `pnpm --filter @vertex-shifa/site dev` (port 5175) · built app (after `pnpm build`): `pnpm --filter @vertex-shifa/site start` (port 4175) |
 | Patient app | dev (Metro for a development build, and web on port 5176): `pnpm --filter @vertex-shifa/patient dev` · `pnpm build` exports the Android, iOS and web bundles; the web export serves only the E2E (port 4176) |
-| Check record | `node scripts/check-record.mjs status <checks…>` (also `fingerprint`, `record <tree> <checks…>`) |
 
 ## Non-negotiable conventions
 
@@ -100,7 +99,7 @@ When a task's work is done (a spec approved, a `/feature-slice` PR accepted, a f
 1. **Branch:** not `main`. `TASKS.md` has no open items for this PR.
 2. **Docs:** update `docs/ROADMAP.md` and every doc the change made stale (`docs/architecture.md`, a folder `CLAUDE.md`, `docs/open-questions.md`, the commands table above).
 3. **Secrets and data:** `git status` and `git diff --stat` show no `.env`, key, WhatsApp session file, real phone number or medical data; fixtures are synthetic.
-4. **Checks:** lint, typecheck, test and build, plus E2E when a front end or `packages/ui*` changed and migration drift when `packages/db` changed, run through the `checker` subagent. Run `node scripts/check-record.mjs status <checks…>` first and run only the checks marked `needed`. Documentation-only changes run no local checks.
+4. **Checks:** lint, typecheck, test and build, plus E2E when a front end or `packages/ui*` changed and migration drift when `packages/db` changed, run through the `checker` subagent. Turbo's cache replays every task whose inputs did not change, so this run costs only what changed since the last one: run it again after any fix rather than reasoning about what already passed. Documentation-only changes run no local checks (CI skips them as well).
 5. **Review:** for feature, sync, security and clinical work, the `reviewer` subagent has run and its blocking findings are fixed.
 6. **Commit:** stage the intended files only; Conventional Commit subject, a body with what and why, ending with the session's attribution line.
 7. **Pull request:** `git push -u origin <branch>`, `gh pr create --base main` with `## Summary` and `## Test plan` (ticked checks, each marked run now or reused from the record), ending with the session's attribution line; then `gh pr merge <number> --auto --merge`. Exception: a PR that changes `v1-scope.md` or adds or changes an ADR waits for the owner's approval before auto-merge is enabled.
