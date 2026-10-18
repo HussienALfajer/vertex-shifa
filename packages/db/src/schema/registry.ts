@@ -22,6 +22,22 @@ export const tableRegistry = {
   tenant_logos: { module: 'tenancy', scope: 'tenant', kind: 'business' },
   facilities: { module: 'tenancy', scope: 'tenant', kind: 'business' },
   areas: { module: 'tenancy', scope: 'platform', kind: 'business' },
+  platform_audit_entries: { module: 'audit', scope: 'platform', kind: 'append-only' },
+  accounts: { module: 'identity', scope: 'platform', kind: 'business' },
+  otp_challenges: { module: 'identity', scope: 'platform', kind: 'queue' },
+  devices: { module: 'identity', scope: 'tenant', kind: 'business' },
+  device_enrollments: { module: 'identity', scope: 'tenant', kind: 'business' },
+  staff_sessions: { module: 'identity', scope: 'tenant', kind: 'business' },
+  platform_users: { module: 'identity', scope: 'platform', kind: 'business' },
+  platform_user_recovery_codes: { module: 'identity', scope: 'platform', kind: 'business' },
+  platform_sessions: { module: 'identity', scope: 'platform', kind: 'business' },
+  account_tenant_links: { module: 'access', scope: 'platform', kind: 'business' },
+  staff_memberships: { module: 'access', scope: 'tenant', kind: 'business' },
+  staff_membership_facilities: { module: 'access', scope: 'tenant', kind: 'business' },
+  specialties: { module: 'practitioners', scope: 'platform', kind: 'business' },
+  practitioners: { module: 'practitioners', scope: 'tenant', kind: 'business' },
+  practitioner_specialties: { module: 'practitioners', scope: 'tenant', kind: 'business' },
+  practitioner_photos: { module: 'practitioners', scope: 'tenant', kind: 'business' },
 } as const satisfies Record<string, TableInfo>;
 
 export type TableScope = 'tenant' | 'platform';

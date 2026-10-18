@@ -3,7 +3,7 @@
 Drizzle schema, migrations, RLS policies and the tenant context (ADR 0004, ADR 0020). PostgreSQL 17, node-postgres driver, snake_case columns from camelCase properties.
 
 ## Layout
-- `src/schema/<module>.ts`: one file per owning module, exported from `schema/index.ts`. Pattern to copy: `schema/tenancy.ts` (business tables, tenant and platform scope), `schema/audit.ts` (append-only) or `schema/events.ts` (work queue).
+- `src/schema/<module>.ts`: one file per owning module, exported from `schema/index.ts`. Pattern to copy: `schema/tenancy.ts` (business tables, tenant and platform scope), `schema/access.ts` and `schema/identity.ts` (composite foreign keys between tenant tables with `foreignKey`, a self-reference, partial unique indexes beside the plain index a foreign key needs), `schema/audit.ts` (append-only) or `schema/events.ts` (work queue).
 - `src/schema/columns.ts`: the shared column helpers (`id`, `idIsUuidV7`, `tenantId`, `timestamptz`, `createdAt`, `updatedAt`, `archivedAt`). Name a column explicitly when the snake_case casing would split it (`integer('latitude_e7')`, not `latitude_e_7`).
 - `src/schema/registry.ts`: every table with its owning module, scope (`tenant`, `platform`) and kind (`business`, `append-only`, `queue`).
 - `src/client.ts`: `createDatabase(url)`. `src/tenant-context.ts`: `withTenant(db, tenantId, work)`. `src/describe-for-log.ts`: `describeForLog(error)`, what an unexpected error may write to the log (no values, ADR 0016), used by the apps.

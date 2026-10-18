@@ -75,3 +75,8 @@ export const phoneNumberSchema = z
       ),
   )
   .meta({ id: 'PhoneNumber' });
+
+/** A mobile number: accounts sign in with it and receive WhatsApp OTPs on it (spec S02). */
+export const mobilePhoneNumberSchema = phoneNumberSchema
+  .refine((value) => parsePhoneNumber(value)?.kind === 'mobile', 'Not a mobile number')
+  .meta({ id: 'MobilePhoneNumber' });

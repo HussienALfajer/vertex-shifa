@@ -1,38 +1,56 @@
-# TASKS — UX foundations (`feat/ux-foundations`)
+# TASKS — S02 Identity, access and devices
 
-Cross-cutting PR before S02, from the owner's manual test of the S01 clinic screens (2026-10-18). No spec: the owner's decisions are in the brief. Amends ADR 0018 (theme toggle), so auto-merge waits for the owner's approval.
+Spec: `docs/specs/S02-identity-access-and-devices.md` (Approved 2026-10-18). ADRs: 0004, 0005, 0008, 0012, 0013, 0016, 0020, 0021, 0022, 0024. Seven PRs; each leaves `main` working, and every route stays fail-closed until the PR that adds its guard.
 
-## packages/ui (first, with unit tests)
-- [x] Theme (owner, 2026-10-18: Vertex Hub's toggle exactly, replacing the three states): the `dark` class on `<html>` from the saved choice or the system; `themeInitScript` (synchronous, from `'self'`); `useTheme`; `ThemeToggle` (one moon/sun icon button with a tooltip)
-- [x] Vite plugin `@vertex-shifa/ui/vite`: serves and emits `theme-init.js`, adds it to `<head>`, preloads the first screen's fonts in the build
-- [x] Fonts: own `@font-face` with `unicode-range`; `fonts-desktop.css` with `font-display: block` (clinic, console), `fonts.css` with `swap` (site); test keeps them the same faces
-- [x] `Form` (Enter → next field, Shift+Enter → previous, last field → primary action; textareas, open popups and handled keys keep their Enter; locks its fields with `inert` while busy, focus kept on the submit button), `FormFields`, `FormActions`
-- [x] `useDraft` (dirty against a baseline, discard, rebase after save)
-- [x] `Button` `loading` (spinner, same width)
-- [x] `UnsavedChangesDialog` (Stay / Leave without saving)
-- [x] `Stepper` (segments aligned with labels; completed, current, upcoming; completed clickable)
-- [x] `PageContainer`; `PageHeader` `back` slot; `BackButton` (arrow points to the inline start)
-- [x] `Toaster` mounted by the apps; success through the toast
-- [x] `packages/ui/CLAUDE.md`: theme, fonts, forms (Enter rule, save and discard, unsaved changes, feedback), layout, stepper
+## PR 1 — contracts and database (`feat/s02-identity-data`)
+- [x] Contracts `access.ts`: roles, permission catalog (S01 and S02 keys) with groups, branch scope and limits, role presets, `effectivePermissions`, `grantablePermissions`, `clinicalReadScopeSchema`; unit tests for every preset and limit
+- [x] Contracts `identity.ts`: `passwordSchema` (common-password list, phone digits), `pinSchema` (trivial PINs, phone digits), `otpCodeSchema`, OTP and sign-in policies, offline window, device and session codes; tests. Request and response shapes arrive with their routes (PR 2–4)
+- [x] Contracts `staff.ts`, `practitioners.ts`, `console-identity.ts`: membership state table, invitation and access change inputs, practitioner profile and specialty, photo policy, platform roles and permissions, TOTP, setup and recovery codes; tests
+- [x] Contracts: new error codes with Arabic texts, audit actions with labels (the `staff.invitation_created.v1` event arrives with the owner invitation in PR 2)
+- [x] Database (`/db-migration`): `accounts`, `account_tenant_links`, `staff_memberships`, `staff_membership_facilities`, `devices`, `device_enrollments`, `staff_sessions`, `otp_challenges`, `practitioners`, `practitioner_specialties`, `practitioner_photos`, `specialties` (seeded), `platform_users`, `platform_user_recovery_codes`, `platform_sessions`, `platform_audit_entries` (append-only); `tenants.idle_lock_minutes`, `tenants.clinical_read_scope`; RLS and grants; registry and owner map
+- [x] Database tests: conventions, isolation of the new tenant tables, `platform_audit_entries` refuses update and delete, specialties seed; migration drift
+- [x] Docs: `docs/architecture.md` tables (already listed by the spec PR), `packages/db/CLAUDE.md`, `packages/contracts/CLAUDE.md`
+- [x] Checks, reviewer, acceptance (summary), PR with auto-merge
 
-## packages/ui-native
-- [x] `ThemeProvider`: the system's setting until the button is pressed, the choice persisted through a `storage` prop, applied before the first render on native; `useThemeToggle`; `ThemeToggle` (moon/sun icon button, `lucide-react-native`)
-- [x] `Input` and `useFocusChain` (`returnKeyType` next/done, focus chaining); pure rules tested
-- [x] `packages/ui-native/CLAUDE.md`
+## PR 2 — API: sign-in, devices and sessions (`feat/s02-identity-api`)
+- [ ] Config: `IDENTITY_HASH_KEY`, `IDENTITY_ENCRYPTION_KEY`, token signing keys; `.env.example` fake values
+- [ ] Identity module: proof of work, `OtpSender` port and fake (refused in production), OTP challenges (ADR 0022 limits), sign-in with lock, tickets (single use), password set, registration options, device registration, device token challenge and token, enrollments, staff sessions (nonce, signatures, refresh, end), JWKS, `/api/me`, `PUT /api/me/password`, `/api/devices/current`, wiped
+- [ ] Session guard in `core/access`: staff access tokens, `@DeviceRoute()`, `@TicketRoute(purpose)`, permissions from `effectivePermissions` with branch scope, tenant status rules; `StaffActor` reshaped; console routes stay fail-closed
+- [ ] Access module: membership reads needed by sign-in and sessions; `GET /api/access/catalog`
+- [ ] Event `staff.invitation_created.v1` in the outbox; CLI: `tenant:create --owner-phone --owner-name` (owner invitation); `account:authorize-password-reset`, `account:change-phone`
+- [ ] S01 rule 7: `FACILITY_HAS_DEVICES`; onboarding wizard gives null-branch devices the first branch (rule 28)
+- [ ] HTTP access tests of every S01 route (success, 401, 403, another tenant) and of the PR's routes; service tests from the spec's list
+- [ ] OpenAPI regenerated, clinic API types regenerated; `AGENTS.md` commands
+- [ ] Checks, reviewer, acceptance (summary), PR with auto-merge
 
-## Apps
-- [x] i18n: theme, unsaved changes, discard, back, toast close (common); clinic texts
-- [x] Clinic: Vite plugin, `fonts-desktop.css`, `ThemeToggle` in the header, `PageContainer` in the shell (header, nav, content share edges), `StateCard` start-aligned, `Toaster`
-- [x] Clinic forms on `Form` + `useDraft`: clinic settings, branch / location, new branch, wizard; toast on save; notices below the actions; first invalid field focused
-- [x] Clinic: unsaved-changes guard (router blocker + `beforeunload`), Electron `will-prevent-unload` dialog, Alt+Left / Alt+Right
-- [x] Clinic: back action on sub-pages (branch → branches, new branch → list, settings → home); wizard `Stepper`
-- [x] Console: Vite plugin, fonts, toggle, `PageContainer`
-- [x] Site: `theme-init.js` route, script in `<head>`, toggle, `PageContainer`
-- [x] Patient: AsyncStorage, `ThemeProvider` storage, toggle in the header
-- [x] ADR 0018 amendment; `docs/ROADMAP.md`; app `CLAUDE.md` files; `docs/architecture.md` if stale
+## PR 3 — API: staff, practitioners, devices and security settings (`feat/s02-staff-api`)
+- [ ] Invitations (create, resend, cancel; outbox event), access changes (`LAST_OWNER`, `PERMISSION_NOT_GRANTABLE`, `CONFLICT`), deactivate and reactivate (ending sessions and enrollments), staff password reset, staff list and detail
+- [ ] Practitioners: list, read, edit (own or owner), photo upload with re-encoding, specialties list; doctor role adds and archives the profile
+- [ ] Devices management: list, read, rename, revoke, remove a member from a device
+- [ ] `PATCH /api/tenant/security`
+- [ ] HTTP access tests and service tests; OpenAPI and clinic types regenerated
+- [ ] Checks, reviewer, acceptance (summary), PR with auto-merge
 
-## Verification
-- [x] E2E: Enter navigation, save toast and no layout shift, discard, unsaved-changes dialog, back actions, stepper, theme toggle following the system then persisted across reload; RTL screenshots light and dark, looked at
-- [x] Fonts: the built renderer reloaded in Chromium (E2E `fonts`): six preloads, all used, faces loaded; the Electron window itself is checked at owner acceptance
-- [x] Shell at 960 px (window minimum) and 1920 px: no overflow, header, nav and page edges aligned (E2E)
-- [x] Checks (`checker`), `reviewer`, owner acceptance (screenshots; the owner asked for Vertex Hub's toggle, then the PR with auto-merge), PR; auto-merge after the owner approves the ADR 0018 amendment
+## PR 4 — API: console identity (`feat/s02-console-api`)
+- [ ] Platform users: setup code, password, TOTP enrollment and replay refusal, recovery codes, sessions (cookie, idle and absolute expiry, `Origin` check), re-authentication, `LAST_ADMIN`
+- [ ] Console session guard; platform audit row for every console request; S01 console routes require re-authentication where rule 38 says
+- [ ] Console account recovery routes; CLI `platform-user:create`, `platform-user:reset`
+- [ ] HTTP access tests (console refused for staff sessions and the reverse); OpenAPI regenerated
+- [ ] Checks, reviewer, acceptance (summary), PR with auto-merge
+
+## PR 5 — Clinic app: devices, PIN and lock (`feat/s02-clinic-sign-in`)
+- [ ] Electron main: device and user keys (Ed25519), PIN wrapping (Argon2id + `safeStorage`), lockout counter, offline window with highest-seen time, multi-clinic registrations, wipe of one registration; IPC bridge; unit tests
+- [ ] Screens: welcome, sign-in (OTP, first sign-in), register this computer, choose a PIN, member picker and lock screen (all states), idle lock, clinic switcher, my account
+- [ ] Session handling in the API client (access token, refresh, `DEVICE_REVOKED` wipe)
+- [ ] i18n; E2E with a mocked API; RTL screenshots light and dark
+- [ ] Checks, reviewer, owner acceptance (steps 1, 2, 4–8 of the spec), PR with auto-merge
+
+## PR 6 — Clinic app: staff, doctor profile, devices and security (`feat/s02-clinic-staff`)
+- [ ] Screens: staff list, invite and member detail with the permission editor, doctor profile with photo, devices, security settings
+- [ ] i18n; E2E with a mocked API; RTL screenshots light and dark
+- [ ] Checks, reviewer, owner acceptance (steps 3, 9, 11 of the spec), PR with auto-merge
+
+## PR 7 — Console: sign-in, TOTP and platform users (`feat/s02-console-sign-in`)
+- [ ] Screens: sign-in with setup and TOTP step, re-authentication dialog, platform users, my account
+- [ ] i18n; E2E with a mocked API; RTL screenshots light and dark
+- [ ] Checks, reviewer, owner acceptance (step 10 of the spec), PR with auto-merge; `docs/ROADMAP.md` S02 done

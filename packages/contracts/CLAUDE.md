@@ -8,6 +8,8 @@ Zod schemas and pure rules shared by every app, the patient app included (ADR 00
 - `money.ts`: currencies, `moneySchema`, `exchangeRateSchema`, arithmetic, conversion, parsing and formatting (ADR 0014).
 - `arabic-names.ts`: `normalizeArabicName`, the key for name search and duplicate matching (ADR 0006).
 - `health-check.ts`: the answer of `GET /api/health`.
+- `access.ts`: staff roles, the permission catalog (group, branch scope, limit), role presets, `effectivePermissions` and the adjustment limits (S02). A spec adding a permission adds its key here with the default and limit S02 fixed for its group.
+- `identity.ts` (passwords, OTPs, PINs, the offline window, device and session codes), `staff.ts` (memberships and invitations), `practitioners.ts`, `console-identity.ts` (platform users, TOTP, recovery codes): S02.
 
 ## Rules
 - Schemas `<thing>Schema`, types `Thing = z.infer<…>`, inputs `create<Thing>Schema`; every schema the API exposes has a stable `.meta({ id })`.

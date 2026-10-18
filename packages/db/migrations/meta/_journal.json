@@ -64,6 +64,34 @@
       "when": 1792335233012,
       "tag": "0008_tenant-logos-index",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792356740351,
+      "tag": "0009_identity-and-access",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792356751748,
+      "tag": "0010_identity-and-access-isolation",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1792356752460,
+      "tag": "0011_specialties-seed",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1792357120290,
+      "tag": "0012_staff-roles-distinct",
+      "breakpoints": true
     }
   ]
 }

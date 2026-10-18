@@ -840,6 +840,11 @@
   },
   "components": {
     "schemas": {
+      "AccountName": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 100
+      },
       "Area": {
         "type": "object",
         "properties": {
@@ -918,7 +923,46 @@
           "facility.created",
           "facility.updated",
           "facility.archived",
-          "facility.restored"
+          "facility.restored",
+          "tenant.security_updated",
+          "staff.invited",
+          "staff.invitation_resent",
+          "staff.invitation_cancelled",
+          "staff.invitation_accepted",
+          "staff.access_changed",
+          "staff.deactivated",
+          "staff.reactivated",
+          "staff.password_reset_authorized",
+          "device.registered",
+          "device.renamed",
+          "device.revoked",
+          "device.wiped",
+          "device_enrollment.created",
+          "device_enrollment.revoked",
+          "staff_session.started",
+          "practitioner.updated",
+          "practitioner_photo.replaced",
+          "practitioner_photo.archived",
+          "account.created",
+          "account.password_set",
+          "account.password_reset_authorized",
+          "account.phone_changed",
+          "account.sign_in_locked",
+          "console.request",
+          "platform_user.created",
+          "platform_user.role_changed",
+          "platform_user.disabled",
+          "platform_user.enabled",
+          "platform_user.reset",
+          "platform_user.setup_completed",
+          "platform_user.signed_in",
+          "platform_user.sign_in_failed",
+          "platform_user.sign_in_locked",
+          "platform_user.totp_failed",
+          "platform_user.recovery_code_used",
+          "platform_user.reauthenticated",
+          "platform_user.password_changed",
+          "platform_user.signed_out"
         ]
       },
       "AuditActorKind": {
@@ -929,6 +973,85 @@
           "platform",
           "system"
         ]
+      },
+      "BranchScope": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "allFacilities": {
+                "type": "boolean",
+                "const": true
+              }
+            },
+            "required": [
+              "allFacilities"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "allFacilities": {
+                "type": "boolean",
+                "const": false
+              },
+              "facilityIds": {
+                "minItems": 1,
+                "maxItems": 100,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                }
+              }
+            },
+            "required": [
+              "allFacilities",
+              "facilityIds"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "ChangeStaffAccess": {
+        "type": "object",
+        "properties": {
+          "roles": {
+            "minItems": 1,
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffRole"
+            }
+          },
+          "branchScope": {
+            "$ref": "#/components/schemas/BranchScope"
+          },
+          "adjustments": {
+            "default": {
+              "granted": [],
+              "revoked": []
+            },
+            "$ref": "#/components/schemas/PermissionAdjustments"
+          },
+          "practitioner": {
+            "$ref": "#/components/schemas/PractitionerProfileInput"
+          },
+          "expectedUpdatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+          }
+        },
+        "required": [
+          "roles",
+          "branchScope",
+          "adjustments",
+          "expectedUpdatedAt"
+        ],
+        "additionalProperties": false
       },
       "ChangeTenantStatus": {
         "type": "object",
@@ -957,6 +1080,13 @@
           "reason"
         ],
         "additionalProperties": false
+      },
+      "ClinicalReadScope": {
+        "type": "string",
+        "enum": [
+          "branch",
+          "own_patients"
+        ]
       },
       "ContactPhone": {
         "type": "object",
@@ -1052,6 +1182,48 @@
         ],
         "additionalProperties": false
       },
+      "CreateInvitation": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "$ref": "#/components/schemas/MobilePhoneNumber"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "roles": {
+            "minItems": 1,
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffRole"
+            }
+          },
+          "branchScope": {
+            "$ref": "#/components/schemas/BranchScope"
+          },
+          "adjustments": {
+            "default": {
+              "granted": [],
+              "revoked": []
+            },
+            "$ref": "#/components/schemas/PermissionAdjustments"
+          },
+          "practitioner": {
+            "$ref": "#/components/schemas/PractitionerProfileInput"
+          }
+        },
+        "required": [
+          "phone",
+          "name",
+          "roles",
+          "branchScope",
+          "adjustments"
+        ],
+        "additionalProperties": false
+      },
       "CreateTenant": {
         "type": "object",
         "properties": {
@@ -1086,6 +1258,26 @@
           "SYP"
         ]
       },
+      "DeviceName": {
+        "type": "string",
+        "minLength": 2,
+        "maxLength": 50
+      },
+      "DeviceRevokeCategory": {
+        "type": "string",
+        "enum": [
+          "lost_or_stolen",
+          "replaced",
+          "other"
+        ]
+      },
+      "DeviceStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "revoked"
+        ]
+      },
       "DisplayNameFormat": {
         "type": "string",
         "enum": [
@@ -1093,12 +1285,33 @@
           "first_name_father_initial"
         ]
       },
+      "EnrollmentRevokeReason": {
+        "type": "string",
+        "enum": [
+          "device_revoked",
+          "member_deactivated",
+          "removed_from_device",
+          "pin_forgotten",
+          "branch_left"
+        ]
+      },
       "ErrorCode": {
         "type": "string",
         "enum": [
           "VALIDATION_FAILED",
+          "POW_INVALID",
           "UNAUTHENTICATED",
+          "INVALID_CREDENTIALS",
+          "TICKET_INVALID",
+          "SESSION_ENDED",
+          "SIGNATURE_INVALID",
+          "DEVICE_UNKNOWN",
           "FORBIDDEN",
+          "DEVICE_REVOKED",
+          "ENROLLMENT_REVOKED",
+          "MEMBERSHIP_INACTIVE",
+          "BRANCH_NOT_IN_SCOPE",
+          "REAUTH_REQUIRED",
           "NOT_ENTITLED",
           "TENANT_SUSPENDED",
           "TENANT_CLOSED",
@@ -1106,14 +1319,26 @@
           "CONFLICT",
           "INVALID_STATUS_TRANSITION",
           "LAST_ACTIVE_FACILITY",
+          "ALREADY_MEMBER",
+          "LAST_OWNER",
+          "LAST_ADMIN",
+          "FACILITY_HAS_DEVICES",
           "CURRENCY_MISMATCH",
           "INVALID_AMOUNT",
           "ONBOARDING_INCOMPLETE",
           "FILE_REJECTED",
           "MAP_LINK_UNRECOGNIZED",
+          "OTP_INVALID",
+          "OTP_EXPIRED",
+          "PASSWORD_TOO_WEAK",
+          "TOTP_INVALID",
+          "PERMISSION_NOT_GRANTABLE",
           "RATE_LIMITED",
+          "OTP_ATTEMPTS_EXCEEDED",
+          "OTP_COOLDOWN",
           "INTERNAL_ERROR",
-          "SERVICE_UNAVAILABLE"
+          "SERVICE_UNAVAILABLE",
+          "OTP_DELIVERY_UNAVAILABLE"
         ]
       },
       "ErrorResponse": {
@@ -1277,6 +1502,13 @@
         ],
         "additionalProperties": false
       },
+      "Gender": {
+        "type": "string",
+        "enum": [
+          "male",
+          "female"
+        ]
+      },
       "HealthCheck": {
         "type": "object",
         "properties": {
@@ -1294,6 +1526,19 @@
           "database"
         ],
         "additionalProperties": false
+      },
+      "IdleLockMinutes": {
+        "type": "integer",
+        "minimum": 5,
+        "maximum": 60
+      },
+      "InvitationMessageStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "sent",
+          "failed"
+        ]
       },
       "ListAreasQuery": {
         "type": "object",
@@ -1395,6 +1640,19 @@
         ],
         "additionalProperties": false
       },
+      "MembershipStatus": {
+        "type": "string",
+        "enum": [
+          "invited",
+          "active",
+          "deactivated"
+        ]
+      },
+      "MobilePhoneNumber": {
+        "type": "string",
+        "pattern": "^\\+\\d{8,15}$",
+        "$ref": "#/components/schemas/PhoneNumber"
+      },
       "Money": {
         "type": "object",
         "properties": {
@@ -1413,9 +1671,147 @@
         ],
         "additionalProperties": false
       },
+      "OtpCode": {
+        "type": "string",
+        "pattern": "^\\d{6}$"
+      },
+      "OtpPurpose": {
+        "type": "string",
+        "enum": [
+          "device_sign_in",
+          "first_sign_in",
+          "password_reset"
+        ]
+      },
+      "Password": {
+        "type": "string",
+        "minLength": 10,
+        "maxLength": 128
+      },
+      "PermissionAdjustments": {
+        "type": "object",
+        "properties": {
+          "granted": {
+            "default": [],
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionKey"
+            }
+          },
+          "revoked": {
+            "default": [],
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PermissionKey"
+            }
+          }
+        },
+        "required": [
+          "granted",
+          "revoked"
+        ],
+        "additionalProperties": false
+      },
+      "PermissionKey": {
+        "type": "string",
+        "enum": [
+          "tenant.read",
+          "tenant.manage",
+          "facility.manage",
+          "staff.read",
+          "staff.manage",
+          "devices.manage",
+          "practitioners.read",
+          "practitioner.edit_own"
+        ]
+      },
       "PhoneNumber": {
         "type": "string",
         "pattern": "^\\+\\d{8,15}$"
+      },
+      "PlatformRole": {
+        "type": "string",
+        "enum": [
+          "admin",
+          "support"
+        ]
+      },
+      "PlatformUserStatus": {
+        "type": "string",
+        "enum": [
+          "pending_setup",
+          "active",
+          "disabled"
+        ]
+      },
+      "PractitionerProfileInput": {
+        "type": "object",
+        "properties": {
+          "displayNameAr": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "displayNameLatin": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 100,
+                "pattern": "^[A-Za-z0-9 \\-'&.]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "gender": {
+            "$ref": "#/components/schemas/Gender"
+          },
+          "specialtyIds": {
+            "minItems": 1,
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "syndicateNumber": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 30,
+                "pattern": "^[A-Za-z0-9\\-/]+$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "displayNameAr",
+          "displayNameLatin",
+          "gender",
+          "specialtyIds",
+          "syndicateNumber"
+        ],
+        "additionalProperties": false
+      },
+      "PublicKey": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9+/]{43}=$"
+      },
+      "RecoveryCode": {
+        "type": "string",
+        "pattern": "^[A-Z2-7]{4}(-[A-Z2-7]{4}){1}$"
       },
       "ResolveMapLink": {
         "type": "object",
@@ -1430,6 +1826,18 @@
           "url"
         ],
         "additionalProperties": false
+      },
+      "SessionEndReason": {
+        "type": "string",
+        "enum": [
+          "signed_out",
+          "locked",
+          "expired",
+          "member_deactivated",
+          "device_revoked",
+          "enrollment_revoked",
+          "password_reset"
+        ]
       },
       "SetTenantDirectoryListing": {
         "type": "object",
@@ -1448,6 +1856,53 @@
           "reason"
         ],
         "additionalProperties": false
+      },
+      "SetupCode": {
+        "type": "string",
+        "pattern": "^[A-Z2-7]{4}(-[A-Z2-7]{4}){2}$"
+      },
+      "Specialty": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z]+(-[a-z]+)*$"
+          },
+          "nameAr": {
+            "type": "string"
+          },
+          "nameLatin": {
+            "type": "string"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "nameAr",
+          "nameLatin",
+          "position"
+        ],
+        "additionalProperties": false
+      },
+      "StaffRole": {
+        "type": "string",
+        "enum": [
+          "owner",
+          "doctor",
+          "reception",
+          "nurse",
+          "accountant"
+        ]
       },
       "Tenant": {
         "type": "object",
@@ -1632,6 +2087,10 @@
           "non_payment",
           "other"
         ]
+      },
+      "TotpCode": {
+        "type": "string",
+        "pattern": "^\\d{6}$"
       },
       "UpdateFacility": {
         "type": "object",
