@@ -11,7 +11,7 @@ Every clinic on the platform is a tenant with one or more branches (facilities),
   - Tenant states and transitions; the onboarding wizard; clinic profile and branch settings screens in the clinic app; branch archive and restore.
   - Console API routes to create and list tenants and change their status (screens in S22), and an API CLI that does the same for Vertex staff until S22.
   - Location by a pin on the OpenStreetMap map (the map component of `packages/ui`, ADR 0023), or a pasted Google Maps link or coordinates; the logo upload, re-encoded on the server.
-  - The web map component in `packages/ui` (MapLibre, provider-neutral props: center, pin, on-change, attribution), configured by tile, style and glyph URLs; the clinic app's CSP widened for the map host and blob workers only (ADR 0023). Local development points the URLs at a small extract of the Azaz area, documented in `packages/ui/CLAUDE.md`.
+  - The web map component in `packages/ui` (MapLibre, provider-neutral props: center, pin, on-change, attribution), configured by tile, style and glyph URLs; the clinic app's CSP widened for the map host only, with MapLibre's worker served by the app instead of a blob worker (ADR 0023). Local development points the URLs at a small extract of the Azaz area, documented in `packages/ui/CLAUDE.md`.
   - Contracts: tenant, facility, area, phone number (Syrian and Turkish, shared with S02), working days, coordinates, the new error codes; i18n texts.
 - Out (later or never):
   - Owner account, invitation by phone, sign-in, roles and the permission catalog: S02. S01 only names the permissions it needs.

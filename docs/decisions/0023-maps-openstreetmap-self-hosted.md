@@ -1,6 +1,6 @@
 # 0023 — Maps: OpenStreetMap served by us, coordinates owned by us
 
-Status: Accepted · Date: 2026-10-10
+Status: Accepted · Date: 2026-10-10 · Amended 2026-10-18 (owner): MapLibre 6 needs no RTL text plugin and no blob workers
 
 ## Context
 Branches need a location (F01) that patients use to find the clinic and get directions, and the patient app shows a map of every listed clinic with filters (F25). The clinic app, the public site, the console and the patient app all show maps.
@@ -9,7 +9,7 @@ The owner first chose Google Maps Platform (S01 interview, 2026-10-10). Every Go
 
 ## Decision
 - **Maps:** OpenStreetMap data as vector tiles in one Protomaps (PMTiles) file covering Syria and Turkey, served by our own gateway with HTTP range requests, together with the style, the sprites and the glyphs (fonts with Arabic). No third-party tile service, no account, no key, no quota; no Cloudflare (ADR 0015).
-- **Rendering:** MapLibre GL JS on the web (clinic app, site, console) and MapLibre native in the patient app (library confirmed in S19). Arabic labels where the data has them, with the RTL text plugin bundled into the app, never loaded from a CDN. Every map shows the "© OpenStreetMap" attribution (ODbL).
+- **Rendering:** MapLibre GL JS on the web (clinic app, site, console) and MapLibre native in the patient app (library confirmed in S19). Arabic labels where the data has them: MapLibre 6 shapes Arabic and orders bidirectional text itself, so no RTL text plugin is loaded (checked on the Azaz extract in the clinic's Electron app, 2026-10-18), and nothing is loaded from a CDN. Every map shows the "© OpenStreetMap" attribution (ODbL).
 - **One component per platform:** a map component in `packages/ui` and one in `packages/ui-native` hide the provider. Screens and data never depend on MapLibre or OpenStreetMap, so moving to Google Maps later (when a billing account exists) is a new component implementation plus keys, with no change to data, screens or the API. Mixing providers (for example a Google satellite layer) follows the same path.
 - **We own the data:** a location is stored as integer coordinates (`latitude_e7`, `longitude_e7`, degrees × 10⁷), never as a provider's place id.
 - **Input without the map:** a pasted Google Maps link (short links resolved by the API, only to Google hosts on an allow list) or `latitude, longitude` text always works, so a missing or failing map never blocks saving.
@@ -17,7 +17,7 @@ The owner first chose Google Maps Platform (S01 interview, 2026-10-10). Every Go
 - **Patient app clinic map (F25):** markers per branch with our own images, clustering in the map library, distance computed on the phone from the patient's location, which never leaves the phone.
 - **No search of places or addresses** (geocoding) in V1: governorate and city come from our list, the exact place from the pin.
 - **Configuration:** the tile, style and glyph URLs come from configuration. Without them (local development, CI) the map component shows the paste field only.
-- **Clinic app:** the Electron CSP is widened only for our map host and the blob workers MapLibre needs; the map appears only on online-only settings screens.
+- **Clinic app:** the Electron CSP is widened only for our map host (`connect-src`); MapLibre's worker is a file of the app (`setWorkerUrl`), so no blob worker is allowed; the map appears only on online-only settings screens.
 
 ## Consequences
 - No vendor account or bill for maps; no risk of a provider blocking Syrian users.

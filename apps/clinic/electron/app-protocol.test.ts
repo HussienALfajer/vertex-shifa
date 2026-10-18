@@ -1,6 +1,6 @@
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { resolveAppFile } from './app-protocol.js';
+import { contentSecurityPolicy, mapOrigins, resolveAppFile } from './app-protocol.js';
 
 const root = resolve('/renderer');
 
@@ -33,5 +33,64 @@ describe('resolveAppFile', () => {
     expect(resolveAppFile(root, 'file:///renderer/index.html')).toBeNull();
     expect(resolveAppFile(root, 'app://clinic/%E0%A4%A.js')).toBeNull();
     expect(resolveAppFile(root, 'not a url')).toBeNull();
+  });
+});
+
+describe('contentSecurityPolicy', () => {
+  it('allows only the app itself without a map server', () => {
+    const policy = contentSecurityPolicy([]);
+    expect(policy).toContain("connect-src 'self';");
+    expect(policy).toContain("worker-src 'self';");
+    expect(policy).not.toContain('blob:');
+    expect(policy).not.toContain('unsafe');
+  });
+
+  it('adds the map origins to connect-src only', () => {
+    const policy = contentSecurityPolicy(['https://maps.example.test']);
+    expect(policy).toContain("connect-src 'self' https://maps.example.test;");
+    expect(policy.match(/maps\.example\.test/g)).toHaveLength(1);
+  });
+});
+
+describe('mapOrigins', () => {
+  it('takes the origin of each configured map URL once', () => {
+    expect(
+      mapOrigins({
+        VITE_MAP_STYLE_URL: 'https://maps.example.test/style.json',
+        VITE_MAP_TILES_URL: 'https://tiles.example.test/syria.pmtiles',
+        VITE_MAP_GLYPHS_URL: 'https://maps.example.test/fonts/{fontstack}/{range}.pbf',
+      }),
+    ).toEqual(['https://maps.example.test', 'https://tiles.example.test']);
+  });
+
+  it('allows plain HTTP on the loopback interface only, for the local extract', () => {
+    expect(mapOrigins({ VITE_MAP_TILES_URL: 'http://localhost:8080/azaz.pmtiles' })).toEqual([
+      'http://localhost:8080',
+    ]);
+    expect(mapOrigins({ VITE_MAP_TILES_URL: 'http://maps.example.test/azaz.pmtiles' })).toEqual([]);
+  });
+
+  it('refuses hosts that would widen or break the policy', () => {
+    expect(
+      mapOrigins({
+        VITE_MAP_STYLE_URL: 'https://*/style.json',
+        VITE_MAP_TILES_URL: 'https://maps.example.test;sandbox/x.pmtiles',
+        VITE_MAP_GLYPHS_URL: 'https://maps.example.test%3Bsandbox/{fontstack}/{range}.pbf',
+      }),
+    ).toEqual([]);
+    expect(mapOrigins({ VITE_MAP_STYLE_URL: 'https://MAPS.Example.test:8443/style.json' })).toEqual(
+      ['https://maps.example.test:8443'],
+    );
+  });
+
+  it('ignores unset, malformed, credentialed and non-HTTP URLs', () => {
+    expect(mapOrigins({})).toEqual([]);
+    expect(
+      mapOrigins({
+        VITE_MAP_STYLE_URL: 'not a url',
+        VITE_MAP_TILES_URL: 'https://user:secret@maps.example.test/x.pmtiles',
+        VITE_MAP_GLYPHS_URL: "javascript:alert('x')",
+      }),
+    ).toEqual([]);
   });
 });

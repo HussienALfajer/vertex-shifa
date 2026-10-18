@@ -18,6 +18,7 @@ export * from './components/field';
 export * from './components/icon-button';
 export * from './components/icon-tile';
 export * from './components/input';
+export * from './components/location-picker';
 export * from './components/meter';
 export * from './components/multi-combobox';
 export * from './components/otp-field';
