@@ -73,10 +73,7 @@
       "Bash(pnpm db:setup-local*)",
       "Bash(*eas submit*)",
       "Bash(*eas update*)",
-      "Bash(gh repo *)",
-      "Bash(ssh *)",
-      "Bash(scp *)",
-      "Bash(rsync *)"
+      "Bash(gh repo *)"
     ],
     "deny": [
       "Read(**/.env)",
