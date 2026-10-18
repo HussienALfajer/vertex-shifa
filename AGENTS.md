@@ -45,6 +45,7 @@ The PR that adds a command adds it to this table and keeps it true. Run from the
 | Build | `pnpm build` |
 | Local database | `pnpm db:setup-local` (roles and dev database; needs `.env` from `.env.example`) · migrate: `pnpm db:migrate` · generate: `pnpm db:generate` |
 | API | start (after `pnpm build`): `pnpm --filter @vertex-shifa/api start` (reads `.env`) · regenerate `apps/api/openapi.json`: `pnpm --filter @vertex-shifa/api exec vitest run -u test/openapi.test.ts` |
+| API CLI | Vertex staff, after `pnpm build`, reads `.env`: `pnpm --filter @vertex-shifa/api cli tenant:create --name-ar <name> [--name-latin <name>] --reason <text>` · `tenant:list [--status <status>]` · `tenant:set-status <tenant-id> --status <active\|suspended\|closed> [--reason-category <non_payment\|other>] --reason <text>` · `tenant:set-directory <tenant-id> --listed <true\|false> --reason <text>` |
 | Worker | start (after `pnpm build`): `pnpm --filter @vertex-shifa/worker start` (reads `.env`) |
 | WhatsApp gateway | start (after `pnpm build`): `pnpm --filter @vertex-shifa/whatsapp-gateway start` (reads `.env`; fake transport only, exits after start until S03 runs sessions) |
 | Clinic app | browser dev: `pnpm --filter @vertex-shifa/clinic dev` · Electron on the dev server: `pnpm --filter @vertex-shifa/clinic dev:electron` (with `dev` running) · built app (after `pnpm build`): `pnpm --filter @vertex-shifa/clinic start` |

@@ -18,6 +18,10 @@
 export const tableRegistry = {
   audit_entries: { module: 'audit', scope: 'tenant', kind: 'append-only' },
   outbox_events: { module: 'events', scope: 'tenant', kind: 'queue' },
+  tenants: { module: 'tenancy', scope: 'platform', kind: 'business' },
+  tenant_logos: { module: 'tenancy', scope: 'tenant', kind: 'business' },
+  facilities: { module: 'tenancy', scope: 'tenant', kind: 'business' },
+  areas: { module: 'tenancy', scope: 'platform', kind: 'business' },
 } as const satisfies Record<string, TableInfo>;
 
 export type TableScope = 'tenant' | 'platform';

@@ -14,7 +14,7 @@ Status legend: `[ ]` not started · `[~]` in progress · `[x]` done. Feature IDs
 - [ ] Deploy skeleton (needs Q1)
 
 ## Phase 1 — Platform core
-- [~] S01 Tenancy and clinic setup: F01 (spec `docs/specs/S01-tenancy-and-clinic-setup.md`)
+- [~] S01 Tenancy and clinic setup: F01 (spec `docs/specs/S01-tenancy-and-clinic-setup.md`; PR 1 contracts, database, API and CLI done; PR 2 web map and PR 3 clinic screens next, `TASKS.md`)
 - [ ] S02 Identity, access and devices: F02 · F03 · F40 (fake WhatsApp transport until S03; records the practitioner's gender for the F25 filter; adds the HTTP access tests of the S01 routes)
 - [ ] S03 WhatsApp gateway and OTP: platform sessions, OTP delivery, failover (ADR 0012)
 - [ ] S04 Sync foundation: F22 (commands, number ranges, sync status, first commands)

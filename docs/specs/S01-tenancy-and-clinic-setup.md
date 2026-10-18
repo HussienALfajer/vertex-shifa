@@ -55,6 +55,7 @@ The tenant registry (ADR 0004 tenant catalog). Platform scope because the consol
 | `name_ar` | text | yes | trimmed, 2–100 characters |
 | `name_latin` | text | no | trimmed, 2–100 characters, Latin letters, digits, spaces, `-`, `'`, `&`, `.` |
 | `status` | text | yes | `onboarding`, `active`, `suspended`, `closed`; default `onboarding` |
+| `status_reason` | text | while `suspended` or `closed` | `non_payment` or `other`; the category the read-only banner shows (owner, 2026-10-18); the free-text reason stays in the audit entry |
 | `status_changed_at` | timestamptz | yes | |
 | `onboarding_completed_at` | timestamptz | no | set once, when the wizard completes |
 | `directory_listed` | boolean | yes | default `false`; set only by Vertex staff (owner, 2026-10-10) |
@@ -172,17 +173,18 @@ Module `apps/api/src/modules/platform/tenancy/` (ADR 0020 anatomy): `tenancy.con
 | `POST /api/facilities/:id/archive` | Staff, `tenant.manage` | — | `facilitySchema` | `LAST_ACTIVE_FACILITY`, `NOT_FOUND` |
 | `POST /api/facilities/:id/restore` | Staff, `tenant.manage` | — | `facilitySchema` | `NOT_FOUND` |
 | `GET /api/areas` | Staff, `tenant.read` | `parentId` (absent = governorates) | `areaSchema[]` | — |
+| `GET /api/areas/:id` | Staff, `tenant.read` | — | `areaSchema` (archived areas too, edge case 4) | `NOT_FOUND` |
 | `POST /api/maps/resolve-link` | Staff, `tenant.manage` or `facility.manage` | `{ url }` | `coordinatesSchema` | `MAP_LINK_UNRECOGNIZED`, `RATE_LIMITED` |
 | `GET /api/console/tenants` | Console, `tenants.read` | `status` filter, list params | `{ items: tenantSchema[], … }` | — |
 | `POST /api/console/tenants` | Console, `tenants.create` | `createTenantSchema` | `tenantSchema` | `VALIDATION_FAILED` |
-| `POST /api/console/tenants/:id/status` | Console, `tenants.change-status` | `changeTenantStatusSchema` (`status`, `reason`) | `tenantSchema` | `INVALID_STATUS_TRANSITION`, `NOT_FOUND` |
+| `POST /api/console/tenants/:id/status` | Console, `tenants.change-status` | `changeTenantStatusSchema` (`status`, `reasonCategory`, `reason`) | `tenantSchema` | `INVALID_STATUS_TRANSITION`, `NOT_FOUND` |
 | `POST /api/console/tenants/:id/directory` | Console, `tenants.manage-directory` | `setTenantDirectoryListingSchema` (`listed`, `reason`) | `tenantSchema` | `NOT_FOUND` |
 
 New error codes in `packages/contracts/src/errors.ts` with Arabic texts: `TENANT_CLOSED` (403), `ONBOARDING_INCOMPLETE` (422), `INVALID_STATUS_TRANSITION` (409), `LAST_ACTIVE_FACILITY` (409), `FILE_REJECTED` (422), `MAP_LINK_UNRECOGNIZED` (422).
 
 `POST /api/maps/resolve-link` parses coordinates from full Google Maps URLs on the server and follows short links (`maps.app.goo.gl`, `goo.gl/maps`) only to Google Maps hosts on an allow list, at most 3 redirects, 5-second timeout, 20 requests per minute per tenant; it never fetches any other host. Coordinates typed or in a full URL are parsed in the client with the same contract parser, without a request.
 
-CLI (`apps/api/src/cli/`), for Vertex staff until the S22 screens, run with the API's `.env`: `tenant:create --name-ar <name> [--name-latin <name>] --reason <text>`, `tenant:list [--status <status>]`, `tenant:set-status <tenant-id> --status <status> --reason <text>`, `tenant:set-directory <tenant-id> --listed <true|false> --reason <text>`. It calls the same service as the console routes. S02 adds `--owner-phone` to `tenant:create` (owner invitation). The command is added to the `AGENTS.md` commands table.
+CLI (`apps/api/src/cli/`), for Vertex staff until the S22 screens, run with the API's `.env`: `tenant:create --name-ar <name> [--name-latin <name>] --reason <text>`, `tenant:list [--status <status>]`, `tenant:set-status <tenant-id> --status <status> [--reason-category <non_payment|other>] --reason <text>` (category `other` by default), `tenant:set-directory <tenant-id> --listed <true|false> --reason <text>`. It calls the same service as the console routes. S02 adds `--owner-phone` to `tenant:create` (owner invitation). The command is added to the `AGENTS.md` commands table.
 
 ## Jobs, events and notifications
 None. No outbox events: nothing consumes tenancy changes yet (S05 and S04 add what they need). No push or WhatsApp messages.

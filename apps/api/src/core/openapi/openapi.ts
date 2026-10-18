@@ -15,6 +15,69 @@ function reference(schema: unknown, route: Route): { $ref: string } {
   return { $ref: `${COMPONENTS}${id}` };
 }
 
+/** A schema with an id by reference; one without (a path parameter's `z.uuid()`) inline. */
+function schemaOf(schema: unknown): unknown {
+  if (schemaId(schema)) return { $ref: `${COMPONENTS}${schemaId(schema)}` };
+  if (schema instanceof z.ZodType) {
+    const { $schema: _, ...json } = z.toJSONSchema(schema, { io: 'input' });
+    return json;
+  }
+  return { type: 'string' };
+}
+
+/** Query parameters: one per property of the route's query schema, as the client sends them. */
+function queryParameters(schema: unknown) {
+  if (!(schema instanceof z.ZodType)) return [];
+  type ObjectSchema = { properties?: Record<string, unknown>; required?: string[] };
+  const root = z.toJSONSchema(schema, { io: 'input' }) as ObjectSchema & {
+    $ref?: string;
+    $defs?: Record<string, ObjectSchema>;
+  };
+  // A schema with an id comes back as a reference to its definition.
+  const json = root.$ref ? (root.$defs?.[root.$ref.replace('#/$defs/', '')] ?? {}) : root;
+  return Object.entries(json.properties ?? {}).map(([name, property]) => ({
+    name,
+    in: 'query',
+    required: json.required?.includes(name) ?? false,
+    schema: property,
+  }));
+}
+
+function requestOf(route: Route) {
+  const parameters = [
+    ...route.request.params.map(({ name, schema }) => ({
+      name,
+      in: 'path',
+      required: true,
+      schema: schemaOf(schema),
+    })),
+    ...queryParameters(route.request.query),
+  ];
+  const requestBody = route.request.file
+    ? {
+        required: true,
+        content: {
+          'multipart/form-data': {
+            schema: {
+              type: 'object',
+              properties: { file: { type: 'string', format: 'binary' } },
+              required: ['file'],
+            },
+          },
+        },
+      }
+    : route.request.body
+      ? {
+          required: true,
+          content: { 'application/json': { schema: reference(route.request.body, route) } },
+        }
+      : undefined;
+  return {
+    ...(parameters.length > 0 ? { parameters } : {}),
+    ...(requestBody ? { requestBody } : {}),
+  };
+}
+
 /** Every contract schema with an id, as OpenAPI components that refer to each other by id. */
 function components() {
   const { schemas } = z.toJSONSchema(z.globalRegistry, { uri: (id) => `${COMPONENTS}${id}` });
@@ -37,9 +100,10 @@ export function buildOpenApiDocument(routes: Route[]) {
     paths[path] ??= {};
     paths[path][route.method.toLowerCase()] = {
       operationId: route.name,
+      ...requestOf(route),
       responses: {
-        '200': {
-          description: 'OK',
+        [String(route.status)]: {
+          description: route.status === 201 ? 'Created' : 'OK',
           content: { 'application/json': { schema: reference(route.responseSchema, route) } },
         },
         default: {

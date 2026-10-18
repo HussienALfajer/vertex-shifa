@@ -4,11 +4,14 @@
  * handler or on its controller (the handler's wins).
  */
 
-/** Who may call the route. Permissions are checked against the session's role (S02). */
+/**
+ * Who may call the route. Permissions are checked against the session's role (S02); a staff route
+ * listing several permissions admits a role holding any of them.
+ */
 export type Access =
   | { kind: 'public' }
   | { kind: 'patient' }
-  | { kind: 'staff'; permission: string }
+  | { kind: 'staff'; permissions: [string, ...string[]] }
   | { kind: 'console'; permission: string };
 
 /** The commercial feature the tenant needs (S05), or none for routes outside any package. */
@@ -34,8 +37,9 @@ export const Public = () => declare(ACCESS, { kind: 'public' });
 /** A signed-in patient, through the patient app. */
 export const PatientRoute = () => declare(ACCESS, { kind: 'patient' });
 
-/** Clinic staff whose role in the session's tenant grants `permission`. */
-export const StaffRoute = (permission: string) => declare(ACCESS, { kind: 'staff', permission });
+/** Clinic staff whose role in the session's tenant grants one of `permissions`. */
+export const StaffRoute = (...permissions: [string, ...string[]]) =>
+  declare(ACCESS, { kind: 'staff', permissions });
 
 /** Platform staff holding `permission`; the route lives under `/api/console/`. */
 export const ConsoleRoute = (permission: string) =>

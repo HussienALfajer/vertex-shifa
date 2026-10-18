@@ -250,10 +250,12 @@ describe.each(tables)('$name', (table) => {
   it('indexes every foreign key, and carries tenant_id in a key between tenant tables', () => {
     const own = indexes.filter((index) => index.table === table.name);
     for (const fk of constraints.filter((c) => c.table === table.name && c.type === 'f')) {
+      // A partial index leaves rows out, so it never covers a foreign key.
       const covered = own.some(
         (index) =>
-          startsWith(index.columns, fk.columns) ||
-          (index.columns[0] === 'tenant_id' && startsWith(index.columns.slice(1), fk.columns)),
+          !index.partial &&
+          (startsWith(index.columns, fk.columns) ||
+            (index.columns[0] === 'tenant_id' && startsWith(index.columns.slice(1), fk.columns))),
       );
       expect(covered, fk.definition).toBe(true);
       if (isTenant(table.name) && fk.references && isTenant(fk.references)) {
