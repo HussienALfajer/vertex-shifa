@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  accessCatalog,
+  accessCatalogSchema,
   assertAdjustmentsAllowed,
   clinicalReadScopeSchema,
   effectivePermissions,
@@ -199,5 +201,15 @@ describe('tenant security settings', () => {
 
   it('knows the two clinical read scopes', () => {
     expect(clinicalReadScopeSchema.options).toEqual(['branch', 'own_patients']);
+  });
+});
+
+describe('the catalog for the permission editor', () => {
+  it('lists every permission with its limit, every preset and the owner-locked keys', () => {
+    const catalog = accessCatalog();
+    expect(catalog.permissions.map((permission) => permission.key)).toEqual(permissionKeys);
+    expect(catalog.permissions.find((p) => p.key === 'staff.manage')?.limit).toEqual(['owner']);
+    expect(catalog.presets.reception).toEqual([...rolePresets.reception]);
+    expect(accessCatalogSchema.parse(catalog)).toEqual(catalog);
   });
 });

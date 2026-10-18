@@ -1,6 +1,9 @@
 import type { INestApplication } from '@nestjs/common';
+import { staffMemberships, withTenant } from '@vertex-shifa/db';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runTenantCommand } from '../src/cli/tenant-commands.js';
+import { DATABASE } from '../src/core/database/database.module.js';
+import { AuthService } from '../src/modules/platform/identity/index.js';
 import { TenancyService } from '../src/modules/platform/tenancy/index.js';
 import { createTestApp } from './app.js';
 
@@ -18,10 +21,14 @@ afterAll(() => app.close());
 async function run(...argv: string[]) {
   const out: string[] = [];
   const err: string[] = [];
-  const code = await runTenantCommand(argv, tenancy, {
-    out: (text) => out.push(text),
-    err: (text) => err.push(text),
-  });
+  const code = await runTenantCommand(
+    argv,
+    { tenancy, auth: app.get(AuthService) },
+    {
+      out: (text) => out.push(text),
+      err: (text) => err.push(text),
+    },
+  );
   return { code, out: out.join('\n'), err: err.join('\n') };
 }
 
@@ -39,6 +46,38 @@ describe('tenant CLI', () => {
     expect(listed.code).toBe(0);
     const ids = (JSON.parse(listed.out) as { items: { id: string }[] }).items.map((t) => t.id);
     expect(ids).toContain(tenant.id);
+  });
+
+  it('invites the first owner with the tenant (S02 acceptance step 1), or neither', async () => {
+    const created = await run(
+      'tenant:create',
+      '--name-ar',
+      'عيادة تجريبية',
+      '--owner-phone',
+      '0930 000 101',
+      '--owner-name',
+      'مالك تجريبي',
+      '--reason',
+      'test',
+    );
+    expect(created.code).toBe(0);
+    const tenant = JSON.parse(created.out) as { id: string };
+    const owners = await withTenant(app.get(DATABASE), tenant.id, (tx) =>
+      tx.select().from(staffMemberships),
+    );
+    expect(owners).toEqual([
+      expect.objectContaining({ status: 'invited', roles: ['owner'], invitedName: 'مالك تجريبي' }),
+    ]);
+    const half = await run(
+      'tenant:create',
+      '--name-ar',
+      'عيادة تجريبية',
+      '--owner-phone',
+      '0930 000 102',
+      '--reason',
+      'test',
+    );
+    expect(half).toMatchObject({ code: 1, err: 'VALIDATION_FAILED: invalid owner-name' });
   });
 
   it('closes a tenant, then refuses to reactivate it', async () => {

@@ -34,7 +34,7 @@ class ProbeController {
   constructor(@Inject(DATABASE) private readonly db: Database) {}
 
   @Get('staff')
-  @StaffRoute('probe.read')
+  @StaffRoute('tenant.read')
   @NoFeature()
   staff() {}
 

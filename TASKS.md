@@ -13,15 +13,15 @@ Spec: `docs/specs/S02-identity-access-and-devices.md` (Approved 2026-10-18). ADR
 - [x] Checks, reviewer, acceptance (summary), PR with auto-merge
 
 ## PR 2 — API: sign-in, devices and sessions (`feat/s02-identity-api`)
-- [ ] Config: `IDENTITY_HASH_KEY`, `IDENTITY_ENCRYPTION_KEY`, token signing keys; `.env.example` fake values
-- [ ] Identity module: proof of work, `OtpSender` port and fake (refused in production), OTP challenges (ADR 0022 limits), sign-in with lock, tickets (single use), password set, registration options, device registration, device token challenge and token, enrollments, staff sessions (nonce, signatures, refresh, end), JWKS, `/api/me`, `PUT /api/me/password`, `/api/devices/current`, wiped
-- [ ] Session guard in `core/access`: staff access tokens, `@DeviceRoute()`, `@TicketRoute(purpose)`, permissions from `effectivePermissions` with branch scope, tenant status rules; `StaffActor` reshaped; console routes stay fail-closed
-- [ ] Access module: membership reads needed by sign-in and sessions; `GET /api/access/catalog`
-- [ ] Event `staff.invitation_created.v1` in the outbox; CLI: `tenant:create --owner-phone --owner-name` (owner invitation); `account:authorize-password-reset`, `account:change-phone`
-- [ ] S01 rule 7: `FACILITY_HAS_DEVICES`; onboarding wizard gives null-branch devices the first branch (rule 28)
-- [ ] HTTP access tests of every S01 route (success, 401, 403, another tenant) and of the PR's routes; service tests from the spec's list
-- [ ] OpenAPI regenerated, clinic API types regenerated; `AGENTS.md` commands
-- [ ] Checks, reviewer, acceptance (summary), PR with auto-merge
+- [x] Config: `IDENTITY_HASH_KEY`, `IDENTITY_TOKEN_KEY` (Ed25519), proof-of-work difficulty, `OTP_SENDER` (fake refused in production); `.env.example` fake values. `IDENTITY_ENCRYPTION_KEY` moves to PR 4, with its first use (the TOTP secret)
+- [x] Identity module: proof of work, `OtpSender` port and fake (refused in production), OTP challenges (ADR 0022 limits), sign-in with lock, tickets (single use), password set, registration options, device registration, device token challenge and token, enrollments, staff sessions (nonce, signatures, refresh, end), JWKS, `/api/me`, `PUT /api/me/password`, `/api/devices/current`, wiped. `/api/me` without the practitioner (PR 3, health layer); `POST /api/sessions/challenge` added for the session nonce
+- [x] Session guard in `core/access`: staff access tokens, `@DeviceRoute()`, `@TicketRoute(purpose)`, permissions from `effectivePermissions` with branch scope, tenant status rules; `StaffActor` reshaped; console routes stay fail-closed
+- [x] Access module: membership reads needed by sign-in and sessions; `GET /api/access/catalog`
+- [x] Event `staff.invitation_created.v1` in the outbox; CLI: `tenant:create --owner-phone --owner-name` (owner invitation); `account:authorize-password-reset`, `account:change-phone`
+- [x] S01 rule 7: `FACILITY_HAS_DEVICES`; onboarding wizard gives null-branch devices the first branch (rule 28)
+- [x] HTTP access tests of every S01 route (success, 401, 403, another tenant) and of the PR's routes; service tests from the spec's list
+- [x] OpenAPI regenerated, clinic API types regenerated; `AGENTS.md` commands
+- [x] Checks, reviewer, acceptance (summary), PR with auto-merge
 
 ## PR 3 — API: staff, practitioners, devices and security settings (`feat/s02-staff-api`)
 - [ ] Invitations (create, resend, cancel; outbox event), access changes (`LAST_OWNER`, `PERMISSION_NOT_GRANTABLE`, `CONFLICT`), deactivate and reactivate (ending sessions and enrollments), staff password reset, staff list and detail

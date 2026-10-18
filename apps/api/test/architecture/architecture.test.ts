@@ -86,7 +86,7 @@ describe('the rules catch', () => {
 
   abstract class BaseController {
     @Get('inherited')
-    @StaffRoute('probe.read')
+    @StaffRoute('tenant.read')
     @NoFeature()
     inherited() {}
   }
@@ -120,7 +120,7 @@ describe('the rules catch', () => {
   @Controller('console/probe')
   class ConsoleBrokenController {
     @Get()
-    @StaffRoute('probe.read')
+    @StaffRoute('tenant.read')
     @NoFeature()
     staffInConsole() {}
   }
@@ -135,7 +135,7 @@ describe('the rules catch', () => {
   @Controller('routed')
   class RoutedController {
     @Get()
-    @StaffRoute('probe.read')
+    @StaffRoute('tenant.read')
     @NoFeature()
     staffRouted() {}
   }
@@ -163,7 +163,7 @@ describe('the rules catch', () => {
     const violations = routeViolations(routes);
     expect(violations).toEqual(
       expect.arrayContaining([
-        'BrokenController.bare declares no access (@Public, @PatientRoute, @StaffRoute or @ConsoleRoute)',
+        'BrokenController.bare declares no access (@Public, @PatientRoute, @StaffRoute, @ConsoleRoute, @DeviceRoute or @TicketRoute)',
         'BrokenController.bare declares no entitlement (@RequiresFeature or @NoFeature)',
         'BrokenController.bare declares no response schema with an id (@SerializeOptions({ schema }))',
         'BrokenController.consoleOutside: console routes, and only they, live under /api/console/',

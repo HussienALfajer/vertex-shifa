@@ -31,7 +31,13 @@ import {
 } from '@vertex-shifa/db';
 import { and, asc, count, desc, eq, isNotNull, isNull, ne, type SQL } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
-import type { Actor, PlatformActor, StaffActor, SystemActor } from '../../../core/access/actor.js';
+import {
+  type Actor,
+  holds,
+  type PlatformActor,
+  type StaffActor,
+  type SystemActor,
+} from '../../../core/access/actor.js';
 import { DATABASE } from '../../../core/database/database.module.js';
 import { RateLimiter } from '../../../core/rate-limit/rate-limiter.js';
 import { recordAudit } from '../audit/index.js';
@@ -40,6 +46,19 @@ import type { MapLinkResolver } from './map-link-resolver.js';
 
 /** Injection token of the map link resolver, so tests can route it to a fake server. */
 export const MAP_LINK_RESOLVER = Symbol('MapLinkResolver');
+
+/**
+ * The registered computers of a branch, as the branch rules need them (spec S02 rules 28 and 32).
+ * The identity module, which owns devices, provides it; tenancy only declares it.
+ */
+export interface FacilityDevices {
+  /** Active devices registered to the branch. */
+  countActive(tx: Transaction, facilityId: string): Promise<number>;
+  /** Gives the tenant's devices registered without a branch (onboarding) this branch. */
+  placeUnplaced(tx: Transaction, facilityId: string): Promise<void>;
+}
+
+export const FACILITY_DEVICES = Symbol('FacilityDevices');
 
 type TenantRow = typeof tenants.$inferSelect;
 type FacilityRow = typeof facilities.$inferSelect;
@@ -148,6 +167,7 @@ export class TenancyService {
   constructor(
     @Inject(DATABASE) private readonly db: Database,
     @Inject(MAP_LINK_RESOLVER) private readonly mapLinks: MapLinkResolver,
+    @Inject(FACILITY_DEVICES) private readonly devices: FacilityDevices,
   ) {}
 
   // Clinic: the session's tenant.
@@ -302,6 +322,8 @@ export class TenancyService {
         .values({ tenantId: tenant.id, type: 'clinic', ...facilityColumns(input) })
         .returning();
       const facility = toFacility(row as FacilityRow);
+      // Rule 28 (S02): computers registered during onboarding get the first branch.
+      await this.devices.placeUnplaced(tx, facility.id);
       await recordAudit(tx, tenant.id, {
         actor,
         action: 'facility.created',
@@ -312,7 +334,11 @@ export class TenancyService {
     });
   }
 
+  /** The owner, or a member holding `facility.manage` in this branch (S02 rule 7). */
   updateFacility(actor: StaffActor, id: string, input: UpdateFacility): Promise<Facility> {
+    if (!holds(actor, 'tenant.manage') && !holds(actor, 'facility.manage', id)) {
+      throw new DomainError('FORBIDDEN', 'The branch is outside the member scope');
+    }
     return this.writeSetup(actor, async (tx, tenant) => {
       const current = await this.facilityRow(tx, id, { lock: true });
       assertCurrent(current, input.expectedUpdatedAt);
@@ -333,7 +359,10 @@ export class TenancyService {
     });
   }
 
-  /** Rule 7: the last branch in use is never archived. Archiving twice changes nothing. */
+  /**
+   * Rule 7: the last branch in use, or a branch with active computers (S02 rule 32), is never
+   * archived. Archiving twice changes nothing.
+   */
   archiveFacility(actor: StaffActor, id: string): Promise<Facility> {
     return this.writeSetup(actor, async (tx, tenant) => {
       const current = await this.facilityRow(tx, id, { lock: true });
@@ -344,6 +373,9 @@ export class TenancyService {
         .where(and(isNull(facilities.archivedAt), ne(facilities.id, id)));
       if (!others?.value) {
         throw new DomainError('LAST_ACTIVE_FACILITY', 'The last branch in use cannot be archived');
+      }
+      if ((await this.devices.countActive(tx, id)) > 0) {
+        throw new DomainError('FACILITY_HAS_DEVICES', 'The branch has active devices');
       }
       return this.setArchived(tx, actor, tenant.id, current, new Date());
     });
@@ -410,8 +442,15 @@ export class TenancyService {
     };
   }
 
-  /** Rule 1: in `onboarding`, without a branch (the wizard adds it). One tenant per call. */
-  createTenant(actor: StaffOfVertex, input: CreateTenant): Promise<Tenant> {
+  /**
+   * Rule 1: in `onboarding`, without a branch (the wizard adds it). One tenant per call. `then`
+   * runs in the same transaction (the first owner's invitation, S02 rule 3).
+   */
+  createTenant(
+    actor: StaffOfVertex,
+    input: CreateTenant,
+    then?: (tx: Transaction, tenantId: string) => Promise<unknown>,
+  ): Promise<Tenant> {
     const id = uuidv7();
     return withTenant(this.db, id, async (tx) => {
       const [row] = await tx
@@ -425,6 +464,7 @@ export class TenancyService {
         entityId: id,
         reason: input.reason,
       });
+      await then?.(tx, id);
       return toTenant(row as TenantRow);
     });
   }
@@ -541,6 +581,31 @@ export class TenancyService {
     });
     return toFacility(row as FacilityRow);
   }
+}
+
+/**
+ * The tenant row in the caller's tenant transaction, for the modules that need its status. With
+ * `share`, it waits for and holds off the tenant's setup writes (which lock it for update), so a
+ * check of its branches stays true until the caller commits.
+ */
+export async function readTenant(
+  tx: Transaction,
+  id: string,
+  options: { lock?: 'share' } = {},
+): Promise<TenantRow> {
+  const query = tx.select().from(tenants).where(eq(tenants.id, id));
+  const [row] = await (options.lock ? query.for('share') : query);
+  if (!row) throw notFound('Tenant');
+  return row;
+}
+
+/** The tenant's branches in use, by name, in the caller's tenant transaction. */
+export function readFacilitiesInUse(tx: Transaction): Promise<{ id: string; name: string }[]> {
+  return tx
+    .select({ id: facilities.id, name: facilities.name })
+    .from(facilities)
+    .where(isNull(facilities.archivedAt))
+    .orderBy(asc(facilities.name), asc(facilities.id));
 }
 
 function logoFields(logo: { byteSize: number; width: number; height: number; sha256: string }) {

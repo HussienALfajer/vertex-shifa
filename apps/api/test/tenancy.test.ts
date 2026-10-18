@@ -20,6 +20,7 @@ import { DATABASE } from '../src/core/database/database.module.js';
 import { listRoutes } from '../src/core/routes.js';
 import { TenancyService } from '../src/modules/platform/tenancy/index.js';
 import { createTestApp } from './app.js';
+import { ownerActor } from './staff.js';
 
 // Synthetic tenants, branches and phone numbers only; areas are the seeded public place names.
 
@@ -56,7 +57,7 @@ async function refusal(work: Promise<unknown> | (() => Promise<unknown>)): Promi
 
 async function newTenant(): Promise<{ tenant: Tenant; staff: StaffActor }> {
   const tenant = await tenancy.createTenant(SYSTEM, { nameAr: 'عيادة تجريبية', reason: 'test' });
-  return { tenant, staff: { kind: 'staff', tenantId: tenant.id, staffId: uuidv7() } };
+  return { tenant, staff: ownerActor(tenant.id) };
 }
 
 const branch = (fields: Partial<CreateFacility> = {}): CreateFacility => ({

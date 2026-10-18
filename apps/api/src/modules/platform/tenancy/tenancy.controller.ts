@@ -42,7 +42,7 @@ import { NoFeature, StaffRoute } from '../../../core/access/access.decorators.js
 import { CurrentStaff, type StaffActor } from '../../../core/access/actor.js';
 import { TenancyService } from './tenancy.service.js';
 
-// Permissions (S01; the catalog and role presets arrive with S02): `tenant.read` every staff role,
+// Permissions (catalog and presets in `packages/contracts/src/access.ts`): `tenant.read` every role,
 // `tenant.manage` the owner only, `facility.manage` per branch, granted by the owner.
 
 const idParam = { schema: z.uuid() };

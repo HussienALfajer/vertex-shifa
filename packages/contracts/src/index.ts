@@ -4,6 +4,7 @@ export * from './audit.js';
 export * from './console-identity.js';
 export * from './coordinates.js';
 export * from './errors.js';
+export * from './events.js';
 export * from './health-check.js';
 export * from './identity.js';
 export * from './money.js';

@@ -7,4 +7,4 @@ export {
   type TableScope,
   tableRegistry,
 } from './schema/registry.js';
-export { TENANT_SETTING, withTenant } from './tenant-context.js';
+export { enterTenant, TENANT_SETTING, withTenant } from './tenant-context.js';
