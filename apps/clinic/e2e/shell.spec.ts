@@ -47,8 +47,9 @@ test.describe('clinic shell', () => {
       await page.setViewportSize({ width, height: 800 });
       await page.goto('/');
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      // A string: the E2E is typed for Node, without the DOM's globals.
+      const overflow = await page.evaluate<number>(
+        'document.documentElement.scrollWidth - document.documentElement.clientWidth',
       );
       expect(overflow, `${width}px`).toBe(0);
       const mark = await page.getByRole('banner').locator('svg').first().boundingBox();

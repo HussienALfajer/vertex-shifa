@@ -6,8 +6,9 @@ import { screenshot } from './screenshot.js';
 // Enter in forms, Save and unsaved changes, feedback that never moves the page, back navigation,
 // the wizard's stepper and the fonts.
 
+// Page code as strings: the E2E is typed for Node, without the DOM's globals.
 const background = (page: Page) =>
-  page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  page.evaluate<string>('getComputedStyle(document.body).backgroundColor');
 
 test.describe('theme', () => {
   test('follows the system until pressed, then keeps the choice from the first paint', async ({
@@ -166,7 +167,7 @@ test.describe('redirects', () => {
       state.facilities.push(facility({ name: 'فرع السوق' }));
     });
     await page.clock.fastForward(31_000);
-    await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')));
+    await page.evaluate("window.dispatchEvent(new Event('visibilitychange'))");
     await expect(page).toHaveURL('/settings/branches');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('الفروع');
   });
@@ -238,16 +239,10 @@ test.describe('fonts', () => {
     await mockApi(page, { tenant: tenant({ status: 'active' }), facilities: [facility()] });
     await page.goto('/');
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    const preloads = await page
-      .locator('link[rel="preload"][as="font"]')
-      .evaluateAll((links) => links.map((link) => (link as HTMLLinkElement).href));
-    expect(preloads).toHaveLength(6);
-    const loaded = await page.evaluate(async () => {
-      await document.fonts.ready;
-      return [...document.fonts]
-        .filter((face) => face.status === 'loaded')
-        .map((face) => `${face.family} ${face.weight}`);
-    });
+    await expect(page.locator('link[rel="preload"][as="font"]')).toHaveCount(6);
+    const loaded = await page.evaluate<string[]>(`document.fonts.ready.then((fonts) =>
+      [...fonts].filter((face) => face.status === 'loaded').map((face) => face.family + ' ' + face.weight),
+    )`);
     for (const face of ['Noto Kufi Arabic 400', 'Noto Kufi Arabic 700', 'Montserrat 400']) {
       expect(loaded.map((name) => name.replaceAll(/["']/g, ''))).toContain(face);
     }
