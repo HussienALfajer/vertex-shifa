@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { permissionAdjustmentsSchema, type Role, rolesSchema } from './access.js';
+import {
+  permissionAdjustmentsSchema,
+  permissionKeySchema,
+  type Role,
+  roleSchema,
+  rolesSchema,
+} from './access.js';
 import { DomainError } from './errors.js';
 import { mobilePhoneNumberSchema } from './phone.js';
 import { practitionerProfileInputSchema } from './practitioners.js';
@@ -120,4 +126,82 @@ export type ChangeStaffAccess = z.infer<typeof changeStaffAccessSchema>;
  */
 export function assertOwnerRemains(activeOwners: number): void {
   if (activeOwners < 1) throw new DomainError('LAST_OWNER', 'The tenant needs an active owner');
+}
+
+// Routes of staff management (spec S02 "API and commands").
+
+const instant = z.iso.datetime();
+
+/**
+ * A member as the staff screens show them. `name` is the name the owner typed until the person
+ * accepts, then the person's own: an invitation never reveals what an account already holds.
+ */
+export const staffMemberSchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string(),
+    phone: z.string(),
+    status: membershipStatusSchema,
+    roles: z.array(roleSchema),
+    branchScope: branchScopeSchema,
+    adjustments: z.object({
+      granted: z.array(permissionKeySchema),
+      revoked: z.array(permissionKeySchema),
+    }),
+    /** What the member holds (`effectivePermissions`). */
+    permissions: z.array(permissionKeySchema),
+    /** The doctor profile, while the member has the doctor role. */
+    practitionerId: z.uuid().nullable(),
+    invitationExpiresAt: instant.nullable(),
+    invitationMessageStatus: invitationMessageStatusSchema.nullable(),
+    acceptedAt: instant.nullable(),
+    deactivatedAt: instant.nullable(),
+    createdAt: instant,
+    updatedAt: instant,
+    /** Set on a cancelled invitation. */
+    archivedAt: instant.nullable(),
+  })
+  .meta({ id: 'StaffMember' });
+
+export type StaffMember = z.infer<typeof staffMemberSchema>;
+
+export const listStaffQuerySchema = z
+  .object({
+    status: membershipStatusSchema.optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    pageSize: z.coerce.number().int().min(1).max(100).default(50),
+  })
+  .meta({ id: 'ListStaffQuery' });
+
+export const staffPageSchema = z
+  .object({
+    items: z.array(staffMemberSchema),
+    total: z.int().min(0),
+    page: z.int().min(1),
+    pageSize: z.int().min(1),
+  })
+  .meta({ id: 'StaffPage' });
+
+export type StaffPage = z.infer<typeof staffPageSchema>;
+
+/** Why the owner deactivates a member: kept in the audit entry. */
+export const deactivateStaffSchema = z
+  .object({ reason: z.string().trim().min(2).max(500) })
+  .meta({ id: 'DeactivateStaff' });
+
+export const passwordResetAuthorizedSchema = z
+  .object({ passwordResetAuthorizedUntil: instant })
+  .meta({ id: 'PasswordResetAuthorized' });
+
+/** An owner-authorized password reset stays open 72 hours (rule 16). */
+export const passwordResetWindowHours = 72;
+
+/** When an invitation was last sent, from its expiry (rule 4). */
+export function invitationSentAt(expiresAt: Date): Date {
+  return new Date(expiresAt.getTime() - invitationPolicy.ttlDays * 86_400_000);
+}
+
+/** Whether an invitation sent at `sentAt` may be sent again at `now` (10-minute cooldown). */
+export function canResendInvitation(sentAt: Date, now: Date): boolean {
+  return now.getTime() - sentAt.getTime() >= invitationPolicy.resendCooldownMinutes * 60_000;
 }

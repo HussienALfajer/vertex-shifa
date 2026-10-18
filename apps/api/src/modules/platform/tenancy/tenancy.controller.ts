@@ -1,14 +1,9 @@
 import {
   Body,
-  type CallHandler,
   Controller,
   Delete,
-  type ExecutionContext,
   Get,
-  HttpException,
   Inject,
-  Injectable,
-  type NestInterceptor,
   Param,
   Patch,
   Post,
@@ -35,35 +30,18 @@ import {
   tenantSchema,
   updateFacilitySchema,
   updateTenantProfileSchema,
+  updateTenantSecuritySchema,
 } from '@vertex-shifa/contracts';
-import { catchError, type Observable, throwError } from 'rxjs';
 import { z } from 'zod';
 import { NoFeature, StaffRoute } from '../../../core/access/access.decorators.js';
 import { CurrentStaff, type StaffActor } from '../../../core/access/actor.js';
+import { RejectedUpload } from '../../../core/uploads/rejected-upload.js';
 import { TenancyService } from './tenancy.service.js';
 
 // Permissions (catalog and presets in `packages/contracts/src/access.ts`): `tenant.read` every role,
 // `tenant.manage` the owner only, `facility.manage` per branch, granted by the owner.
 
 const idParam = { schema: z.uuid() };
-
-/** An upload multer refused (too large, extra parts, wrong field) is a rejected file. */
-@Injectable()
-class RejectedUpload implements NestInterceptor {
-  intercept(_: ExecutionContext, next: CallHandler): Observable<unknown> {
-    return next
-      .handle()
-      .pipe(
-        catchError((error: unknown) =>
-          throwError(() =>
-            error instanceof HttpException
-              ? new DomainError('FILE_REJECTED', 'Logo upload refused')
-              : error,
-          ),
-        ),
-      );
-  }
-}
 
 /** The clinic's own tenant: profile, logo, onboarding. */
 @Controller('tenant')
@@ -86,6 +64,17 @@ export class TenantController {
     @Body({ schema: updateTenantProfileSchema }) input: z.output<typeof updateTenantProfileSchema>,
   ) {
     return this.tenancy.updateProfile(staff, input);
+  }
+
+  @Patch('security')
+  @StaffRoute('tenant.manage')
+  @SerializeOptions({ schema: tenantSchema })
+  updateSecurity(
+    @CurrentStaff() staff: StaffActor,
+    @Body({ schema: updateTenantSecuritySchema })
+    input: z.output<typeof updateTenantSecuritySchema>,
+  ) {
+    return this.tenancy.updateSecurity(staff, input);
   }
 
   @Put('logo')

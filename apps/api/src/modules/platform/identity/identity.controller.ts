@@ -5,8 +5,11 @@ import {
   Headers,
   Inject,
   Ip,
+  Param,
+  Patch,
   Post,
   Put,
+  Query,
   SerializeOptions,
 } from '@nestjs/common';
 import {
@@ -20,6 +23,9 @@ import {
   enrolledSchema,
   enrollSchema,
   jwksSchema,
+  listDevicesQuerySchema,
+  managedDeviceListSchema,
+  managedDeviceSchema,
   meSchema,
   nonceSchema,
   openSessionSchema,
@@ -33,6 +39,9 @@ import {
   registerDeviceSchema,
   registeredDeviceSchema,
   registrationOptionsSchema,
+  renameDeviceSchema,
+  revokeDeviceSchema,
+  revokedEnrollmentSchema,
   sessionEndedSchema,
   sessionTokensSchema,
   setPasswordSchema,
@@ -40,7 +49,7 @@ import {
   signInSchema,
   signInTicketSchema,
 } from '@vertex-shifa/contracts';
-import type { z } from 'zod';
+import { z } from 'zod';
 import {
   DeviceRoute,
   NoFeature,
@@ -58,6 +67,7 @@ import {
 } from '../../../core/access/actor.js';
 import { DEVICE_TOKEN_HEADER } from '../../../core/access/session-verifier.js';
 import { AuthService } from './auth.service.js';
+import { DeviceManagementService } from './device-management.service.js';
 import { DevicesService } from './devices.service.js';
 import { SessionsService } from './sessions.service.js';
 import { TokenSigner } from './tokens.js';
@@ -219,6 +229,68 @@ export class DevicesController {
     @Body({ schema: enrollSchema }) input: z.output<typeof enrollSchema>,
   ) {
     return this.devices.enroll(device, ticket, input);
+  }
+}
+
+const idParam = { schema: z.uuid() };
+
+/**
+ * The clinic's computers as staff with `devices.manage` manage them, for the branches in their
+ * scope (rule 29). Registered after `DevicesController`, whose `current` routes come first.
+ */
+@Controller('devices')
+@NoFeature()
+export class DeviceManagementController {
+  constructor(@Inject(DeviceManagementService) private readonly devices: DeviceManagementService) {}
+
+  @Get()
+  @StaffRoute('devices.manage')
+  @SerializeOptions({ schema: managedDeviceListSchema })
+  list(
+    @CurrentStaff() staff: StaffActor,
+    @Query({ schema: listDevicesQuerySchema }) query: z.output<typeof listDevicesQuerySchema>,
+  ) {
+    return this.devices.list(staff, query);
+  }
+
+  @Get(':id')
+  @StaffRoute('devices.manage')
+  @SerializeOptions({ schema: managedDeviceSchema })
+  get(@CurrentStaff() staff: StaffActor, @Param('id', idParam) id: string) {
+    return this.devices.get(staff, id);
+  }
+
+  @Patch(':id')
+  @StaffRoute('devices.manage')
+  @SerializeOptions({ schema: managedDeviceSchema })
+  rename(
+    @CurrentStaff() staff: StaffActor,
+    @Param('id', idParam) id: string,
+    @Body({ schema: renameDeviceSchema }) input: z.output<typeof renameDeviceSchema>,
+  ) {
+    return this.devices.rename(staff, id, input.name);
+  }
+
+  @Post(':id/revoke')
+  @StaffRoute('devices.manage')
+  @SerializeOptions({ schema: managedDeviceSchema })
+  revoke(
+    @CurrentStaff() staff: StaffActor,
+    @Param('id', idParam) id: string,
+    @Body({ schema: revokeDeviceSchema }) input: z.output<typeof revokeDeviceSchema>,
+  ) {
+    return this.devices.revoke(staff, id, input);
+  }
+
+  @Post(':id/enrollments/:enrollmentId/revoke')
+  @StaffRoute('devices.manage')
+  @SerializeOptions({ schema: revokedEnrollmentSchema })
+  removeMember(
+    @CurrentStaff() staff: StaffActor,
+    @Param('id', idParam) id: string,
+    @Param('enrollmentId', idParam) enrollmentId: string,
+  ) {
+    return this.devices.removeMember(staff, id, enrollmentId);
   }
 }
 

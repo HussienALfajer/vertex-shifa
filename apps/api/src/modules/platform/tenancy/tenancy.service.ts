@@ -4,6 +4,7 @@ import {
   assertTenantStatusChange,
   assertTenantWritable,
   type ChangeTenantStatus,
+  type ClinicalReadScope,
   type Coordinates,
   type CreateFacility,
   type CreateTenant,
@@ -19,6 +20,7 @@ import {
   type TenantStatus,
   type UpdateFacility,
   type UpdateTenantProfile,
+  type UpdateTenantSecurity,
 } from '@vertex-shifa/contracts';
 import {
   areas,
@@ -38,6 +40,7 @@ import {
   type StaffActor,
   type SystemActor,
 } from '../../../core/access/actor.js';
+import { assertCurrent, nextUpdatedAt } from '../../../core/concurrency/updated-at.js';
 import { DATABASE } from '../../../core/database/database.module.js';
 import { RateLimiter } from '../../../core/rate-limit/rate-limiter.js';
 import { recordAudit } from '../audit/index.js';
@@ -84,6 +87,8 @@ function toTenant(row: TenantRow): Tenant {
       status: row.status as TenantStatus,
       directoryListed: row.directoryListed,
     }),
+    idleLockMinutes: row.idleLockMinutes,
+    clinicalReadScope: row.clinicalReadScope as ClinicalReadScope,
     createdAt: iso(row.createdAt),
     updatedAt: iso(row.updatedAt),
     archivedAt: isoOrNull(row.archivedAt),
@@ -122,21 +127,6 @@ function facilityColumns(input: CreateFacility | UpdateFacility) {
     displayNameFormat: input.displayNameFormat,
     displayCallSound: input.displayCallSound,
   };
-}
-
-/** Rule 16: an edit carries the `updatedAt` the client read; any other value is a `CONFLICT`. */
-function assertCurrent(row: { updatedAt: Date }, expectedUpdatedAt: string) {
-  if (row.updatedAt.getTime() !== Date.parse(expectedUpdatedAt)) {
-    throw new DomainError('CONFLICT', 'The record changed since it was read');
-  }
-}
-
-/**
- * The `updatedAt` of a change to a locked row: now, but always at least a millisecond past the
- * previous value, so two changes within one millisecond never look like one (rule 16).
- */
-function nextUpdatedAt(row: { updatedAt: Date }): Date {
-  return new Date(Math.max(Date.now(), row.updatedAt.getTime() + 1));
 }
 
 const notFound = (what: string) => new DomainError('NOT_FOUND', `${what} not found`);
@@ -189,6 +179,36 @@ export class TenancyService {
       await recordAudit(tx, tenant.id, {
         actor,
         action: 'tenant.profile_updated',
+        entityType: 'tenant',
+        entityId: tenant.id,
+      });
+      return toTenant(row as TenantRow);
+    });
+  }
+
+  /**
+   * The owner's security settings (spec S02 rule 25): idle-lock minutes and the clinical read scope.
+   * A suspended clinic may still change them (S02 rule 33); a closed one may not.
+   */
+  updateSecurity(actor: StaffActor, input: UpdateTenantSecurity): Promise<Tenant> {
+    return withTenant(this.db, actor.tenantId, async (tx) => {
+      const tenant = await this.tenantRow(tx, actor.tenantId, { lock: true });
+      if (tenant.status === 'closed') {
+        throw new DomainError('TENANT_CLOSED', 'The tenant is closed');
+      }
+      assertCurrent(tenant, input.expectedUpdatedAt);
+      const [row] = await tx
+        .update(tenants)
+        .set({
+          idleLockMinutes: input.idleLockMinutes,
+          clinicalReadScope: input.clinicalReadScope,
+          updatedAt: nextUpdatedAt(tenant),
+        })
+        .where(eq(tenants.id, tenant.id))
+        .returning();
+      await recordAudit(tx, tenant.id, {
+        actor,
+        action: 'tenant.security_updated',
         entityType: 'tenant',
         entityId: tenant.id,
       });
@@ -586,15 +606,17 @@ export class TenancyService {
 /**
  * The tenant row in the caller's tenant transaction, for the modules that need its status. With
  * `share`, it waits for and holds off the tenant's setup writes (which lock it for update), so a
- * check of its branches stays true until the caller commits.
+ * check of its branches stays true until the caller commits. With `no key update`, it also
+ * serializes the caller with the other writers of the tenant (staff changes, so rules such as the
+ * last owner hold) and with `share` readers, without blocking inserts that reference the tenant.
  */
 export async function readTenant(
   tx: Transaction,
   id: string,
-  options: { lock?: 'share' } = {},
+  options: { lock?: 'share' | 'no key update' } = {},
 ): Promise<TenantRow> {
   const query = tx.select().from(tenants).where(eq(tenants.id, id));
-  const [row] = await (options.lock ? query.for('share') : query);
+  const [row] = await (options.lock ? query.for(options.lock) : query);
   if (!row) throw notFound('Tenant');
   return row;
 }

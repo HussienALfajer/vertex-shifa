@@ -3,6 +3,7 @@ import { idleLockMinutesSchema, permissionKeySchema, roleSchema } from './access
 import { commonPasswords } from './common-passwords.js';
 import { DomainError } from './errors.js';
 import { mobilePhoneNumberSchema } from './phone.js';
+import { practitionerSchema } from './practitioners.js';
 import { tenantStatusSchema } from './tenancy.js';
 
 /**
@@ -469,6 +470,8 @@ export const meSchema = z
     permissions: z.array(permissionKeySchema),
     deviceId: z.uuid(),
     facilityId: z.uuid().nullable(),
+    /** The member's doctor profile, while they have the doctor role. */
+    practitioner: practitionerSchema.nullable(),
   })
   .meta({ id: 'Me' });
 
@@ -502,6 +505,65 @@ export const jwksSchema = z
     ),
   })
   .meta({ id: 'Jwks' });
+
+// Routes of device management (spec S02 rules 29 and 32).
+
+/** A registered computer as the devices screen shows it, with its enrolled members. */
+export const managedDeviceSchema = z
+  .object({
+    id: z.uuid(),
+    facilityId: z.uuid().nullable(),
+    name: z.string(),
+    status: deviceStatusSchema,
+    os: z.string(),
+    appVersion: z.string(),
+    lastSeenAt: instant,
+    registeredAt: instant,
+    revokedAt: instant.nullable(),
+    wipedAt: instant.nullable(),
+    updatedAt: instant,
+    members: z.array(
+      z.object({
+        enrollmentId: z.uuid(),
+        membershipId: z.uuid(),
+        name: z.string(),
+        roles: z.array(roleSchema),
+        lastConfirmedAt: instant,
+      }),
+    ),
+  })
+  .meta({ id: 'ManagedDevice' });
+
+export type ManagedDevice = z.infer<typeof managedDeviceSchema>;
+
+export const managedDeviceListSchema = z
+  .array(managedDeviceSchema)
+  .meta({ id: 'ManagedDeviceList' });
+
+export const listDevicesQuerySchema = z
+  .object({ status: deviceStatusSchema.optional() })
+  .meta({ id: 'ListDevicesQuery' });
+
+export const renameDeviceSchema = z.object({ name: deviceNameSchema }).meta({ id: 'RenameDevice' });
+
+/** Rule 29: a reason category and free text, kept in the audit entry. */
+export const revokeDeviceSchema = z
+  .object({ category: deviceRevokeCategorySchema, reason: z.string().trim().min(2).max(500) })
+  .meta({ id: 'RevokeDevice' });
+
+export type RevokeDevice = z.infer<typeof revokeDeviceSchema>;
+
+export const revokedEnrollmentSchema = z
+  .object({
+    id: z.uuid(),
+    deviceId: z.uuid(),
+    membershipId: z.uuid(),
+    revokedAt: instant,
+    revokeReason: enrollmentRevokeReasonSchema,
+  })
+  .meta({ id: 'RevokedEnrollment' });
+
+export type RevokedEnrollment = z.infer<typeof revokedEnrollmentSchema>;
 
 // What the device and user keys sign: a domain tag, the nonce and the ids it binds, so a signature
 // is never valid for another purpose, device or enrollment.

@@ -263,8 +263,10 @@ export class DevicesService implements FacilityDevices {
     const now = new Date();
     return this.uniqueOrConflict(
       withTenant(this.db, device.tenantId, async (tx) => {
+        // Locked so a deactivation or a scope change meanwhile (rule 8) waits for this one, or
+        // this one reads the membership after it. The tenant first, as every writer locks it.
+        const tenant = await readTenant(tx, device.tenantId, { lock: 'share' });
         const row = await this.deviceRow(tx, device.deviceId, { lock: true });
-        const tenant = await readTenant(tx, device.tenantId);
         const member = await readMembership(tx, { accountId: ticket.accountId });
         assertMemberMayUse(member, tenant, row.facilityId);
         if (input.userPublicKey === row.publicKey) {

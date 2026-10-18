@@ -110,7 +110,7 @@ describe('tenancy routes over HTTP', () => {
     const routes = listRoutes(app).filter((route) =>
       /^\/api\/(tenant|facilities|areas|maps|console\/tenants)(\/|$)/.test(route.path),
     );
-    expect(routes).toHaveLength(19);
+    expect(routes).toHaveLength(20);
     for (const route of routes) {
       const path = route.path.replace(':id', uuidv7());
       const method = route.method.toLowerCase() as 'get' | 'post' | 'patch' | 'put' | 'delete';

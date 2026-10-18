@@ -101,6 +101,8 @@ export function tenant(overrides: Partial<Tenant> = {}): Tenant {
     onboardingCompletedAt: null,
     directoryListed: false,
     directoryShown: false,
+    idleLockMinutes: 15,
+    clinicalReadScope: 'branch',
     createdAt: created,
     updatedAt: created,
     archivedAt: null,

@@ -5,8 +5,10 @@ import {
   assertMembershipAction,
   assertOwnerRemains,
   canApplyMembershipAction,
+  canResendInvitation,
   changeStaffAccessSchema,
   createInvitationSchema,
+  invitationSentAt,
   type MembershipAction,
   type MembershipStatus,
   membershipStatusSchema,
@@ -165,5 +167,15 @@ describe('practitioner profiles', () => {
 
   it('prefill the professional name from the account name', () => {
     expect(defaultPractitionerNameAr(' طبيب تجريبي ')).toBe('د. طبيب تجريبي');
+  });
+});
+
+describe('invitation resend', () => {
+  it('finds when an invitation was sent from its 7-day expiry, and waits 10 minutes to resend', () => {
+    const sentAt = new Date('2026-10-19T10:00:00.000Z');
+    const expiresAt = new Date('2026-10-26T10:00:00.000Z');
+    expect(invitationSentAt(expiresAt)).toEqual(sentAt);
+    expect(canResendInvitation(sentAt, new Date('2026-10-19T10:09:59.999Z'))).toBe(false);
+    expect(canResendInvitation(sentAt, new Date('2026-10-19T10:10:00.000Z'))).toBe(true);
   });
 });

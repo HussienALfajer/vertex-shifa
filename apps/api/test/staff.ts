@@ -15,6 +15,7 @@ import {
   areas,
   type Database,
   otpChallenges,
+  specialties,
   staffMembershipFacilities,
   staffMemberships,
   withTenant,
@@ -285,8 +286,8 @@ export class StaffClient {
   }
 
   /**
-   * A member invited directly in the database (invitations arrive with the staff routes), who
-   * then signs in for the first time and enrolls on `device`.
+   * A member invited directly in the database (a fixture; `test/staff.test.ts` tests the route),
+   * who then signs in for the first time and enrolls on `device`.
    */
   async member(
     tenantId: string,
@@ -304,7 +305,7 @@ export class StaffClient {
     return { ...session, phone, membershipId };
   }
 
-  /** Writes an invitation as the staff routes will; answers the phone. */
+  /** Writes an invitation as the staff routes do; answers the phone. */
   async invite(
     tenantId: string,
     access: {
@@ -340,6 +341,23 @@ export class StaffClient {
     });
     await this.db.insert(accountTenantLinks).values({ accountId, linkedTenantId: tenantId });
     return phone;
+  }
+
+  /** Moves an invitation's last send 11 minutes back, past the resend cooldown (rule 4). */
+  async backdateInvitation(tenantId: string, membershipId: string): Promise<void> {
+    const sentAt = Date.now() - 11 * 60_000;
+    await withTenant(this.db, tenantId, (tx) =>
+      tx
+        .update(staffMemberships)
+        .set({ invitationExpiresAt: new Date(sentAt + invitationPolicy.ttlDays * 86_400_000) })
+        .where(eq(staffMemberships.id, membershipId)),
+    );
+  }
+
+  /** The first specialties of the seeded list, by position. */
+  async specialtyIds(count = 1): Promise<string[]> {
+    const rows = await this.db.select().from(specialties).orderBy(specialties.position);
+    return rows.slice(0, count).map((row) => row.id);
   }
 
   async membershipId(tenantId: string, phone: string): Promise<string> {

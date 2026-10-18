@@ -4,7 +4,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { listRoutes, type Route } from '../src/core/routes.js';
 import { createTestApp } from './app.js';
-import { type Session, StaffClient } from './staff.js';
+import { newPhone, type Session, StaffClient } from './staff.js';
 
 // The HTTP access tests of spec S02 (Acceptance, "Tests"): every staff route of S01 and S02 with
 // success, 401 without a session, 403 without the permission and another tenant's ids; console,
@@ -15,10 +15,14 @@ let client: StaffClient;
 let a: Awaited<ReturnType<StaffClient['clinic']>>;
 let b: Awaited<ReturnType<StaffClient['clinic']>>;
 let secondBranch: string;
+type Member = Awaited<ReturnType<StaffClient['member']>>;
+
 /** Reception: no `tenant.manage`, no `facility.manage`. */
-let reception: Session;
-/** A nurse whose `tenant.read` the owner revoked. */
-let withoutRead: Session;
+let reception: Member;
+/** A nurse whose `tenant.read` and `practitioners.read` the owner revoked. */
+let withoutRead: Member;
+/** A doctor invited by the owner, with a practitioner profile. */
+let doctor: { id: string; practitionerId: string };
 /** Reception granted `facility.manage`, scoped to the second branch only. */
 let branchManager: Session;
 
@@ -34,7 +38,7 @@ beforeAll(async () => {
   reception = await client.member(a.tenantId, a.owner.device, { roles: ['reception'] });
   withoutRead = await client.member(a.tenantId, a.owner.device, {
     roles: ['nurse'],
-    revoked: ['tenant.read'],
+    revoked: ['tenant.read', 'practitioners.read'],
   });
   const secondComputer = await client.register(
     await client.signIn(a.phone),
@@ -46,8 +50,27 @@ beforeAll(async () => {
     facilityIds: [secondBranch],
     granted: ['facility.manage'],
   });
+  // Invitations wait for the end of onboarding (rule 3).
+  await client.http
+    .post('/api/tenant/onboarding/complete')
+    .set('authorization', bearer(a.owner))
+    .expect(201);
+  const invited = await client.http
+    .post('/api/staff/invitations')
+    .set('authorization', bearer(a.owner))
+    .send(doctorInvitation(await client.specialtyIds()))
+    .expect(201);
+  doctor = { id: invited.body.id, practitionerId: invited.body.practitionerId };
 });
 afterAll(() => app.close());
+
+const doctorInvitation = (specialtyIds: string[]) => ({
+  phone: newPhone(),
+  name: 'طبيب تجريبي',
+  roles: ['doctor'],
+  branchScope: { allFacilities: true },
+  practitioner: { displayNameAr: 'د. طبيب تجريبي', gender: 'male', specialtyIds },
+});
 
 const staffRoutes = () => listRoutes(app).filter((route) => route.access?.kind === 'staff');
 
@@ -56,7 +79,7 @@ function call(route: Pick<Route, 'method' | 'path'>, path = route.path) {
   return client.http[method](path);
 }
 
-const withIds = (path: string, id: string) => path.replace(':id', id);
+const withIds = (path: string, id: string) => path.replaceAll(/:\w+/g, id);
 
 describe('staff routes', () => {
   it('answer 401 without a session, and with a device token or ticket in its place', async () => {
@@ -76,7 +99,10 @@ describe('staff routes', () => {
     for (const route of staffRoutes()) {
       const permissions = route.access?.kind === 'staff' ? route.access.permissions : [];
       if (permissions.length === 0) continue;
-      const member = permissions.includes('tenant.read') ? withoutRead : reception;
+      // Reception holds the read permissions every role has; the nurse lost them.
+      const member = permissions.some((p) => p === 'tenant.read' || p === 'practitioners.read')
+        ? withoutRead
+        : reception;
       const response = await call(route, withIds(route.path, a.branchId ?? ''))
         .set('authorization', bearer(member))
         .send({});
@@ -103,6 +129,52 @@ describe('staff routes', () => {
       .set('authorization', bearer(b.owner))
       .expect(200);
     expect(tenant.body.id).toBe(b.tenantId);
+  });
+
+  it("answer NOT_FOUND for another tenant's members, practitioners and computers", async () => {
+    const photo = await sharp({
+      create: { width: 200, height: 200, channels: 3, background: '#0b6b4f' },
+    })
+      .png()
+      .toBuffer();
+    const now = new Date().toISOString();
+    const bodies: Record<string, object> = {
+      'PATCH /api/staff/:id/access': {
+        roles: ['reception'],
+        branchScope: { allFacilities: true },
+        expectedUpdatedAt: now,
+      },
+      'POST /api/staff/:id/deactivate': { reason: 'سبب تجريبي' },
+      'PATCH /api/practitioners/:id': {
+        displayNameAr: 'د. طبيب تجريبي',
+        gender: 'female',
+        specialtyIds: await client.specialtyIds(),
+        expectedUpdatedAt: now,
+      },
+      'PATCH /api/devices/:id': { name: 'حاسوب تجريبي' },
+      'POST /api/devices/:id/revoke': { category: 'other', reason: 'سبب تجريبي' },
+    };
+    const ids: Record<string, string> = {
+      staff: reception.membershipId,
+      practitioners: doctor.practitionerId,
+      devices: a.owner.device.id,
+    };
+    const routes = staffRoutes().filter((route) =>
+      /^\/api\/(staff|practitioners|devices)\/:id/.test(route.path),
+    );
+    expect(routes.length).toBeGreaterThan(15);
+    for (const route of routes) {
+      const area = route.path.split('/')[2] ?? '';
+      const path = route.path
+        .replace(':enrollmentId', a.owner.enrollmentId)
+        .replace(':id', ids[area] ?? '');
+      const pending = call(route, path).set('authorization', bearer(b.owner));
+      const response = await (route.method === 'PUT' && route.path.endsWith('/photo')
+        ? pending.attach('file', photo, 'photo.png')
+        : pending.send(bodies[key(route)] ?? {}));
+      expect(response.status, key(route)).toBe(404);
+      expect(response.body.code, key(route)).toBe('NOT_FOUND');
+    }
   });
 
   it('keep facility.manage to the branches of the member', async () => {
@@ -138,8 +210,10 @@ describe('staff routes', () => {
     const as = (method: string, path: string, session: Session = owner) => {
       done.add(`${method} ${path}`);
       const route = { method, path };
-      return call(route, path.replace(':id', currentId)).set('authorization', bearer(session));
+      const actual = path.replace(':enrollmentId', enrollmentId).replace(':id', currentId);
+      return call(route, actual).set('authorization', bearer(session));
     };
+    let enrollmentId = '';
     let currentId = '';
 
     const tenant = await as('GET', '/api/tenant').expect(200);
@@ -155,7 +229,14 @@ describe('staff routes', () => {
     await as('PUT', '/api/tenant/logo').attach('file', logo, 'logo.png').expect(200);
     await as('GET', '/api/tenant/logo').expect(200);
     await as('DELETE', '/api/tenant/logo').expect(200);
-    await as('POST', '/api/tenant/onboarding/complete').expect(201);
+    const completed = await as('POST', '/api/tenant/onboarding/complete').expect(201);
+    await as('PATCH', '/api/tenant/security')
+      .send({
+        idleLockMinutes: 10,
+        clinicalReadScope: 'own_patients',
+        expectedUpdatedAt: completed.body.updatedAt,
+      })
+      .expect(200);
 
     const list = await as('GET', '/api/facilities').expect(200);
     const branch = list.body.items.find((item: { id: string }) => item.id === a.branchId);
@@ -178,6 +259,60 @@ describe('staff routes', () => {
       .expect(201);
 
     await as('GET', '/api/access/catalog').expect(200);
+
+    const specialties = await as('GET', '/api/specialties').expect(200);
+    await as('GET', '/api/staff').expect(200);
+    currentId = withoutRead.membershipId;
+    await as('GET', '/api/staff/:id').expect(200);
+    await as('POST', '/api/staff/:id/password-reset').expect(201);
+    await as('POST', '/api/staff/:id/deactivate').send({ reason: 'سبب تجريبي' }).expect(201);
+    await as('POST', '/api/staff/:id/reactivate').expect(201);
+    const invited = await as('POST', '/api/staff/invitations')
+      .send(doctorInvitation([specialties.body[1].id]))
+      .expect(201);
+    currentId = invited.body.id;
+    await client.backdateInvitation(a.tenantId, currentId);
+    const resent = await as('POST', '/api/staff/:id/invitation/resend').expect(201);
+    await as('PATCH', '/api/staff/:id/access')
+      .send({
+        roles: ['doctor', 'nurse'],
+        branchScope: { allFacilities: true },
+        expectedUpdatedAt: resent.body.updatedAt,
+      })
+      .expect(200);
+
+    await as('GET', '/api/practitioners').expect(200);
+    currentId = invited.body.practitionerId;
+    const profile = await as('GET', '/api/practitioners/:id').expect(200);
+    await as('PATCH', '/api/practitioners/:id')
+      .send({
+        displayNameAr: 'د. طبيب معدل',
+        gender: 'male',
+        specialtyIds: [specialties.body[2].id, specialties.body[1].id],
+        expectedUpdatedAt: profile.body.updatedAt,
+      })
+      .expect(200);
+    const photo = await sharp({
+      create: { width: 300, height: 200, channels: 3, background: '#0b6b4f' },
+    })
+      .png()
+      .toBuffer();
+    await as('PUT', '/api/practitioners/:id/photo').attach('file', photo, 'photo.png').expect(200);
+    await as('GET', '/api/practitioners/:id/photo').expect(200);
+    await as('DELETE', '/api/practitioners/:id/photo').expect(200);
+    currentId = invited.body.id;
+    await as('POST', '/api/staff/:id/invitation/cancel').expect(201);
+
+    const computer = await client.register(await client.signIn(a.phone), a.tenantId, a.branchId);
+    await as('GET', '/api/devices').expect(200);
+    currentId = computer.device.id;
+    enrollmentId = computer.enrollmentId;
+    await as('GET', '/api/devices/:id').expect(200);
+    await as('PATCH', '/api/devices/:id').send({ name: 'حاسوب الاستقبال' }).expect(200);
+    await as('POST', '/api/devices/:id/enrollments/:enrollmentId/revoke').expect(201);
+    await as('POST', '/api/devices/:id/revoke')
+      .send({ category: 'replaced', reason: 'سبب تجريبي' })
+      .expect(201);
     await as('GET', '/api/me').expect(200);
     await as('PUT', '/api/me/password')
       .send({
@@ -245,7 +380,9 @@ describe('console, device and ticket routes', () => {
 
   it('declare no feature (identity belongs to every package)', () => {
     const routes = listRoutes(app).filter((route) =>
-      /^\/api\/(auth|me|devices|sessions|access|\.well-known)(\/|$)/.test(route.path),
+      /^\/api\/(auth|me|devices|sessions|access|staff|practitioners|specialties|\.well-known)(\/|$)/.test(
+        route.path,
+      ),
     );
     for (const route of routes) expect(route.entitlement, key(route)).toEqual({ kind: 'none' });
   });

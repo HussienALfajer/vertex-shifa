@@ -74,3 +74,51 @@ export const practitionerPhotoUpload = {
   minSide: 128,
   maxSide: 512,
 } as const;
+
+// Routes of practitioner profiles (spec S02 "API and commands").
+
+const instant = z.iso.datetime();
+
+/** A doctor profile as the clinic shows it. */
+export const practitionerSchema = z
+  .object({
+    id: z.uuid(),
+    membershipId: z.uuid(),
+    displayNameAr: z.string(),
+    displayNameLatin: z.string().nullable(),
+    gender: genderSchema,
+    /** In order: the first is the main specialty. */
+    specialtyIds: z.array(z.uuid()),
+    syndicateNumber: z.string().nullable(),
+    hasPhoto: z.boolean(),
+    createdAt: instant,
+    updatedAt: instant,
+  })
+  .meta({ id: 'Practitioner' });
+
+export type Practitioner = z.infer<typeof practitionerSchema>;
+
+export const practitionerListSchema = z.array(practitionerSchema).meta({ id: 'PractitionerList' });
+
+/** The doctor's or the owner's edit, with the `updatedAt` the client read (rule 10). */
+export const updatePractitionerSchema = z
+  .object({ ...practitionerProfileFields, expectedUpdatedAt: instant })
+  .meta({ id: 'UpdatePractitioner' });
+
+export type UpdatePractitioner = z.infer<typeof updatePractitionerSchema>;
+
+export const practitionerPhotoSchema = z
+  .object({
+    contentType: z.literal('image/jpeg'),
+    /** The JPEG, base64. */
+    data: z.base64(),
+    byteSize: z.int().min(1).max(practitionerPhotoUpload.maxStoredBytes),
+    width: z.int().min(practitionerPhotoUpload.minSide).max(practitionerPhotoUpload.maxSide),
+    height: z.int().min(practitionerPhotoUpload.minSide).max(practitionerPhotoUpload.maxSide),
+    sha256: z.string().regex(/^[0-9a-f]{64}$/),
+  })
+  .meta({ id: 'PractitionerPhoto' });
+
+export type PractitionerPhoto = z.infer<typeof practitionerPhotoSchema>;
+
+export const specialtyListSchema = z.array(specialtySchema).meta({ id: 'SpecialtyList' });

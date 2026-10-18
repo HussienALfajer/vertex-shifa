@@ -86,6 +86,17 @@ export async function readMembership(
             isNull(staffMembershipFacilities.archivedAt),
           ),
         );
+  return toMembership(
+    row,
+    branches.map((branch) => branch.facilityId),
+  );
+}
+
+/** A membership row with the branches of its scope. */
+export function toMembership(
+  row: typeof staffMemberships.$inferSelect,
+  facilityIds: string[],
+): Membership {
   return {
     id: row.id,
     tenantId: row.tenantId,
@@ -93,7 +104,7 @@ export async function readMembership(
     status: row.status as MembershipStatus,
     roles: row.roles as Role[],
     allFacilities: row.allFacilities,
-    facilityIds: branches.map((branch) => branch.facilityId),
+    facilityIds: row.allFacilities ? [] : facilityIds,
     granted: row.grantedPermissions as PermissionKey[],
     revoked: row.revokedPermissions as PermissionKey[],
     invitedName: row.invitedName,
@@ -197,13 +208,7 @@ export async function inviteFirstOwner(
     })
     .returning({ id: staffMemberships.id });
   const membershipId = (row as { id: string }).id;
-  await tx
-    .insert(accountTenantLinks)
-    .values({ accountId: input.accountId, linkedTenantId: input.tenantId })
-    .onConflictDoUpdate({
-      target: [accountTenantLinks.accountId, accountTenantLinks.linkedTenantId],
-      set: { archivedAt: null, updatedAt: now },
-    });
+  await linkAccount(tx, input.accountId, input.tenantId, now);
   await recordAudit(tx, input.tenantId, {
     actor: input.actor,
     action: 'staff.invited',
@@ -215,4 +220,41 @@ export async function inviteFirstOwner(
     membershipId,
   });
   return membershipId;
+}
+
+/**
+ * Links the account to the tenant, or restores the link of a cancelled invitation, in the
+ * membership's transaction, so sign-in can offer the clinic.
+ */
+export async function linkAccount(
+  tx: Transaction,
+  accountId: string,
+  tenantId: string,
+  now: Date,
+): Promise<void> {
+  await tx
+    .insert(accountTenantLinks)
+    .values({ accountId, linkedTenantId: tenantId })
+    .onConflictDoUpdate({
+      target: [accountTenantLinks.accountId, accountTenantLinks.linkedTenantId],
+      set: { archivedAt: null, updatedAt: now },
+    });
+}
+
+/** Archives the account's link to the tenant (a cancelled invitation). */
+export async function unlinkAccount(
+  tx: Transaction,
+  accountId: string,
+  tenantId: string,
+  now: Date,
+): Promise<void> {
+  await tx
+    .update(accountTenantLinks)
+    .set({ archivedAt: now, updatedAt: now })
+    .where(
+      and(
+        eq(accountTenantLinks.accountId, accountId),
+        eq(accountTenantLinks.linkedTenantId, tenantId),
+      ),
+    );
 }
