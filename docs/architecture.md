@@ -61,21 +61,21 @@ docs/                 product, decisions, specs, roadmap, workflow
 
 | Layer | Module | Owns (main tables) | Notes |
 |---|---|---|---|
-| platform | identity | accounts, sessions, devices, otp_challenges | ADR 0005 |
+| platform | identity | accounts, otp_challenges, devices, device_enrollments, staff_sessions, platform_users, platform_user_recovery_codes, platform_sessions | ADR 0005, 0024, S02 |
 | platform | tenancy | tenants (the tenant catalog, with `data_location`), tenant_logos, facilities, areas; units later | ADR 0004, S01 |
-| platform | access | roles, role_permissions, staff_memberships | ADR 0005 |
+| platform | access | staff_memberships, staff_membership_facilities, account_tenant_links; the permission catalog and role presets are code in `packages/contracts` | ADR 0005, 0024, S02 |
 | platform | commercial | catalog_items, packages, quotes, contracts, contract_items, platform_invoices, platform_payments | ADR 0013, 0014 |
 | platform | entitlements | entitlement_overrides, resolved cache | ADR 0013 |
 | platform | config | templates, template_versions, custom_field_definitions | ADR 0010 |
 | platform | messaging | message_templates, messages, whatsapp_sessions (with lease), send_counters, known_recipients, whatsapp_lid_map, push_tokens (Expo and native), opt_outs | ADR 0012, 0022 |
 | platform | files | files, attachments | ADR 0016 |
-| platform | audit | audit_entries (append-only) | ADR 0016 |
+| platform | audit | audit_entries, platform_audit_entries (append-only) | ADR 0016 |
 | platform | events | outbox_events (work queue) | ADR 0012, 0020 |
 | platform | domains | domains, certificates | ADR 0015 |
 | platform | sync | device_sync_state, number_ranges, command_log (append-only), replication scopes | ADR 0008 |
 | health | people | persons, related_persons | ADR 0006 |
 | health | patient-index | patient_charts, person_chart_links, match_candidates | ADR 0006 |
-| health | practitioners | practitioners, practitioner_roles | ADR 0004 |
+| health | practitioners | practitioners, practitioner_specialties, practitioner_photos, specialties (S02); practitioner_roles (S07) | ADR 0004 |
 | health | scheduling | schedules, sessions, slots, capacity_pools, appointments, queue_tickets, conflicts | ADR 0009 |
 | health | clinical | encounters, notes and versions, observations, conditions, allergies, documents | ADR 0007 |
 | health | orders | service_requests, results | ADR 0007 |

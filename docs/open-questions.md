@@ -16,7 +16,6 @@ Decisions that belong to the owner. Agents must not guess answers to these. When
 | Q11 | Arabic and Latin fonts of the Vertex identity: license covers desktop app, mobile app and printed documents | Brand phase | Check Vertex Hub's font licenses; use the same fallbacks |
 | Q12 | Exchange rates in clinics: each clinic enters its own rates, or the platform publishes a daily suggestion | S16 | Each clinic enters its rates; the platform may suggest later |
 | Q13 | The Syrian pound after the 2026 redenomination: ISO 4217 code and minor-unit exponent used in software and on invoices | S16 | Confirm with the Central Bank of Syria publications; until then `SYP` with exponent 2 (ADR 0014) |
-| Q14 | A revoked clinic device has unsynced clinical or money commands (notes, prescriptions, payments made before the revocation): upload them to a quarantine that the clinic reviews, or drop them with the wipe | S02 (devices) | Quarantine: the server accepts them flagged as coming from a revoked device, applies nothing until a clinic owner reviews each one (ADR 0021) |
 
 ## Resolved
 
@@ -40,3 +39,4 @@ Decisions that belong to the owner. Agents must not guess answers to these. When
 | Brand | Vertex Hub identity and logo with SHIFA; components copied and adapted at the brand phase (ADR 0018) | 2026-10-09 |
 | Development method | Claude Code (Opus 5.5) with the method in ADR 0019 and `docs/workflow.md` | 2026-10-09 |
 | Map provider | OpenStreetMap vector tiles served by us with MapLibre; Google Maps refused billing from Syria (`OR_BACR2_59`), kept as a later option behind the map component; coordinates stored by us; paste-a-link fallback (ADR 0023) | 2026-10-10 |
+| Revoked device's pending commands (Q14) | Quarantine: uploaded and flagged as coming from a revoked device; nothing applied until an owner accepts (run as a late command) or rejects each one with a reason. A deactivated member's commands on an active device are accepted when made before the deactivation with an acceptable clock skew, quarantined otherwise (ADR 0024, S02) | 2026-10-18 |

@@ -8,7 +8,7 @@ Short records of decisions that shape the system. Each has a status: **Accepted*
 | [0002](0002-stack-and-repository.md) | TypeScript everywhere in one pnpm + Turborepo monorepo: NestJS, Drizzle, PostgreSQL 17, Zod, Electron, Next.js, Expo | Accepted |
 | [0003](0003-patient-app-react-native-expo.md) | Patient app in React Native with Expo, on both stores, no PWA; push confirmed in 0022 | Accepted |
 | [0004](0004-tenancy-and-data-isolation.md) | One organization hierarchy; PostgreSQL row-level security; a silo option per tenant | Accepted |
-| [0005](0005-identity-and-access.md) | One account per person with roles in many tenants; devices and offline PIN; no email or SMS | Accepted |
+| [0005](0005-identity-and-access.md) | One account per person with roles in many tenants; devices and offline PIN; no email or SMS | Accepted, amended by 0024 |
 | [0006](0006-patient-identity-and-consent.md) | Platform person, a chart per clinic, patient index with Arabic matching, family links, consent | Accepted |
 | [0007](0007-clinical-data-and-terminologies.md) | FHIR-aligned relational model; ICD-10, LOINC, ATC, UCUM; append-only records with snapshots | Accepted |
 | [0008](0008-offline-first-clinic-and-sync.md) | Offline-first clinic app: local SQLite, commands validated by the server; sync engine confirmed in 0021 | Accepted, amended by 0021 |
@@ -27,6 +27,7 @@ Short records of decisions that shape the system. Each has a status: **Accepted*
 | [0021](0021-sync-engine-confirmed-by-spike-a.md) | Spike A confirms PowerSync self-hosted (PostgreSQL bucket storage); commands, never-blocking command endpoint, encryption, RLS exception for the sync service, revocation | Accepted |
 | [0022](0022-messaging-confirmed-by-spike-b.md) | Spike B confirms Baileys and Expo push in Syria; disconnect-code states, session lease, LID and `append` intake, durable rate limits, OTP budget, two push tokens | Accepted |
 | [0023](0023-maps-openstreetmap-self-hosted.md) | Maps: OpenStreetMap vector tiles served by us with MapLibre; one provider-neutral map component; coordinates owned by us; paste-a-link fallback; Google later | Accepted |
+| [0024](0024-identity-sessions-and-devices.md) | S02 identity: an installation registered to several clinics, one device per registration; PIN with a 7-day offline window and lockout; per-member permission adjustments within limits; quarantine of a revoked device's commands (Q14); console TOTP | Accepted |
 
 Template:
 

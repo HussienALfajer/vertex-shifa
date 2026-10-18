@@ -18,6 +18,18 @@ One name per concept. Code, contracts and tables use the English term; the Arabi
 | الطبيب | practitioner | A health professional |
 | دور الطبيب في الفرع | practitioner role | A practitioner working at a facility with a schedule |
 | الموظف | staff member | A person with a role in a tenant |
+| الحساب | account | One person's sign-in identity, by verified phone number, across clinics and the patient app |
+| المالك | owner | A staff member with the owner role; a tenant always has at least one |
+| الدور | role | A preset of permissions: owner, doctor, reception, nurse, accountant |
+| تعديل الصلاحيات | permission adjustment | A permission added to or removed from one member on top of their roles' presets, within limits |
+| نطاق الفروع | branch scope | The branches a member works in: all, or a list |
+| الدعوة | invitation | A membership waiting for the invited person's first sign-in (7 days) |
+| ملف الطبيب | practitioner profile | A doctor's professional name, gender, specialties, syndicate number and photo |
+| الاختصاص | specialty | A medical specialty from the platform list |
+| نطاق قراءة الملفات | clinical read scope | Which patients' records a doctor reads: all of their branches, or their own patients |
+| الفتح الطارئ | break-glass | Opening a record outside one's scope with a stated reason, flagged in the audit |
+| موظف Vertex | platform user | A Vertex staff account in the console: admin or support |
+| رموز الاسترداد | recovery codes | Single-use codes that replace a console TOTP code once |
 | الصلاحية | permission | A right granted through a role |
 | الشخص | person | A human being at platform level |
 | المريض | patient | A person receiving care |
@@ -69,7 +81,13 @@ One name per concept. Code, contracts and tables use the English term; the Arabi
 | الميزة | feature | A catalog item that can be entitled |
 | الاستحقاق | entitlement | What a tenant may use |
 | الاستثناء | override | A manual entitlement change |
-| الجهاز | device | A registered clinic computer |
+| الجهاز | device | A registration of a clinic computer to one tenant and one branch, with its own keys and local data |
+| نسخة التطبيق المثبتة | installation | The clinic app on one computer; it may hold one device registration per clinic |
+| تسجيل المستخدم على الجهاز | device enrollment | A staff member enrolled on a device, with a per-user key unlocked by their PIN |
+| الرمز السري | PIN | Six digits that unlock a member's key on a device, online or offline |
+| مدة العمل دون اتصال | offline window | How long a member's PIN works offline after the server last confirmed them on that device (7 days) |
+| القفل التلقائي | idle lock | The app locks after the owner's idle time and asks for a PIN |
+| الحجر | quarantine | Commands of a revoked device (or doubtful ones of a deactivated member) held until an owner accepts or rejects each one |
 | المزامنة | sync | Exchange of commands and changes with the server |
 | الأمر (مزامنة) | command | A queued change validated by the server |
 | رمز التحقق | OTP | One-time code sent by WhatsApp |

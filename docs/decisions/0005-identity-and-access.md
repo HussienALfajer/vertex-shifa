@@ -1,6 +1,6 @@
 # 0005 — Identity and access: one person, many roles; devices; no email or SMS
 
-Status: Accepted · Date: 2026-10-09
+Status: Accepted, amended by [0024](0024-identity-sessions-and-devices.md) · Date: 2026-10-09
 
 ## Context
 A doctor may work in two clinics and also be a patient. Staff sign in on shared clinic PCs that are often offline. The platform uses neither email nor SMS (ADR 0012), so sign-in and recovery rely on WhatsApp OTP, passwords, devices and people.
