@@ -26,3 +26,6 @@ export const updatedAt = () =>
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date());
+
+/** Business tables: set when the record is archived; records are never deleted (ADR 0020). */
+export const archivedAt = () => timestamptz();

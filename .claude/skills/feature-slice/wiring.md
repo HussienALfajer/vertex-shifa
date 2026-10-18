@@ -37,7 +37,11 @@ Walk this list against the diff before closing a PR. Paths are completed by the 
 
 ## Patterns to copy
 
-Filled after the first feature ships.
+From S01 tenancy, the first module.
 
 | Layer | File to copy from |
 |---|---|
+| Contracts | `packages/contracts/src/tenancy.ts` (schemas, state table, pure rules) and its test |
+| Database | `packages/db/src/schema/tenancy.ts`, `migrations/0006_tenancy-isolation.sql` (RLS and grants), `test/tenancy.test.ts` |
+| API module | `apps/api/src/modules/platform/tenancy/` (controllers, service, `index.ts`), `test/tenancy.test.ts` |
+| CLI | `apps/api/src/cli/tenant-commands.ts`, `test/cli.test.ts` |

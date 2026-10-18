@@ -1,4 +1,4 @@
-import { errorCodes } from '@vertex-shifa/contracts';
+import { auditActions, errorCodes } from '@vertex-shifa/contracts';
 import { describe, expect, it } from 'vitest';
 import { ar, formatLocale } from './index.js';
 
@@ -27,6 +27,10 @@ describe('Arabic catalog', () => {
 
   it('has a text for every error code', () => {
     expect(Object.keys(ar.errors).sort()).toEqual([...errorCodes].sort());
+  });
+
+  it('has a label for every audit action', () => {
+    expect(Object.keys(ar.audit).sort()).toEqual([...auditActions].sort());
   });
 });
 

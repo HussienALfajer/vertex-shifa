@@ -1,13 +1,15 @@
 import {
+  Body,
   Controller,
   Get,
   type INestApplication,
   Inject,
   Logger,
   Module,
+  Post,
   SerializeOptions,
 } from '@nestjs/common';
-import { DomainError } from '@vertex-shifa/contracts';
+import { contactPhoneSchema, DomainError } from '@vertex-shifa/contracts';
 import type { Database } from '@vertex-shifa/db';
 import { sql } from 'drizzle-orm';
 import request from 'supertest';
@@ -83,6 +85,14 @@ class ProbeController {
     return { shown: 'yes', hidden: 'never leaves the server' };
   }
 
+  @Post('validated')
+  @Public()
+  @NoFeature()
+  @SerializeOptions({ schema: contactPhoneSchema })
+  validated(@Body({ schema: contactPhoneSchema }) input: z.output<typeof contactPhoneSchema>) {
+    return input;
+  }
+
   @Get('misshapen')
   @Public()
   @NoFeature()
@@ -156,6 +166,21 @@ describe('API core over HTTP', () => {
     const line = String(logged.mock.calls[0]?.[0]);
     expect(line).toBe('Database error 22P02');
     expect(line).not.toContain('synthetic-secret');
+  });
+
+  it('parses a body by its schema, and refuses one naming the fields, never the values', async () => {
+    const post = (body: object) =>
+      request(app.getHttpServer()).post('/api/probe/validated').send(body);
+    const parsed = await post({ phone: '0900 000 001', whatsapp: true }).expect(201);
+    expect(parsed.body).toEqual({ phone: '+963900000001', whatsapp: true });
+    const refused = await post({ phone: '011 000 0001', whatsapp: true, note: 'x' }).expect(400);
+    expect(refused.body).toEqual({
+      code: 'VALIDATION_FAILED',
+      message: 'Invalid fields: whatsapp',
+    });
+    const malformed = await post({ phone: '+1 202 000 0001', whatsapp: 'yes' }).expect(400);
+    expect(malformed.body.code).toBe('VALIDATION_FAILED');
+    expect(malformed.body.message).not.toContain('202');
   });
 
   it('answers only the fields of the response schema', async () => {

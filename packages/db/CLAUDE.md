@@ -3,11 +3,11 @@
 Drizzle schema, migrations, RLS policies and the tenant context (ADR 0004, ADR 0020). PostgreSQL 17, node-postgres driver, snake_case columns from camelCase properties.
 
 ## Layout
-- `src/schema/<module>.ts`: one file per owning module, exported from `schema/index.ts`. Pattern to copy: `schema/audit.ts` (append-only) or `schema/events.ts` (work queue).
-- `src/schema/columns.ts`: the shared column helpers (`id`, `idIsUuidV7`, `tenantId`, `timestamptz`, `createdAt`, `updatedAt`). `archivedAt` arrives with the first business table.
+- `src/schema/<module>.ts`: one file per owning module, exported from `schema/index.ts`. Pattern to copy: `schema/tenancy.ts` (business tables, tenant and platform scope), `schema/audit.ts` (append-only) or `schema/events.ts` (work queue).
+- `src/schema/columns.ts`: the shared column helpers (`id`, `idIsUuidV7`, `tenantId`, `timestamptz`, `createdAt`, `updatedAt`, `archivedAt`). Name a column explicitly when the snake_case casing would split it (`integer('latitude_e7')`, not `latitude_e_7`).
 - `src/schema/registry.ts`: every table with its owning module, scope (`tenant`, `platform`) and kind (`business`, `append-only`, `queue`).
 - `src/client.ts`: `createDatabase(url)`. `src/tenant-context.ts`: `withTenant(db, tenantId, work)`. `src/describe-for-log.ts`: `describeForLog(error)`, what an unexpected error may write to the log (no values, ADR 0016), used by the apps.
-- `migrations/`: generated SQL plus custom migrations (RLS, triggers, grants, backfills). Never read or edit `migrations/meta/`.
+- `migrations/`: generated SQL plus custom migrations (RLS, triggers, grants, backfills, reference seeds such as `0007_areas-seed.sql`, with fixed UUIDv7 ids). Never read or edit `migrations/meta/`.
 - `scripts/setup-local.ts`: the local PostgreSQL setup (`pnpm db:setup-local`).
 - `src/testing.ts` (`@vertex-shifa/db/testing`): `createTestDatabase()`, a fresh migrated database for one test run, used by this package's and the apps' test global setups.
 - `test/`: run against a fresh database per run (`test/global-setup.ts`); `conventions.test.ts` reads the rules below from the migrated database.

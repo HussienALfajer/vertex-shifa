@@ -1,5 +1,6 @@
 import { type INestApplication, RequestMethod } from '@nestjs/common';
 import {
+  HTTP_CODE_METADATA,
   METHOD_METADATA,
   MODULE_PATH,
   PATH_METADATA,
@@ -17,6 +18,8 @@ export type Route = {
   /** `Controller.handler`, for messages. */
   name: string;
   method: string;
+  /** The success status: `@HttpCode()`, else Nest's default (201 for POST, 200 otherwise). */
+  status: number;
   /** Full path with Nest parameters: `/api/appointments/:id`. */
   path: string;
   access: Access | undefined;
@@ -25,7 +28,32 @@ export type Route = {
   responseSchema: unknown;
   /** Takes `@Res()` or `@Next()`, which answer outside the response serializer. */
   rawResponse: boolean;
+  /** What the route takes, from `@Body({ schema })`, `@Query({ schema })`, `@Param(name, { schema })`. */
+  request: {
+    body: unknown;
+    query: unknown;
+    params: { name: string; schema: unknown }[];
+    /** Takes `@UploadedFile()`: a `multipart/form-data` upload in the field `file`. */
+    file: boolean;
+  };
 };
+
+type ParamMetadata = { data?: unknown; schema?: unknown };
+
+/** The request side of a route, from its parameter decorators. */
+function requestOf(params: Record<string, ParamMetadata>): Route['request'] {
+  const request: Route['request'] = { body: undefined, query: undefined, params: [], file: false };
+  for (const [key, param] of Object.entries(params)) {
+    const type = Number(key.split(':')[0]);
+    if (type === RouteParamtypes.BODY && param.data === undefined) request.body = param.schema;
+    if (type === RouteParamtypes.QUERY && param.data === undefined) request.query = param.schema;
+    if (type === RouteParamtypes.PARAM && typeof param.data === 'string') {
+      request.params.push({ name: param.data, schema: param.schema });
+    }
+    if (type === RouteParamtypes.FILE) request.file = true;
+  }
+  return request;
+}
 
 function paths(value: unknown): string[] {
   if (Array.isArray(value)) return value.map(String);
@@ -88,7 +116,7 @@ export function listRoutes(app: INestApplication): Route[] {
           handler,
           controller,
         );
-        const params: Record<string, unknown> =
+        const params: Record<string, ParamMetadata> =
           Reflect.getMetadata(ROUTE_ARGS_METADATA, controller, property) ?? {};
         const rawResponse = Object.keys(params).some((key) => {
           const type = Number(key.split(':')[0]);
@@ -99,11 +127,15 @@ export function listRoutes(app: INestApplication): Route[] {
             routes.push({
               name: `${controller.name}.${property}`,
               method: RequestMethod[method],
+              status:
+                Reflect.getMetadata(HTTP_CODE_METADATA, handler) ??
+                (method === RequestMethod.POST ? 201 : 200),
               path: join(API_PREFIX, modulePath, base, own),
               access: declared(ACCESS, handler, controller),
               entitlement: declared(ENTITLEMENT, handler, controller),
               responseSchema: options?.schema,
               rawResponse,
+              request: requestOf(params),
             });
           }
         }
