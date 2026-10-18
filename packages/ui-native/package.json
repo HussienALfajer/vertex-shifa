@@ -11,11 +11,13 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@vertex-shifa/tokens": "workspace:*"
+    "@vertex-shifa/tokens": "workspace:*",
+    "lucide-react-native": "^1.59.0"
   },
   "peerDependencies": {
     "react": "19.2.3",
-    "react-native": "0.86.3"
+    "react-native": "0.86.3",
+    "react-native-svg": "15.15.4"
   },
   "devDependencies": {
     "@types/node": "^24.19.1",
@@ -23,6 +25,7 @@
     "@vertex-shifa/config": "workspace:*",
     "react": "19.2.3",
     "react-native": "0.86.3",
+    "react-native-svg": "15.15.4",
     "typescript": "~6.0.3",
     "vitest": "^5.0.3"
   }

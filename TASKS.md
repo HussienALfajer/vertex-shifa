@@ -1,27 +1,38 @@
-# TASKS — S01 Tenancy and clinic setup
+# TASKS — UX foundations (`feat/ux-foundations`)
 
-Spec: `docs/specs/S01-tenancy-and-clinic-setup.md` (Approved). Online only: no sync commands, no worker jobs, no outbox events. Three PRs, each leaving `main` whole.
+Cross-cutting PR before S02, from the owner's manual test of the S01 clinic screens (2026-10-18). No spec: the owner's decisions are in the brief. Amends ADR 0018 (theme toggle), so auto-merge waits for the owner's approval.
 
-## PR 1 — `feat/s01-tenancy-api`: contracts, database, API, CLI
-- [x] Contracts: `phone.ts` (Syrian and Turkish E.164, local forms, mobile vs landline, WhatsApp only on mobile), `tenancy.ts` (tenant, status and transition table, profile, logo, facility, area, working-days codec, coordinates e7 codec and Google Maps URL parser), the six new error codes, the S01 audit actions; unit tests; Arabic error texts in `packages/i18n`
-- [x] Database (`/db-migration`): `tenants`, `tenant_logos`, `facilities`, `areas`, `archivedAt` column helper, registry entries (module `tenancy`), forced RLS on tenant tables, grants, areas seed migration (14 governorates, Aleppo governorate cities); convention test and seed test; migration drift
-- [x] API module `modules/platform/tenancy/`: controllers (staff, console), service (tenant context, audit in the transaction, `updated_at` conflict, status writes refused when suspended or closed, onboarding rules, `LAST_ACTIVE_FACILITY`, directory listing), logo re-encoding (size limit, pixel limit, PNG only, metadata stripped), map link resolver (host allow list, 3 redirects, 5 s timeout, 20/min per tenant); `@NoFeature()` and access decorators on every route; registered in `app.module.ts`
-- [x] API tests: 401 for every route; service tests with a tenant context (success, another tenant → `NOT_FOUND`, suspended/closed refusals, `CONFLICT`, onboarding, last branch, logo cases, resolver against a fake HTTP server, listed-but-suspended reported as not shown); architecture test; `openapi.json` regenerated
-- [x] CLI `apps/api/src/cli/`: `tenant:create`, `tenant:list`, `tenant:set-status`, `tenant:set-directory` (actor `system`), tests; command added to the `AGENTS.md` table
-- [x] `status_reason` on `tenants` (owner, 2026-10-18), spec updated
-- [x] Wiring checklist; docs (`docs/architecture.md` module map, `apps/api/CLAUDE.md` pattern to copy, `packages/db/CLAUDE.md`, `docs/glossary.md` if terms are new, `wiring.md` patterns table)
-- [x] External audit fixes: strictly advancing `updatedAt`, CLI hides unexpected errors, short links over TLS only, Syrian area codes, OpenAPI success statuses, list `sort`/`order`, `GET /api/areas/:id`, full `tenant_logos` FK index (migration 0008) and convention test, cumulative-timeout and redirect tests
-- [x] Checks (`checker`), `reviewer`, owner acceptance (CLI steps 1–2), PR with auto-merge
+## packages/ui (first, with unit tests)
+- [x] Theme (owner, 2026-10-18: Vertex Hub's toggle exactly, replacing the three states): the `dark` class on `<html>` from the saved choice or the system; `themeInitScript` (synchronous, from `'self'`); `useTheme`; `ThemeToggle` (one moon/sun icon button with a tooltip)
+- [x] Vite plugin `@vertex-shifa/ui/vite`: serves and emits `theme-init.js`, adds it to `<head>`, preloads the first screen's fonts in the build
+- [x] Fonts: own `@font-face` with `unicode-range`; `fonts-desktop.css` with `font-display: block` (clinic, console), `fonts.css` with `swap` (site); test keeps them the same faces
+- [x] `Form` (Enter → next field, Shift+Enter → previous, last field → primary action; textareas, open popups and handled keys keep their Enter; locks its fields with `inert` while busy, focus kept on the submit button), `FormFields`, `FormActions`
+- [x] `useDraft` (dirty against a baseline, discard, rebase after save)
+- [x] `Button` `loading` (spinner, same width)
+- [x] `UnsavedChangesDialog` (Stay / Leave without saving)
+- [x] `Stepper` (segments aligned with labels; completed, current, upcoming; completed clickable)
+- [x] `PageContainer`; `PageHeader` `back` slot; `BackButton` (arrow points to the inline start)
+- [x] `Toaster` mounted by the apps; success through the toast
+- [x] `packages/ui/CLAUDE.md`: theme, fonts, forms (Enter rule, save and discard, unsaved changes, feedback), layout, stepper
 
-## PR 2 — `feat/s01-map-component`: web map in `packages/ui`
-- [x] `packages/ui` map component (MapLibre; center, pin, on-change, attribution; tile, style and glyph URLs from config; falls back to the paste field when unset or failing); unit tests
-- [x] Clinic CSP widened for the map host only (MapLibre 6 runs its worker from the app, so no blob workers; ADR 0023); local Azaz extract documented in `packages/ui/CLAUDE.md`
-- [x] Checks (`checker`), `reviewer`, external audit fixes (CSP host check, short-link races, retry, camera, cleared value, pin name), owner acceptance, PR with auto-merge
+## packages/ui-native
+- [x] `ThemeProvider`: the system's setting until the button is pressed, the choice persisted through a `storage` prop, applied before the first render on native; `useThemeToggle`; `ThemeToggle` (moon/sun icon button, `lucide-react-native`)
+- [x] `Input` and `useFocusChain` (`returnKeyType` next/done, focus chaining); pure rules tested
+- [x] `packages/ui-native/CLAUDE.md`
 
-## PR 3 — `feat/s01-clinic-setup-screens`: clinic screens and E2E
-- [x] Bridge: `pnpm build`, OpenAPI client for the clinic app (`openapi-typescript` types with a drift test, `openapi-fetch`); TanStack Query added (first online-only screen); dangling `#/$defs` references in the API's query parameters fixed, with a test
-- [x] Screens: onboarding wizard (5 steps), setup in progress, clinic settings, branches, branch settings / location, directory status, suspended or closed banner; loading, error and offline states; i18n keys
-- [x] E2E with a mocked API: wizard end to end (paste field), settings, branch list with one and two branches, offline, read-only banner; RTL screenshots light and dark, looked at
-- [x] Map wiring: `VITE_MAP_*` read by the renderer, `maplibre-gl` added to the clinic for the worker URL (`?url`); the ODbL licence is a text line under the map (`openstreetmap.org/copyright`), since the app opens no outside links; `VITE_API_URL` joins the CSP's `connect-src`
-- [x] Docs: `apps/clinic/CLAUDE.md`, `docs/ROADMAP.md` (S01 done), `AGENTS.md` command, `wiring.md` patterns
-- [x] Checks (`checker`), `reviewer`, external audit fixes (lost create answers never overwritten, forms locked while saving, saves never paused offline, area load errors, first branch name), owner acceptance (screenshots), PR with auto-merge
+## Apps
+- [x] i18n: theme, unsaved changes, discard, back, toast close (common); clinic texts
+- [x] Clinic: Vite plugin, `fonts-desktop.css`, `ThemeToggle` in the header, `PageContainer` in the shell (header, nav, content share edges), `StateCard` start-aligned, `Toaster`
+- [x] Clinic forms on `Form` + `useDraft`: clinic settings, branch / location, new branch, wizard; toast on save; notices below the actions; first invalid field focused
+- [x] Clinic: unsaved-changes guard (router blocker + `beforeunload`), Electron `will-prevent-unload` dialog, Alt+Left / Alt+Right
+- [x] Clinic: back action on sub-pages (branch → branches, new branch → list, settings → home); wizard `Stepper`
+- [x] Console: Vite plugin, fonts, toggle, `PageContainer`
+- [x] Site: `theme-init.js` route, script in `<head>`, toggle, `PageContainer`
+- [x] Patient: AsyncStorage, `ThemeProvider` storage, toggle in the header
+- [x] ADR 0018 amendment; `docs/ROADMAP.md`; app `CLAUDE.md` files; `docs/architecture.md` if stale
+
+## Verification
+- [x] E2E: Enter navigation, save toast and no layout shift, discard, unsaved-changes dialog, back actions, stepper, theme toggle following the system then persisted across reload; RTL screenshots light and dark, looked at
+- [x] Fonts: the built renderer reloaded in Chromium (E2E `fonts`): six preloads, all used, faces loaded; the Electron window itself is checked at owner acceptance
+- [x] Shell at 960 px (window minimum) and 1920 px: no overflow, header, nav and page edges aligned (E2E)
+- [x] Checks (`checker`), `reviewer`, owner acceptance (screenshots; the owner asked for Vertex Hub's toggle, then the PR with auto-merge), PR; auto-merge after the owner approves the ADR 0018 amendment

@@ -19,7 +19,7 @@ test.describe('patient shell', () => {
     await expect(page).toHaveTitle('فيرتكس شفا');
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('أهلًا بك في فيرتكس شفا');
-    await expect(page.getByRole('banner')).toHaveText('فيرتكس شفا');
+    await expect(page.getByRole('banner')).toContainText('فيرتكس شفا');
     // The device's color scheme applies (the web export is rendered ahead in light): the surface
     // token is white in light and green-900 in dark (packages/tokens).
     const surface = testInfo.project.name === 'dark' ? 'rgb(11, 45, 40)' : 'rgb(255, 255, 255)';
@@ -35,6 +35,26 @@ test.describe('patient shell', () => {
     await expect(page.locator('body')).not.toHaveText(/[٠-٩]/);
 
     await screenshot(page, testInfo, 'home');
+  });
+
+  test('switches between light and dark with one button and keeps the choice', async ({
+    page,
+  }, testInfo) => {
+    await page.goto('/');
+    const banner = page.getByRole('banner');
+    const toDark = page.getByRole('button', { name: 'فعّل الوضع الداكن' });
+    const toLight = page.getByRole('button', { name: 'فعّل الوضع الفاتح' });
+    for (const [button, surface, name] of [
+      [toDark, 'rgb(11, 45, 40)', 'dark'],
+      [toLight, 'rgb(255, 255, 255)', 'light'],
+    ] as const) {
+      if (await button.isVisible()) await button.click();
+      await expect(banner).toHaveCSS('background-color', surface);
+      // Kept on the device (AsyncStorage) and applied again on the next start.
+      await page.reload();
+      await expect(banner).toHaveCSS('background-color', surface);
+      await screenshot(page, testInfo, `theme-${name}`);
+    }
   });
 
   test('shows the not-found state for an unknown route', async ({ page }, testInfo) => {

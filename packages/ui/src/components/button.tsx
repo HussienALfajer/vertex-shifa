@@ -4,6 +4,7 @@ import { Button as ButtonPrimitive } from '@base-ui/react/button';
 import { mergeProps } from '@base-ui/react/merge-props';
 import { useRender } from '@base-ui/react/use-render';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { Loader2Icon } from 'lucide-react';
 import type { ComponentProps } from 'react';
 import { cn } from '../lib/cn';
 
@@ -36,15 +37,27 @@ const buttonVariants = cva(
   },
 );
 
-type ButtonProps = ButtonPrimitive.Props & VariantProps<typeof buttonVariants>;
+type ButtonProps = ButtonPrimitive.Props &
+  VariantProps<typeof buttonVariants> & {
+    /**
+     * Its action is running (a save): a spinner takes the label's place at the same width, and
+     * the button stays focusable but does nothing.
+     */
+    loading?: boolean;
+  };
 
 /**
  * A button, or with `render` the rendered element (a router link) styled as one. A rendered link
  * keeps its own semantics: it is announced as a link, and Base UI's button behaviour, which
  * expects a native `<button>`, applies only when `nativeButton` is passed.
  */
-function Button({ className, variant, size, ...props }: ButtonProps) {
-  const classes = cn(buttonVariants({ variant, size }), className);
+function Button({ className, variant, size, loading = false, children, ...props }: ButtonProps) {
+  const classes = cn(
+    buttonVariants({ variant, size }),
+    // Busy, not unavailable: it keeps its full color.
+    loading && 'relative data-disabled:opacity-100',
+    className,
+  );
   if (props.render && props.nativeButton === undefined) {
     const { render, disabled: _disabled, focusableWhenDisabled: _focusable, ...rest } = props;
     return (
@@ -52,10 +65,34 @@ function Button({ className, variant, size, ...props }: ButtonProps) {
         render={render as useRender.ComponentProps<'a'>['render']}
         className={classes}
         {...(rest as ComponentProps<'a'>)}
-      />
+      >
+        {children}
+      </StyledElement>
     );
   }
-  return <ButtonPrimitive data-slot="button" className={classes} {...props} />;
+  if (!loading) {
+    return (
+      <ButtonPrimitive data-slot="button" className={classes} {...props}>
+        {children}
+      </ButtonPrimitive>
+    );
+  }
+  return (
+    <ButtonPrimitive
+      data-slot="button"
+      className={classes}
+      {...props}
+      disabled
+      focusableWhenDisabled
+      aria-busy
+    >
+      {/* Transparent, not hidden: the label keeps the width and the accessible name. */}
+      <span className="inline-flex items-center gap-2 opacity-0">{children}</span>
+      <span className="absolute inset-0 flex items-center justify-center">
+        <Loader2Icon aria-hidden className="animate-spin" />
+      </span>
+    </ButtonPrimitive>
+  );
 }
 
 function StyledElement({ render, ...props }: useRender.ComponentProps<'a'>) {

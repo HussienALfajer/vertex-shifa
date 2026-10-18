@@ -13,13 +13,11 @@ export function SetupReview({
   profile,
   draft,
   onEdit,
-  disabled,
 }: {
   profile: ProfileDraft;
   draft: FacilityDraft;
+  /** Locked with the rest of the wizard while "Finish setup" is being sent (`FormFields`). */
   onEdit: (step: SetupStep) => void;
-  /** While "Finish setup" is being sent. */
-  disabled: boolean;
 }) {
   const { t } = useTranslation('clinic');
   const logo = useQuery(logoQuery);
@@ -30,11 +28,7 @@ export function SetupReview({
 
   return (
     <div className="flex flex-col gap-4">
-      <ReviewSection
-        title={t('setup.steps.clinic')}
-        onEdit={() => onEdit('clinic')}
-        disabled={disabled}
-      >
+      <ReviewSection title={t('setup.steps.clinic')} onEdit={() => onEdit('clinic')}>
         <ReviewItem label={t('fields.nameAr.label')}>{profile.nameAr}</ReviewItem>
         {profile.nameLatin.trim() !== '' && (
           <ReviewItem label={t('fields.nameLatin.label')}>
@@ -53,11 +47,7 @@ export function SetupReview({
           )}
         </ReviewItem>
       </ReviewSection>
-      <ReviewSection
-        title={t('setup.steps.location')}
-        onEdit={() => onEdit('location')}
-        disabled={disabled}
-      >
+      <ReviewSection title={t('setup.steps.location')} onEdit={() => onEdit('location')}>
         <ReviewItem label={t('fields.city.label')}>
           {list([city.data?.nameAr, governorate?.nameAr].filter((name) => name !== undefined))}
         </ReviewItem>
@@ -78,11 +68,7 @@ export function SetupReview({
           </ul>
         </ReviewItem>
       </ReviewSection>
-      <ReviewSection
-        title={t('setup.steps.week')}
-        onEdit={() => onEdit('week')}
-        disabled={disabled}
-      >
+      <ReviewSection title={t('setup.steps.week')} onEdit={() => onEdit('week')}>
         <ReviewItem label={t('fields.workingDays.label')}>
           {list(workingDaysToList(draft.workingDays).map((day) => t(`weekdays.${day}`)))}
         </ReviewItem>
@@ -90,11 +76,7 @@ export function SetupReview({
           {draft.defaultCurrency && t(`currencies.${draft.defaultCurrency}`)}
         </ReviewItem>
       </ReviewSection>
-      <ReviewSection
-        title={t('setup.steps.display')}
-        onEdit={() => onEdit('display')}
-        disabled={disabled}
-      >
+      <ReviewSection title={t('setup.steps.display')} onEdit={() => onEdit('display')}>
         <ReviewItem label={t('fields.displayNameFormat.label')}>
           {t(`fields.displayNameFormat.${draft.displayNameFormat}`)}
         </ReviewItem>
@@ -109,12 +91,10 @@ export function SetupReview({
 function ReviewSection({
   title,
   onEdit,
-  disabled,
   children,
 }: {
   title: string;
   onEdit: () => void;
-  disabled: boolean;
   children: ReactNode;
 }) {
   const { t } = useTranslation('clinic');
@@ -126,7 +106,6 @@ function ReviewSection({
           variant="outline"
           size="sm"
           onClick={onEdit}
-          disabled={disabled}
           aria-label={t('setup.editStep', { step: title })}
         >
           {t('setup.edit')}

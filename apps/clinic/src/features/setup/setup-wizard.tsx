@@ -1,9 +1,20 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CurrencyCode, Facility, Tenant } from '@vertex-shifa/contracts';
-import { Button, Callout, Card, PageHeader, Progress } from '@vertex-shifa/ui';
+import {
+  Button,
+  Callout,
+  Card,
+  Form,
+  FormActions,
+  FormFields,
+  PageHeader,
+  Stepper,
+  useDraft,
+} from '@vertex-shifa/ui';
 import { type ReactNode, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OfflineNotice } from '../../components/offline-notice';
+import { useUnsavedChangesGuard } from '../../components/unsaved-changes';
 import { ApiError } from '../../lib/api';
 import { useErrorText } from '../../lib/error-text';
 import { useStaffAccess } from '../../lib/staff-access';
@@ -53,7 +64,8 @@ type Notice = { tone: 'warning' | 'danger'; text: string };
 
 /**
  * The onboarding wizard (screen 1): five steps, each saved to the server on "Next" (rule 3), edits
- * carrying the `updatedAt` they started from (rule 16).
+ * carrying the `updatedAt` they started from (rule 16). The stepper goes back to a completed step;
+ * leaving with values not saved yet asks first.
  */
 export function SetupWizard({
   tenant,
@@ -74,16 +86,19 @@ export function SetupWizard({
   const canSave = useCanSave(tenant, access.manageTenant);
 
   const [step, setStep] = useState<SetupStep>(initialStep);
-  const [profile, setProfile] = useState<ProfileDraft>(() => profileDraft(tenant));
+  const profileForm = useDraft<ProfileDraft>(() => profileDraft(tenant));
+  const profile = profileForm.draft;
   const [profileBase, setProfileBase] = useState(tenant.updatedAt);
   const [facility, setFacility] = useState(branch);
   /** A create failed: it may still have happened on the server, so the next save looks first. */
   const createFailed = useRef(false);
-  const [draft, setDraft] = useState<FacilityDraft>(() => {
+  const facilityForm = useDraft<FacilityDraft>(() => {
     if (!branch) return emptyDraft(tenant.nameAr);
     // The saved currency may be the stand-in: the owner chooses it at the week step.
     return { ...draftFromFacility(branch, governorateId), defaultCurrency: undefined };
   });
+  const draft = facilityForm.draft;
+  const guard = useUnsavedChangesGuard(profileForm.dirty || facilityForm.dirty);
   // Errors show once the owner tried to move on, and follow every change after that.
   const [checking, setChecking] = useState(false);
   const profileProblems: ProfileErrors = checking ? profileErrors(profile) : {};
@@ -107,7 +122,7 @@ export function SetupWizard({
   async function showSaved(saved: Facility) {
     const city = await cache.reloadArea(saved.areaId);
     setFacility(saved);
-    setDraft({
+    facilityForm.reset({
       ...draftFromFacility(saved, city.parentId ?? undefined),
       defaultCurrency: undefined,
     });
@@ -117,7 +132,7 @@ export function SetupWizard({
   async function reloadAfterConflict(sent: SetupStep) {
     if (sent === 'clinic') {
       const fresh = await cache.reloadTenant();
-      setProfile(profileDraft(fresh));
+      profileForm.reset(profileDraft(fresh));
       setProfileBase(fresh.updatedAt);
     } else if (facility) {
       await showSaved(await cache.reloadFacility(facility.id));
@@ -136,8 +151,15 @@ export function SetupWizard({
         const saved = await updateProfile(profileInput(sent.profile, profileBase));
         cache.tenantSaved(saved);
         setProfileBase(saved.updatedAt);
-        // The first branch takes the clinic's Arabic name as saved.
-        if (!facility) setDraft((current) => ({ ...current, name: saved.nameAr }));
+        profileForm.reset(sent.profile);
+        // The first branch takes the clinic's Arabic name as saved; untouched, that is no edit.
+        if (!facility) {
+          if (facilityForm.dirty) {
+            facilityForm.setDraft((current) => ({ ...current, name: saved.nameAr }));
+          } else {
+            facilityForm.reset({ ...sent.draft, name: saved.nameAr });
+          }
+        }
         return 'saved';
       }
       if (sent.step === 'review') {
@@ -162,6 +184,7 @@ export function SetupWizard({
         : await createFacility(facilityInput(sent.draft, UNCHOSEN_CURRENCY));
       await cache.facilitySaved(saved);
       setFacility(saved);
+      facilityForm.reset(sent.draft);
       return 'saved';
     },
     onSuccess: (result, sent) => {
@@ -191,12 +214,13 @@ export function SetupWizard({
     },
   });
 
-  function next() {
+  function next(): boolean {
     setNotice(undefined);
     setChecking(true);
     if (step === 'clinic') {
-      if (Object.keys(profileErrors(profile)).length === 0) save.mutate({ step, profile, draft });
-      return;
+      if (Object.keys(profileErrors(profile)).length > 0) return false;
+      save.mutate({ step, profile, draft });
+      return true;
     }
     // A branch step saves the whole branch: an error on another step sends the owner there.
     const location = locationErrors(draft);
@@ -209,25 +233,30 @@ export function SetupWizard({
         : Object.keys(week).length > 0
           ? 'week'
           : undefined;
-    if (failing) setStep(failing);
-    else save.mutate({ step, profile, draft });
+    if (failing) {
+      setStep(failing);
+      return false;
+    }
+    save.mutate({ step, profile, draft });
+    return true;
   }
 
   const busy = save.isPending;
-  const editable = access.manageTenant && isTenantWritable(tenant) && !busy;
+  // Locked while a save runs (`Form`), so the values saved are the values shown.
+  const editable = access.manageTenant && isTenantWritable(tenant);
   const change = (patch: Partial<FacilityDraft>) =>
-    setDraft((current) => ({ ...current, ...patch }));
+    facilityForm.setDraft((current) => ({ ...current, ...patch }));
 
   const fields: Record<SetupStep, ReactNode> = {
     clinic: (
       <>
         <ProfileFields
           draft={profile}
-          onChange={setProfile}
+          onChange={profileForm.setDraft}
           errors={profileProblems}
           disabled={!editable}
         />
-        <LogoField disabled={!canSave || busy} />
+        <LogoField disabled={!canSave} />
       </>
     ),
     location: (
@@ -235,67 +264,56 @@ export function SetupWizard({
     ),
     week: <WeekFields draft={draft} onChange={change} errors={problems} disabled={!editable} />,
     display: <DisplayFields draft={draft} onChange={change} disabled={!editable} />,
-    review: <SetupReview profile={profile} draft={draft} onEdit={goTo} disabled={busy} />,
+    review: <SetupReview profile={profile} draft={draft} onEdit={goTo} />,
   };
 
   return (
-    <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
+    <section className="flex w-full max-w-3xl flex-col gap-6">
       <PageHeader title={t('setup.title')} description={t('setup.description')} />
-      <SetupProgress step={step} />
-      <OfflineNotice />
-      {notice && <Callout role="alert" tone={notice.tone} title={notice.text} />}
-      <Card className="flex flex-col gap-6 p-6">
-        <h2 className="text-xl font-bold">{t(`setup.steps.${step}`)}</h2>
-        {step === 'review' && (
-          <p className="text-muted-foreground">{t('setup.reviewDescription')}</p>
-        )}
-        {fields[step]}
-      </Card>
-      <div className="flex flex-wrap justify-between gap-3">
-        {index > 0 ? (
-          <Button
-            variant="outline"
-            disabled={busy}
-            onClick={() => goTo(setupSteps[index - 1] ?? 'clinic')}
-          >
-            {t('setup.back')}
-          </Button>
-        ) : (
-          <span />
-        )}
-        <Button onClick={next} disabled={!canSave || busy}>
-          {busy ? t('setup.saving') : step === 'review' ? t('setup.finish') : t('setup.next')}
-        </Button>
+      <div className="flex flex-col gap-3">
+        <p className="text-sm font-medium text-muted-foreground">
+          {t('setup.progress', { current: index + 1, total: setupSteps.length })}
+        </p>
+        <Stepper
+          aria-label={t('setup.stepsLabel')}
+          steps={setupSteps.map((key, at) =>
+            t('setup.stepNumber', { number: at + 1, name: t(`setup.steps.${key}`) }),
+          )}
+          current={index}
+          onSelect={busy ? undefined : (at) => goTo(setupSteps[at] ?? 'clinic')}
+        />
       </div>
+      <OfflineNotice />
+      <Form onSubmit={next} busy={busy} className="flex flex-col gap-6">
+        <FormFields>
+          <Card className="flex flex-col gap-6 p-6">
+            <h2 className="text-xl font-bold">{t(`setup.steps.${step}`)}</h2>
+            {step === 'review' && (
+              <p className="text-muted-foreground">{t('setup.reviewDescription')}</p>
+            )}
+            {fields[step]}
+          </Card>
+        </FormFields>
+        <FormActions className="justify-between">
+          {index > 0 ? (
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => goTo(setupSteps[index - 1] ?? 'clinic')}
+            >
+              {t('setup.back')}
+            </Button>
+          ) : (
+            <span />
+          )}
+          <Button type="submit" loading={busy} disabled={!canSave}>
+            {step === 'review' ? t('setup.finish') : t('setup.next')}
+          </Button>
+        </FormActions>
+        {/* Under the actions: nothing above the cursor moves when it shows. */}
+        {notice && <Callout role="alert" tone={notice.tone} title={notice.text} />}
+      </Form>
+      {guard.dialog}
     </section>
-  );
-}
-
-function SetupProgress({ step }: { step: SetupStep }) {
-  const { t } = useTranslation('clinic');
-  const current = setupSteps.indexOf(step) + 1;
-  const label = t('setup.progress', { current, total: setupSteps.length });
-  return (
-    <div className="flex flex-col gap-3">
-      <p className="text-sm font-medium text-muted-foreground">{label}</p>
-      <Progress value={(current / setupSteps.length) * 100} aria-label={label} />
-      <ol className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-        {setupSteps.map((key, at) => (
-          <li
-            key={key}
-            aria-current={key === step ? 'step' : undefined}
-            className={
-              key === step
-                ? 'font-bold text-foreground'
-                : at < current
-                  ? 'text-foreground'
-                  : 'text-muted-foreground'
-            }
-          >
-            {t('setup.stepNumber', { number: at + 1, name: t(`setup.steps.${key}`) })}
-          </li>
-        ))}
-      </ol>
-    </div>
   );
 }

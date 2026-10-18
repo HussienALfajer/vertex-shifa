@@ -1,7 +1,7 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeProvider } from '@vertex-shifa/ui-native';
 import { type ErrorBoundaryProps, Slot } from 'expo-router';
 import Head from 'expo-router/head';
-import { StatusBar } from 'expo-status-bar';
 import { type ReactNode, useEffect } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { I18nManager } from 'react-native';
@@ -25,8 +25,8 @@ function Frame({ children }: { children: ReactNode }) {
         <Head>
           <title>{i18n.t('productName')}</title>
         </Head>
-        <StatusBar style="auto" />
-        <ThemeProvider>
+        {/* Light or dark: the system's setting until the user chooses, read before the first frame. */}
+        <ThemeProvider storage={AsyncStorage}>
           <AppShell>{children}</AppShell>
         </ThemeProvider>
       </SafeAreaProvider>

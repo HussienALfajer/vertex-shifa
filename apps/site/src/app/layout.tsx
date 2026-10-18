@@ -1,5 +1,6 @@
 import { defaultLanguage, textDirection } from '@vertex-shifa/i18n';
 import { DirectionProvider } from '@vertex-shifa/ui';
+import { themeInitPath } from '@vertex-shifa/ui/theme';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import favicon from '../../../../brand/logo/svg/favicon.svg';
@@ -11,7 +12,12 @@ export const metadata: Metadata = { title: i18n.t('productName'), icons: favicon
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang={defaultLanguage} dir={textDirection}>
+    // `theme-init.js` puts the `dark` class on <html> before hydration: React leaves it alone.
+    <html lang={defaultLanguage} dir={textDirection} suppressHydrationWarning>
+      <head>
+        {/* Synchronous, before the body is painted: the device's theme without a flash. */}
+        <script src={themeInitPath} />
+      </head>
       <body>
         <DirectionProvider direction={textDirection}>
           <AppShell>{children}</AppShell>

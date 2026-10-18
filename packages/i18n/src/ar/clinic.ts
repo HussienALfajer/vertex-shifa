@@ -40,6 +40,7 @@ export const clinic = {
     description:
       'أكمل هذه الخطوات لتبدأ العمل على فيرتكس شفا. تُحفظ كل خطوة عند الانتقال إلى التالية.',
     progress: 'الخطوة {{current}} من {{total}}',
+    stepsLabel: 'خطوات الإعداد',
     stepNumber: '{{number}}. {{name}}',
     steps: {
       clinic: 'العيادة',
@@ -53,7 +54,6 @@ export const clinic = {
     finish: 'إنهاء الإعداد',
     edit: 'تعديل',
     editStep: 'تعديل: {{step}}',
-    saving: 'جارٍ الحفظ…',
     reviewDescription: 'راجع البيانات قبل إنهاء الإعداد.',
     inProgress: {
       title: 'يجري إعداد العيادة',

@@ -1,7 +1,7 @@
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { textDirection } from '@vertex-shifa/i18n';
-import { DirectionProvider } from '@vertex-shifa/ui';
+import { DirectionProvider, Toaster } from '@vertex-shifa/ui';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
@@ -39,7 +39,10 @@ createRoot(root, {
       {/* Base UI reads the direction from this provider, not from <html dir> (keyboard, placement). */}
       <DirectionProvider direction={textDirection}>
         <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
+          {/* Success feedback is a toast: it never moves the screen under the cursor. */}
+          <Toaster closeLabel={i18n.t('close')}>
+            <RouterProvider router={router} />
+          </Toaster>
         </QueryClientProvider>
       </DirectionProvider>
     </I18nextProvider>

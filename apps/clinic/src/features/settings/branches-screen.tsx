@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
+  BackButton,
   Badge,
   Button,
   Callout,
@@ -57,6 +58,7 @@ export function BranchesScreen({ archived }: { archived: boolean }) {
   return (
     <section className="flex flex-col gap-6">
       <PageHeader
+        back={<BackButton render={<Link to="/" />}>{t('nav.home')}</BackButton>}
         title={t('branches.title')}
         description={t('branches.description')}
         actions={
