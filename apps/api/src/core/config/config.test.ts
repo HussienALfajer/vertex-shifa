@@ -10,6 +10,7 @@ const env = {
   DATABASE_APP_URL: 'postgres://shifa_app:fake@localhost:5432/db',
   IDENTITY_HASH_KEY: randomBytes(32).toString('base64'),
   IDENTITY_TOKEN_KEY: tokenKey,
+  IDENTITY_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
 };
 
 describe('loadConfig', () => {
@@ -23,6 +24,17 @@ describe('loadConfig', () => {
     });
     expect(config.identity.hashKey).toHaveLength(32);
     expect(config.identity.tokenKey.asymmetricKeyType).toBe('ed25519');
+    expect(config.identity.encryptionKey).toHaveLength(32);
+    expect(config.consoleOrigin).toBe('http://localhost:5174');
+  });
+
+  it('keeps only the origin of the console URL, and refuses an encryption key of another size', () => {
+    expect(loadConfig({ ...env, CONSOLE_ORIGIN: 'https://console.example/x' }).consoleOrigin).toBe(
+      'https://console.example',
+    );
+    expect(() =>
+      loadConfig({ ...env, IDENTITY_ENCRYPTION_KEY: randomBytes(48).toString('base64') }),
+    ).toThrow('Invalid API environment: IDENTITY_ENCRYPTION_KEY');
   });
 
   it('names the bad variables without printing their values', () => {
@@ -49,10 +61,10 @@ describe('loadConfig', () => {
     expect(load).toThrow('Invalid API environment: IDENTITY_HASH_KEY, IDENTITY_TOKEN_KEY');
   });
 
-  it('refuses to start in production with the fake OTP sender, the example keys or a weak proof of work', () => {
-    expect(() => loadConfig({ ...env, NODE_ENV: 'production' })).toThrow(
-      'Invalid API environment: OTP_SENDER',
-    );
+  it('refuses to start in production with the fake OTP sender, the example keys, a weak proof of work or a console without HTTPS', () => {
+    expect(() =>
+      loadConfig({ ...env, NODE_ENV: 'production', CONSOLE_ORIGIN: 'https://console.example' }),
+    ).toThrow('Invalid API environment: OTP_SENDER');
     const example = {
       ...env,
       NODE_ENV: 'production',
@@ -62,9 +74,10 @@ describe('loadConfig', () => {
         Buffer.alloc(32),
       ]).toString('base64'),
       IDENTITY_POW_DIFFICULTY: '8',
+      IDENTITY_ENCRYPTION_KEY: Buffer.alloc(32).toString('base64'),
     };
     expect(() => loadConfig(example)).toThrow(
-      'Invalid API environment: OTP_SENDER, IDENTITY_HASH_KEY, IDENTITY_TOKEN_KEY, IDENTITY_POW_DIFFICULTY',
+      'Invalid API environment: OTP_SENDER, IDENTITY_HASH_KEY, IDENTITY_TOKEN_KEY, IDENTITY_POW_DIFFICULTY, IDENTITY_ENCRYPTION_KEY, CONSOLE_ORIGIN',
     );
     expect(loadConfig({ ...example, NODE_ENV: 'development' }).identity.powDifficulty).toBe(8);
   });

@@ -2,6 +2,7 @@ import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
 import {
   DomainError,
   type PermissionKey,
+  type PlatformRole,
   permissionCatalog,
   type Role,
   type TicketPurpose,
@@ -30,8 +31,14 @@ export type StaffActor = {
   facilityIds: string[];
 };
 
-/** Vertex staff in the console. */
-export type PlatformActor = { kind: 'platform'; userId: string };
+/** Vertex staff in the console, from their session cookie (spec S02 rules 37–39). */
+export type PlatformActor = {
+  kind: 'platform';
+  userId: string;
+  /** The console session of the request. */
+  sessionId: string;
+  role: PlatformRole;
+};
 
 /** The API CLI and jobs, run by Vertex staff with server access. */
 export type SystemActor = { kind: 'system' };

@@ -44,7 +44,7 @@ class ProbeController {
   patient() {}
 
   @Get('console')
-  @ConsoleRoute('probe.read')
+  @ConsoleRoute('tenants.read')
   @NoFeature()
   console() {}
 

@@ -3,6 +3,7 @@ import {
   type AuditAction,
   assertPasswordStrong,
   type ChangePassword,
+  type ConsoleAccount,
   DomainError,
   type Me,
   type OtpChallenge,
@@ -42,17 +43,24 @@ import {
 } from '../access/index.js';
 import { recordAudit, recordPlatformAudit } from '../audit/index.js';
 import { readFacilitiesInUse, readTenant } from '../tenancy/index.js';
+import { DecoyLocks, signInLocked } from './decoy-locks.js';
 import { OtpChallenges } from './otp-challenges.js';
 import { ProofOfWork } from './proof-of-work.js';
-import { decoyPasswordHash, hashPassword, KeyedHash, verifyPassword } from './secrets.js';
+import { hashPassword, KeyedHash, verifyPassword } from './secrets.js';
 import { findOrCreateAccount } from './staff-accounts.js';
 import { endSessions } from './staff-sessions.js';
 import { Tickets } from './tickets.js';
 import { TokenSigner } from './tokens.js';
 import { isUniqueViolation } from './unique-violation.js';
 
-/** Vertex staff: in the console (PR 4) or through the CLI. */
+/** Vertex staff: in the console or through the CLI. */
 type StaffOfVertex = PlatformActor | SystemActor;
+
+/** An account as Vertex support names it: by phone (CLI, lookup) or by id (console). */
+type AccountKey = { phone: string } | { id: string };
+
+const accountWhere = (key: AccountKey) =>
+  'id' in key ? eq(accounts.id, key.id) : eq(accounts.phone, key.phone);
 
 const MINUTE_MS = 60_000;
 /** An authorized password reset is open for 72 hours (spec S02 rule 16). */
@@ -60,8 +68,6 @@ const RESET_WINDOW_MS = 72 * 60 * MINUTE_MS;
 
 const invalidCredentials = () =>
   new DomainError('INVALID_CREDENTIALS', 'Unknown phone or wrong password');
-const locked = (until: Date) =>
-  new DomainError('RATE_LIMITED', `Sign-in locked until ${until.toISOString()}`);
 
 /**
  * Accounts and signing in (spec S02 rules 11–17): proof of work, password sign-in with its lock,
@@ -76,7 +82,7 @@ export class AuthService {
   private readonly challengesPerAddress = new RateLimiter(60, 10 * MINUTE_MS);
   private readonly verificationsPerAddress = new RateLimiter(60, 10 * MINUTE_MS);
   /** Sign-in failures of phones without a password, locked like accounts (rule 12). */
-  private readonly decoyLocks = new Map<string, { failures: number; lockedUntil: number }>();
+  private readonly decoys = new DecoyLocks();
 
   constructor(
     @Inject(DATABASE) private readonly db: Database,
@@ -103,7 +109,7 @@ export class AuthService {
     const now = new Date();
     const [account] = await this.db.select().from(accounts).where(eq(accounts.phone, input.phone));
     if (!account?.passwordHash) {
-      await this.failDecoy(this.hashes.hash('phone', input.phone), input.password, now);
+      await this.decoys.fail(this.hashes.hash('phone', input.phone), input.password, now);
       throw invalidCredentials();
     }
     await this.claimAttempt(account.id, now);
@@ -343,7 +349,7 @@ export class AuthService {
     return { passwordChangedAt: now.toISOString() };
   }
 
-  // Vertex staff: the CLI now, the console from PR 4.
+  // Vertex staff: the console and the CLI.
 
   /**
    * Rule 3: the tenant's first owner, invited by Vertex with the tenant, in the tenant's creating
@@ -365,7 +371,7 @@ export class AuthService {
    */
   async authorizePasswordReset(
     actor: StaffOfVertex,
-    phone: string,
+    key: AccountKey,
     reason: string,
   ): Promise<{ accountId: string; passwordResetAuthorizedUntil: string }> {
     const until = new Date(Date.now() + RESET_WINDOW_MS);
@@ -373,7 +379,7 @@ export class AuthService {
       const [row] = await tx
         .update(accounts)
         .set({ passwordResetAuthorizedUntil: until, updatedAt: new Date() })
-        .where(eq(accounts.phone, phone))
+        .where(accountWhere(key))
         .returning({ id: accounts.id });
       if (!row) throw new DomainError('NOT_FOUND', 'Account not found');
       await recordPlatformAudit(tx, {
@@ -383,7 +389,7 @@ export class AuthService {
         entityId: row.id,
         reason,
       });
-      await this.auditOwnerTenants(tx, actor, row.id, 'account.password_reset_authorized', reason);
+      await this.auditRecovery(tx, actor, row.id, 'account.password_reset_authorized', reason);
       return row;
     });
     return { accountId: account.id, passwordResetAuthorizedUntil: until.toISOString() };
@@ -395,7 +401,7 @@ export class AuthService {
    */
   async changePhone(
     actor: StaffOfVertex,
-    phone: string,
+    key: AccountKey,
     newPhone: string,
     reason: string,
   ): Promise<{ accountId: string }> {
@@ -405,7 +411,7 @@ export class AuthService {
         const [row] = await tx
           .update(accounts)
           .set({ phone: newPhone, phoneVerifiedAt: null, updatedAt: new Date() })
-          .where(eq(accounts.phone, phone))
+          .where(accountWhere(key))
           .returning({ id: accounts.id });
         if (!row) throw new DomainError('NOT_FOUND', 'Account not found');
         await recordPlatformAudit(tx, {
@@ -415,7 +421,7 @@ export class AuthService {
           entityId: row.id,
           reason,
         });
-        await this.auditOwnerTenants(tx, actor, row.id, 'account.phone_changed', reason);
+        await this.auditRecovery(tx, actor, row.id, 'account.phone_changed', reason);
         return row;
       });
     } catch (error) {
@@ -425,6 +431,59 @@ export class AuthService {
       throw error;
     }
     return { accountId: account.id };
+  }
+
+  /**
+   * Rule 17: Vertex support finds an owner's account before a recovery: its sign-in state and the
+   * clinics where it is a member, with the roles; nothing clinical. `NOT_FOUND` for an unknown
+   * phone and for an account that owns no clinic (support recovers owners only). With `auditAs`,
+   * the lookup is written to the platform audit once per clinic it shows (rule 41).
+   */
+  async lookUpAccount(key: AccountKey, auditAs?: StaffOfVertex): Promise<ConsoleAccount> {
+    const [account] = await this.db.select().from(accounts).where(accountWhere(key));
+    if (!account) throw new DomainError('NOT_FOUND', 'Account not found');
+    const memberships: ConsoleAccount['memberships'] = [];
+    for (const tenantId of await linkedTenantIds(this.db, account.id)) {
+      const membership = await withTenant(this.db, tenantId, async (tx) => {
+        const member = await readMembership(tx, { accountId: account.id });
+        if (!member) return undefined;
+        const tenant = await readTenant(tx, tenantId);
+        return {
+          tenantId,
+          tenantNameAr: tenant.nameAr,
+          tenantStatus: tenant.status as ConsoleAccount['memberships'][number]['tenantStatus'],
+          membershipId: member.id,
+          status: member.status,
+          roles: member.roles,
+        };
+      });
+      if (membership) memberships.push(membership);
+    }
+    if (!memberships.some((membership) => membership.roles.includes('owner'))) {
+      throw new DomainError('NOT_FOUND', 'Account not found');
+    }
+    if (auditAs) {
+      await this.db.transaction(async (tx) => {
+        for (const membership of memberships) {
+          await recordPlatformAudit(tx, {
+            actor: auditAs,
+            action: 'account.looked_up',
+            entityType: 'account',
+            entityId: account.id,
+            subjectTenantId: membership.tenantId,
+          });
+        }
+      });
+    }
+    return {
+      id: account.id,
+      phone: account.phone,
+      nameAr: account.nameAr,
+      hasPassword: account.passwordHash !== null,
+      passwordResetAuthorizedUntil: account.passwordResetAuthorizedUntil?.toISOString() ?? null,
+      signInLockedUntil: account.signInLockedUntil?.toISOString() ?? null,
+      memberships,
+    };
   }
 
   // Shared steps.
@@ -449,17 +508,24 @@ export class AuthService {
     }
   }
 
-  /** Rule 17: a recovery action is also written to the audit of each tenant the account owns. */
-  private async auditOwnerTenants(
+  /**
+   * Rule 17: Vertex recovers owners only; another member's reset is their clinic owner's (rule
+   * 16). The action is written to the audit of every tenant where the account is a member, since a
+   * new password or phone reaches all of them; without an owner membership it is refused, and the
+   * caller's transaction rolls the change back.
+   */
+  private async auditRecovery(
     tx: Transaction,
     actor: StaffOfVertex,
     accountId: string,
     action: AuditAction,
     reason: string,
   ) {
+    let owner = false;
     await this.forEachTenant(tx, accountId, async () => {
       const member = await readMembership(tx, { accountId });
-      if (!member?.roles.includes('owner')) return;
+      if (!member) return;
+      owner ||= member.roles.includes('owner');
       await recordAudit(tx, member.tenantId, {
         actor,
         action,
@@ -468,6 +534,7 @@ export class AuthService {
         reason,
       });
     });
+    if (!owner) throw new DomainError('FORBIDDEN', 'Vertex recovers clinic owners only');
   }
 
   /** Whether the account is an active member enrolled on the active device (rule 22). */
@@ -512,7 +579,7 @@ export class AuthService {
         .where(eq(accounts.id, accountId));
       return undefined;
     });
-    if (lockedUntil) throw locked(lockedUntil);
+    if (lockedUntil) throw signInLocked(lockedUntil);
   }
 
   /** A wrong password: the fifth in a row locks the account. */
@@ -549,29 +616,5 @@ export class AuthService {
       entityId: accountId,
     });
     return until;
-  }
-
-  /**
-   * A sign-in for a phone without a password: the same password check against a decoy hash, and
-   * the same lock after five failures, then `INVALID_CREDENTIALS`.
-   */
-  private async failDecoy(phoneKey: string, password: string, now: Date) {
-    // As `claimAttempt`: the attempt is counted before the slow check, with no wait in between, so
-    // concurrent guesses lock a phone without an account exactly as they lock an account.
-    for (const [key, entry] of this.decoyLocks) {
-      if (entry.failures === 0 && entry.lockedUntil <= now.getTime()) this.decoyLocks.delete(key);
-    }
-    const entry = this.decoyLocks.get(phoneKey) ?? { failures: 0, lockedUntil: 0 };
-    this.decoyLocks.set(phoneKey, entry);
-    if (entry.lockedUntil > now.getTime()) throw locked(new Date(entry.lockedUntil));
-    const lock = () => {
-      entry.failures = 0;
-      entry.lockedUntil = now.getTime() + signInPolicy.lockMinutes * MINUTE_MS;
-      return new Date(entry.lockedUntil);
-    };
-    if (entry.failures >= signInPolicy.maxFailures) throw locked(lock());
-    entry.failures += 1;
-    await verifyPassword(password, await decoyPasswordHash());
-    if (entry.failures >= signInPolicy.maxFailures && entry.lockedUntil <= now.getTime()) lock();
   }
 }

@@ -29,14 +29,14 @@ Spec: `docs/specs/S02-identity-access-and-devices.md` (Approved 2026-10-18). ADR
 - [x] Devices management: list, read, rename, revoke, remove a member from a device
 - [x] `PATCH /api/tenant/security`
 - [x] HTTP access tests and service tests; OpenAPI and clinic types regenerated
-- [ ] Checks, reviewer, acceptance (summary), PR with auto-merge
+- [x] Checks, reviewer, acceptance (summary), PR with auto-merge
 
 ## PR 4 — API: console identity (`feat/s02-console-api`)
-- [ ] Platform users: setup code, password, TOTP enrollment and replay refusal, recovery codes, sessions (cookie, idle and absolute expiry, `Origin` check), re-authentication, `LAST_ADMIN`
-- [ ] Console session guard; platform audit row for every console request; S01 console routes require re-authentication where rule 38 says
-- [ ] Console account recovery routes; CLI `platform-user:create`, `platform-user:reset`
-- [ ] HTTP access tests (console refused for staff sessions and the reverse); OpenAPI regenerated
-- [ ] Checks, reviewer, acceptance (summary), PR with auto-merge
+- [x] Platform users: setup code, password, TOTP enrollment and replay refusal, recovery codes, sessions (cookie, idle and absolute expiry, `Origin` check), re-authentication, `LAST_ADMIN`
+- [x] Console session guard; platform audit row for every console request; S01 console routes require re-authentication where rule 38 says
+- [x] Console account recovery routes; CLI `platform-user:create`, `platform-user:reset`
+- [x] HTTP access tests (console refused for staff sessions and the reverse); OpenAPI regenerated
+- [x] Checks, reviewer, acceptance (summary), PR with auto-merge
 
 ## PR 5 — Clinic app: devices, PIN and lock (`feat/s02-clinic-sign-in`)
 - [ ] Electron main: device and user keys (Ed25519), PIN wrapping (Argon2id + `safeStorage`), lockout counter, offline window with highest-seen time, multi-clinic registrations, wipe of one registration; IPC bridge; unit tests

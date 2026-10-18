@@ -10,7 +10,7 @@ Zod schemas and pure rules shared by every app, the patient app included (ADR 00
 - `health-check.ts`: the answer of `GET /api/health`.
 - `access.ts`: staff roles, the permission catalog (group, branch scope, limit), role presets, `effectivePermissions` and the adjustment limits (S02). A spec adding a permission adds its key here with the default and limit S02 fixed for its group.
 - `events.ts`: the event catalog, every outbox event type with its version and payload schema (ids only).
-- `identity.ts` (passwords, OTPs, PINs, the offline window, device and session codes, the sign-in, device and session route shapes and the messages device and user keys sign), `staff.ts` (memberships and invitations), `practitioners.ts`, `console-identity.ts` (platform users, TOTP, recovery codes): S02.
+- `identity.ts` (passwords, OTPs, PINs, the offline window, device and session codes, the sign-in, device and session route shapes and the messages device and user keys sign), `staff.ts` (memberships and invitations), `practitioners.ts`, `console-identity.ts` (platform users, TOTP, recovery codes, the console sign-in, platform user and owner recovery route shapes): S02.
 
 ## Rules
 - Schemas `<thing>Schema`, types `Thing = z.infer<…>`, inputs `create<Thing>Schema`; every schema the API exposes has a stable `.meta({ id })`.

@@ -8,8 +8,16 @@ import { DATABASE } from '../../../core/database/database.module.js';
 import { MEMBER_DEVICES, STAFF_ACCOUNTS } from '../access/index.js';
 import { FACILITY_DEVICES } from '../tenancy/index.js';
 import { AuthService } from './auth.service.js';
+import { ConsoleAuthService } from './console-auth.service.js';
+import { ConsoleSessions } from './console-sessions.js';
 import { DeviceManagementService } from './device-management.service.js';
 import { DEVICE_NONCES, DevicesService } from './devices.service.js';
+import {
+  ConsoleAccountsController,
+  ConsoleAuthController,
+  ConsoleMeController,
+  PlatformUsersController,
+} from './identity.console.controller.js';
 import {
   AuthController,
   DeviceManagementController,
@@ -20,8 +28,9 @@ import {
 } from './identity.controller.js';
 import { OtpChallenges } from './otp-challenges.js';
 import { FakeOtpSender, OTP_SENDER, type OtpSender } from './otp-sender.js';
+import { PlatformUsersService } from './platform-users.service.js';
 import { ProofOfWork } from './proof-of-work.js';
-import { KeyedHash } from './secrets.js';
+import { KeyedHash, SecretBox } from './secrets.js';
 import { SESSION_NONCES, SessionsService } from './sessions.service.js';
 import { Nonces } from './single-use.js';
 import { StaffAccountsStore } from './staff-accounts.js';
@@ -30,7 +39,8 @@ import { Tickets } from './tickets.js';
 import { TokenSigner } from './tokens.js';
 
 /**
- * Accounts, sign-in, OTPs, devices, enrollments and staff sessions (spec S02). Global, because it
+ * Accounts, sign-in, OTPs, devices, enrollments and staff sessions, and the console's platform
+ * users, sign-in and sessions (spec S02). Global, because it
  * provides the ports other modules and the core declare: the session verifier of the access guard
  * (`SESSION_VERIFIER`), the branch rules on devices of tenancy (`FACILITY_DEVICES`), and the
  * accounts and member computers of staff management in access (`STAFF_ACCOUNTS`,
@@ -45,12 +55,21 @@ import { TokenSigner } from './tokens.js';
     DeviceManagementController,
     SessionsController,
     JwksController,
+    ConsoleAuthController,
+    ConsoleMeController,
+    PlatformUsersController,
+    ConsoleAccountsController,
   ],
   providers: [
     {
       provide: KeyedHash,
       inject: [CONFIG],
       useFactory: (config: Config) => new KeyedHash(config.identity.hashKey),
+    },
+    {
+      provide: SecretBox,
+      inject: [CONFIG],
+      useFactory: (config: Config) => new SecretBox(config.identity.encryptionKey),
     },
     {
       provide: TokenSigner,
@@ -87,6 +106,9 @@ import { TokenSigner } from './tokens.js';
     DevicesService,
     SessionsService,
     DeviceManagementService,
+    ConsoleSessions,
+    ConsoleAuthService,
+    PlatformUsersService,
     { provide: SESSION_VERIFIER, useExisting: SessionsService },
     { provide: FACILITY_DEVICES, useExisting: DevicesService },
     { provide: MEMBER_DEVICES, useExisting: DeviceManagementService },
@@ -98,6 +120,7 @@ import { TokenSigner } from './tokens.js';
     MEMBER_DEVICES,
     STAFF_ACCOUNTS,
     AuthService,
+    PlatformUsersService,
     OTP_SENDER,
   ],
 })

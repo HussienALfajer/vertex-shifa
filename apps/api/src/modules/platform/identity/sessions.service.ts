@@ -4,6 +4,7 @@ import {
   type ErrorCode,
   type Nonce,
   type OpenSession,
+  type PlatformPermissionKey,
   type SessionTokens,
   staffSessionMessage,
   type TicketPurpose,
@@ -16,13 +17,14 @@ import {
   withTenant,
 } from '@vertex-shifa/db';
 import { and, eq } from 'drizzle-orm';
-import type { DeviceActor, StaffActor, Ticket } from '../../../core/access/actor.js';
-import type { SessionVerifier } from '../../../core/access/session-verifier.js';
+import type { DeviceActor, PlatformActor, StaffActor, Ticket } from '../../../core/access/actor.js';
+import type { ConsoleRequest, SessionVerifier } from '../../../core/access/session-verifier.js';
 import { DATABASE } from '../../../core/database/database.module.js';
 import { RateLimiter } from '../../../core/rate-limit/rate-limiter.js';
 import { permissionsOf, readMembership } from '../access/index.js';
 import { recordAudit } from '../audit/index.js';
 import { readTenant } from '../tenancy/index.js';
+import { ConsoleSessions } from './console-sessions.js';
 import { verifyEd25519 } from './secrets.js';
 import type { Nonces } from './single-use.js';
 import {
@@ -68,6 +70,7 @@ export class SessionsService implements SessionVerifier {
     @Inject(Tickets) private readonly tickets: Tickets,
     @Inject(SessionIssuer) private readonly issuer: SessionIssuer,
     @Inject(SESSION_NONCES) private readonly nonces: Nonces,
+    @Inject(ConsoleSessions) private readonly consoleSessions: ConsoleSessions,
   ) {}
 
   challenge(device: DeviceActor): Nonce {
@@ -233,6 +236,14 @@ export class SessionsService implements SessionVerifier {
         facilityIds: member.facilityIds,
       };
     });
+  }
+
+  console(
+    sessionToken: string,
+    check: { permission: PlatformPermissionKey | null; reauth: boolean; fromConsole: boolean },
+    request: ConsoleRequest,
+  ): Promise<PlatformActor> {
+    return this.consoleSessions.verify(sessionToken, check, request);
   }
 
   async device(deviceToken: string, options: { allowRevoked: boolean }): Promise<DeviceActor> {

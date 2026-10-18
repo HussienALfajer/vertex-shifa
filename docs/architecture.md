@@ -38,7 +38,7 @@ apps/
   worker/             NestJS jobs: core/ (pg-boss, outbox dispatcher), jobs/<area>/<name>.job.ts (exists)
   whatsapp-gateway/   NestJS: transport/ (interface, fake), sessions/, sending/ (exists)
   clinic/             React + Vite + TanStack Router; electron/ shell (app:// protocol, locked-down window) (exists; local SQLite + sync client with S04)
-  console/            React + Vite + TanStack Router; platform back office (exists; shell only, API and sign-in with S22)
+  console/            React + Vite + TanStack Router; platform back office (exists; shell only; its API sign-in exists (S02), its screens come with S02 PR 7 and S22)
   site/               Next.js App Router; clinic public pages (exists; shell only, subdomains, custom domains and booking in Phase 5)
   patient/            React Native + Expo (SDK 57) + Expo Router (exists; shell only, account, booking and push with S19)
 packages/

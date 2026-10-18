@@ -16,14 +16,16 @@ export function routeViolations(routes: Route[]): string[] {
   for (const route of routes) {
     if (!route.access) {
       violations.push(
-        `${route.name} declares no access (@Public, @PatientRoute, @StaffRoute, @ConsoleRoute, @DeviceRoute or @TicketRoute)`,
+        `${route.name} declares no access (@Public, @PatientRoute, @StaffRoute, @ConsoleRoute, @ConsoleSignInRoute, @DeviceRoute or @TicketRoute)`,
       );
     }
     if (!route.entitlement) {
       violations.push(`${route.name} declares no entitlement (@RequiresFeature or @NoFeature)`);
     }
     const underConsole = route.path === '/api/console' || route.path.startsWith('/api/console/');
-    if ((route.access?.kind === 'console') !== underConsole) {
+    const consoleAccess =
+      route.access?.kind === 'console' || route.access?.kind === 'console-sign-in';
+    if (consoleAccess !== underConsole) {
       violations.push(`${route.name}: console routes, and only they, live under /api/console/`);
     }
     if (!schemaId(route.responseSchema)) {

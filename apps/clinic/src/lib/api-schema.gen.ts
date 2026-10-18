@@ -176,6 +176,214 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/console/accounts/{id}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ConsoleAccountsController.authorizePasswordReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/console/accounts/{id}/phone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["ConsoleAccountsController.changePhone"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/console/accounts/lookup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ConsoleAccountsController.lookUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/console/auth/reauth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ConsoleAuthController.reauthenticate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/console/auth/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ConsoleAuthController.setUp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/console/auth/sign-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ConsoleAuthController.signIn"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/console/auth/sign-out": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ConsoleAuthController.signOut"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/console/auth/totp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ConsoleAuthController.totp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/console/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ConsoleMeController.me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/console/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["ConsoleMeController.changePassword"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/console/platform-users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PlatformUsersController.list"];
+        put?: never;
+        post: operations["PlatformUsersController.create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/console/platform-users/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["PlatformUsersController.update"];
+        trace?: never;
+    };
+    "/api/console/platform-users/{id}/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PlatformUsersController.reset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/console/tenants": {
         parameters: {
             query?: never;
@@ -866,6 +1074,12 @@ export interface components {
             ownerLocked: components["schemas"]["PermissionKey"][];
         };
         AccountName: string;
+        AccountPasswordResetAuthorized: {
+            /** Format: uuid */
+            accountId: string;
+            /** Format: date-time */
+            passwordResetAuthorizedUntil: string;
+        };
         Area: {
             /** Format: uuid */
             id: string;
@@ -879,9 +1093,12 @@ export interface components {
         AreaLevel: "governorate" | "city";
         AreaList: components["schemas"]["Area"][];
         /** @enum {string} */
-        AuditAction: "tenant.created" | "tenant.status_changed" | "tenant.directory_listing_changed" | "tenant.profile_updated" | "tenant.onboarding_completed" | "tenant_logo.replaced" | "tenant_logo.archived" | "facility.created" | "facility.updated" | "facility.archived" | "facility.restored" | "tenant.security_updated" | "staff.invited" | "staff.invitation_resent" | "staff.invitation_cancelled" | "staff.invitation_accepted" | "staff.access_changed" | "staff.deactivated" | "staff.reactivated" | "staff.password_reset_authorized" | "device.registered" | "device.renamed" | "device.revoked" | "device.wiped" | "device_enrollment.created" | "device_enrollment.revoked" | "staff_session.started" | "practitioner.created" | "practitioner.updated" | "practitioner.archived" | "practitioner.restored" | "practitioner_photo.replaced" | "practitioner_photo.archived" | "account.created" | "account.password_set" | "account.password_reset_authorized" | "account.phone_changed" | "account.sign_in_locked" | "console.request" | "platform_user.created" | "platform_user.role_changed" | "platform_user.disabled" | "platform_user.enabled" | "platform_user.reset" | "platform_user.setup_completed" | "platform_user.signed_in" | "platform_user.sign_in_failed" | "platform_user.sign_in_locked" | "platform_user.totp_failed" | "platform_user.recovery_code_used" | "platform_user.reauthenticated" | "platform_user.password_changed" | "platform_user.signed_out";
+        AuditAction: "tenant.created" | "tenant.status_changed" | "tenant.directory_listing_changed" | "tenant.profile_updated" | "tenant.onboarding_completed" | "tenant_logo.replaced" | "tenant_logo.archived" | "facility.created" | "facility.updated" | "facility.archived" | "facility.restored" | "tenant.security_updated" | "staff.invited" | "staff.invitation_resent" | "staff.invitation_cancelled" | "staff.invitation_accepted" | "staff.access_changed" | "staff.deactivated" | "staff.reactivated" | "staff.password_reset_authorized" | "device.registered" | "device.renamed" | "device.revoked" | "device.wiped" | "device_enrollment.created" | "device_enrollment.revoked" | "staff_session.started" | "practitioner.created" | "practitioner.updated" | "practitioner.archived" | "practitioner.restored" | "practitioner_photo.replaced" | "practitioner_photo.archived" | "account.created" | "account.password_set" | "account.password_reset_authorized" | "account.phone_changed" | "account.looked_up" | "account.sign_in_locked" | "console.request" | "platform_user.created" | "platform_user.role_changed" | "platform_user.disabled" | "platform_user.enabled" | "platform_user.reset" | "platform_user.setup_completed" | "platform_user.signed_in" | "platform_user.sign_in_failed" | "platform_user.sign_in_locked" | "platform_user.totp_failed" | "platform_user.recovery_code_used" | "platform_user.reauthenticated" | "platform_user.password_changed" | "platform_user.signed_out";
         /** @enum {string} */
         AuditActorKind: "staff" | "patient" | "platform" | "system";
+        AuthorizeAccountPasswordReset: {
+            reason: string;
+        };
         BranchScope: {
             /** @constant */
             allFacilities: true;
@@ -889,6 +1106,10 @@ export interface components {
             /** @constant */
             allFacilities: false;
             facilityIds: string[];
+        };
+        ChangeAccountPhone: {
+            phone: components["schemas"]["MobilePhoneNumber"];
+            reason: string;
         };
         ChangePassword: {
             currentPassword: string;
@@ -917,6 +1138,90 @@ export interface components {
         };
         /** @enum {string} */
         ClinicalReadScope: "branch" | "own_patients";
+        ConsoleAccount: {
+            /** Format: uuid */
+            id: string;
+            phone: string;
+            nameAr: string | null;
+            hasPassword: boolean;
+            passwordResetAuthorizedUntil: string | null;
+            signInLockedUntil: string | null;
+            memberships: {
+                /** Format: uuid */
+                tenantId: string;
+                tenantNameAr: string;
+                tenantStatus: components["schemas"]["TenantStatus"];
+                /** Format: uuid */
+                membershipId: string;
+                status: components["schemas"]["MembershipStatus"];
+                roles: components["schemas"]["StaffRole"][];
+            }[];
+        };
+        ConsoleAccountLookup: {
+            phone: components["schemas"]["MobilePhoneNumber"];
+        };
+        ConsoleMe: {
+            /** Format: uuid */
+            id: string;
+            phone: string;
+            name: string;
+            role: components["schemas"]["PlatformRole"];
+            permissions: ("tenants.read" | "tenants.create" | "tenants.change-status" | "tenants.manage-directory" | "accounts.recover" | "platform-users.manage")[];
+            recoveryCodesRemaining: number;
+            session: {
+                /** Format: date-time */
+                expiresAt: string;
+                reauthenticatedUntil: string | null;
+            };
+        };
+        ConsoleReauth: {
+            code: components["schemas"]["TotpCode"];
+        };
+        ConsoleReauthenticated: {
+            /** Format: date-time */
+            reauthenticatedUntil: string;
+        };
+        ConsoleSetup: {
+            ticket: string;
+            password: components["schemas"]["Password"];
+            code: components["schemas"]["TotpCode"];
+        };
+        ConsoleSetUp: {
+            /** Format: uuid */
+            id: string;
+            phone: string;
+            name: string;
+            role: components["schemas"]["PlatformRole"];
+            permissions: ("tenants.read" | "tenants.create" | "tenants.change-status" | "tenants.manage-directory" | "accounts.recover" | "platform-users.manage")[];
+            recoveryCodesRemaining: number;
+            session: {
+                /** Format: date-time */
+                expiresAt: string;
+                reauthenticatedUntil: string | null;
+            };
+            recoveryCodes: string[];
+        };
+        ConsoleSignIn: {
+            phone: components["schemas"]["MobilePhoneNumber"];
+            password?: string;
+            setupCode?: components["schemas"]["SetupCode"];
+            proofOfWork: components["schemas"]["ProofOfWorkSolution"];
+        };
+        ConsoleSignInResult: {
+            /** @constant */
+            step: "totp";
+            ticket: string;
+        } | {
+            /** @constant */
+            step: "setup";
+            ticket: string;
+            totpSecret: string;
+            totpUri: string;
+        };
+        ConsoleTotp: {
+            ticket: string;
+            code: components["schemas"]["TotpCode"] | components["schemas"]["RecoveryCode"];
+        };
         ContactPhone: {
             phone: components["schemas"]["PhoneNumber"];
             whatsapp: boolean;
@@ -953,6 +1258,11 @@ export interface components {
              */
             adjustments: components["schemas"]["PermissionAdjustments"];
             practitioner?: components["schemas"]["PractitionerProfileInput"];
+        };
+        CreatePlatformUser: {
+            phone: components["schemas"]["MobilePhoneNumber"];
+            name: string;
+            role: components["schemas"]["PlatformRole"];
         };
         CreateTenant: {
             nameAr: string;
@@ -1274,6 +1584,26 @@ export interface components {
         PhoneNumber: string;
         /** @enum {string} */
         PlatformRole: "admin" | "support";
+        PlatformUser: {
+            /** Format: uuid */
+            id: string;
+            phone: string;
+            name: string;
+            role: components["schemas"]["PlatformRole"];
+            status: components["schemas"]["PlatformUserStatus"];
+            setupCodeExpiresAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        PlatformUserList: components["schemas"]["PlatformUser"][];
+        PlatformUserSetup: {
+            user: components["schemas"]["PlatformUser"];
+            setupCode: string;
+            /** Format: date-time */
+            setupCodeExpiresAt: string;
+        };
         /** @enum {string} */
         PlatformUserStatus: "pending_setup" | "active" | "disabled";
         Practitioner: {
@@ -1518,6 +1848,10 @@ export interface components {
             displayCallSound: boolean;
             /** Format: date-time */
             expectedUpdatedAt: string;
+        };
+        UpdatePlatformUser: {
+            role?: components["schemas"]["PlatformRole"];
+            disabled?: boolean;
         };
         UpdatePractitioner: {
             displayNameAr: string;
@@ -1882,6 +2216,460 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SignInResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "ConsoleAccountsController.authorizePasswordReset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthorizeAccountPasswordReset"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountPasswordResetAuthorized"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "ConsoleAccountsController.changePhone": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeAccountPhone"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleAccount"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "ConsoleAccountsController.lookUp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsoleAccountLookup"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleAccount"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "ConsoleAuthController.reauthenticate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsoleReauth"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleReauthenticated"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "ConsoleAuthController.setUp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsoleSetup"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleSetUp"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "ConsoleAuthController.signIn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsoleSignIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleSignInResult"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "ConsoleAuthController.signOut": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionEnded"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "ConsoleAuthController.totp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConsoleTotp"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleMe"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "ConsoleMeController.me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsoleMe"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "ConsoleMeController.changePassword": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePassword"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordChanged"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "PlatformUsersController.list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformUserList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "PlatformUsersController.create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePlatformUser"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformUserSetup"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "PlatformUsersController.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePlatformUser"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformUser"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "PlatformUsersController.reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformUserSetup"];
                 };
             };
             /** @description Error */

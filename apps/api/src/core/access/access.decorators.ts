@@ -1,4 +1,4 @@
-import type { PermissionKey, TicketPurpose } from '@vertex-shifa/contracts';
+import type { PermissionKey, PlatformPermissionKey, TicketPurpose } from '@vertex-shifa/contracts';
 
 /**
  * What each route declares, read by `AccessGuard` and checked by the architecture test (ADR 0005,
@@ -15,7 +15,8 @@ export type Access =
   | { kind: 'public' }
   | { kind: 'patient' }
   | { kind: 'staff'; permissions: PermissionKey[] }
-  | { kind: 'console'; permission: string }
+  | { kind: 'console'; permission: PlatformPermissionKey | null; reauth: boolean }
+  | { kind: 'console-sign-in' }
   | { kind: 'device'; allowRevoked: boolean; ticket: TicketPurpose | null }
   | { kind: 'ticket'; purpose: TicketPurpose };
 
@@ -49,9 +50,27 @@ export const PatientRoute = () => declare(ACCESS, { kind: 'patient' });
 export const StaffRoute = (...permissions: PermissionKey[]) =>
   declare(ACCESS, { kind: 'staff', permissions });
 
-/** Platform staff holding `permission`; the route lives under `/api/console/`. */
-export const ConsoleRoute = (permission: string) =>
-  declare(ACCESS, { kind: 'console', permission });
+/**
+ * A platform user signed in to the console (session cookie) whose role holds `permission`, or any
+ * platform user when none is given; with `reauth`, a sensitive action that needs a TOTP code
+ * entered in the last 5 minutes (spec S02 rule 38). The route lives under `/api/console/`, and a
+ * write must come from the console's origin (rule 39).
+ */
+export const ConsoleRoute = (
+  permission?: PlatformPermissionKey,
+  options: { reauth?: boolean } = {},
+) =>
+  declare(ACCESS, {
+    kind: 'console',
+    permission: permission ?? null,
+    reauth: options.reauth ?? false,
+  });
+
+/**
+ * A step of signing in to the console, before any session: public, under `/api/console/`, and a
+ * write from the console's origin only (rule 39).
+ */
+export const ConsoleSignInRoute = () => declare(ACCESS, { kind: 'console-sign-in' });
 
 /**
  * A registered clinic computer (device token), without a member. `allowRevoked` admits a revoked

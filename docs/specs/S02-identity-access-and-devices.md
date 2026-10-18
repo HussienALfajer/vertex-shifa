@@ -388,7 +388,7 @@ Tokens: access tokens and device tokens are EdDSA JWTs signed by the API (keys f
 | `POST /api/console/auth/reauth` | Console | code | — | `TOTP_INVALID` |
 | `POST /api/console/auth/sign-out`, `GET /api/console/me`, `PUT /api/console/me/password` | Console | — | — | `INVALID_CREDENTIALS`, `PASSWORD_TOO_WEAK` |
 | `GET`, `POST /api/console/platform-users`; `PATCH /api/console/platform-users/:id`; `POST /api/console/platform-users/:id/reset` | Console, `platform-users.manage` (re-auth for writes) | — | platform user, setup code once | `LAST_ADMIN`, `REAUTH_REQUIRED` |
-| `GET /api/console/accounts?phone=` | Console, `accounts.recover` | phone | account with its memberships (tenant names and roles) | `NOT_FOUND` |
+| `POST /api/console/accounts/lookup` | Console, `accounts.recover` | phone (in the body: phones never go in URLs) | account with its memberships (tenant names and roles) | `NOT_FOUND` |
 | `POST /api/console/accounts/:id/password-reset` | Console, `accounts.recover`, re-auth | reason | — | `REAUTH_REQUIRED` |
 | `PUT /api/console/accounts/:id/phone` | Console, `accounts.recover`, re-auth | phone, reason | account | `ALREADY_MEMBER` (phone in use), `REAUTH_REQUIRED` |
 

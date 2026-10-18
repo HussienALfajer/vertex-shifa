@@ -1,9 +1,12 @@
 import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { DomainError, type TicketPurpose } from '@vertex-shifa/contracts';
+import type { Config } from '../config/config.js';
+import { CONFIG } from '../config/config.module.js';
 import { ACCESS, type Access, ENTITLEMENT, type Entitlement } from './access.decorators.js';
 import type { AuthenticatedRequest } from './actor.js';
 import {
+  CONSOLE_SESSION_COOKIE,
   DEVICE_TOKEN_HEADER,
   SESSION_VERIFIER,
   type SessionVerifier,
@@ -11,7 +14,11 @@ import {
 } from './session-verifier.js';
 
 type Request = AuthenticatedRequest & {
+  method: string;
   headers: Record<string, string | string[] | undefined>;
+  params: Record<string, string | undefined>;
+  /** Express's matched route: its path with parameters, `/api/console/tenants/:id/status`. */
+  route?: { path?: unknown };
 };
 
 function header(request: Request, name: string): string | undefined {
@@ -24,20 +31,36 @@ function bearer(request: Request): string | undefined {
   return match?.[1];
 }
 
+/** The value of cookie `name` in the request's `Cookie` header. */
+function cookie(request: Request, name: string): string | undefined {
+  for (const part of (header(request, 'cookie') ?? '').split(';')) {
+    const separator = part.indexOf('=');
+    if (separator > 0 && part.slice(0, separator).trim() === name) {
+      const value = part.slice(separator + 1).trim();
+      return value.length > 0 ? value : undefined;
+    }
+  }
+  return undefined;
+}
+
 const unauthenticated = () => new DomainError('UNAUTHENTICATED', 'No session');
+const crossOrigin = () => new DomainError('FORBIDDEN', 'A console write from another origin');
+
+const READS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 /**
  * Runs before every route and refuses unless the route's declarations allow the request (ADR 0005,
- * ADR 0013). It fails closed: a route without declarations is refused, patient and console routes
- * are refused until their sessions exist (S19, S02 console), and every route that needs a feature
- * is refused until the entitlement resolver (S05). The actor, device and ticket it sets come from
- * verified tokens only (ADR 0004).
+ * ADR 0013). It fails closed: a route without declarations is refused, patient routes are refused
+ * until their sessions exist (S19), and every route that needs a feature is refused until the
+ * entitlement resolver (S05). The actor, device and ticket it sets come from verified tokens only
+ * (ADR 0004).
  */
 @Injectable()
 export class AccessGuard implements CanActivate {
   constructor(
     @Inject(Reflector) private readonly reflector: Reflector,
     @Inject(SESSION_VERIFIER) private readonly sessions: SessionVerifier,
+    @Inject(CONFIG) private readonly config: Config,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -96,10 +119,36 @@ export class AccessGuard implements CanActivate {
         request.ticket = ticket;
         return;
       }
+      case 'console': {
+        const token = cookie(request, CONSOLE_SESSION_COOKIE);
+        if (!token) throw unauthenticated();
+        const route = typeof request.route?.path === 'string' ? request.route.path : '';
+        // The origin is judged by the verifier, after the request is audited (rule 41).
+        request.actor = await this.sessions.console(
+          token,
+          {
+            permission: access.permission,
+            reauth: access.reauth,
+            fromConsole: this.fromConsole(request),
+          },
+          { route: `${request.method} ${route}`, params: request.params ?? {} },
+        );
+        return;
+      }
+      case 'console-sign-in':
+        if (!this.fromConsole(request)) throw crossOrigin();
+        return;
       case 'patient':
-      case 'console':
         throw unauthenticated();
     }
+  }
+
+  /**
+   * Rule 39: a console write must come from the console's own origin. `SameSite=Strict` is decided
+   * per site, so a sibling subdomain could still make the browser send the cookie; this cannot.
+   */
+  private fromConsole(request: Request): boolean {
+    return READS.has(request.method) || header(request, 'origin') === this.config.consoleOrigin;
   }
 
   private ticketOf(request: Request, purpose: TicketPurpose) {
