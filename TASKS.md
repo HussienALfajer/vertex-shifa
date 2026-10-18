@@ -24,11 +24,11 @@ Spec: `docs/specs/S02-identity-access-and-devices.md` (Approved 2026-10-18). ADR
 - [x] Checks, reviewer, acceptance (summary), PR with auto-merge
 
 ## PR 3 — API: staff, practitioners, devices and security settings (`feat/s02-staff-api`)
-- [ ] Invitations (create, resend, cancel; outbox event), access changes (`LAST_OWNER`, `PERMISSION_NOT_GRANTABLE`, `CONFLICT`), deactivate and reactivate (ending sessions and enrollments), staff password reset, staff list and detail
-- [ ] Practitioners: list, read, edit (own or owner), photo upload with re-encoding, specialties list; doctor role adds and archives the profile
-- [ ] Devices management: list, read, rename, revoke, remove a member from a device
-- [ ] `PATCH /api/tenant/security`
-- [ ] HTTP access tests and service tests; OpenAPI and clinic types regenerated
+- [x] Invitations (create, resend, cancel; outbox event), access changes (`LAST_OWNER`, `PERMISSION_NOT_GRANTABLE`, `CONFLICT`), deactivate and reactivate (ending sessions and enrollments), staff password reset, staff list and detail
+- [x] Practitioners: list, read, edit (own or owner), photo upload with re-encoding, specialties list; doctor role adds, archives and restores the profile; `/api/me` gains the practitioner
+- [x] Devices management: list, read, rename, revoke, remove a member from a device
+- [x] `PATCH /api/tenant/security`
+- [x] HTTP access tests and service tests; OpenAPI and clinic types regenerated
 - [ ] Checks, reviewer, acceptance (summary), PR with auto-merge
 
 ## PR 4 — API: console identity (`feat/s02-console-api`)

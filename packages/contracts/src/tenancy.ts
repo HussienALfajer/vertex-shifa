@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { clinicalReadScopeSchema, idleLockMinutesSchema } from './access.js';
 import { coordinatesSchema } from './coordinates.js';
 import { DomainError } from './errors.js';
 import { currencyCodeSchema } from './money.js';
@@ -98,6 +99,9 @@ export const tenantSchema = z
     directoryListed: z.boolean(),
     /** Listed and active: what patients see (`isShownInDirectory`). */
     directoryShown: z.boolean(),
+    /** Security settings the owner sets (spec S02): idle lock and the clinical read scope. */
+    idleLockMinutes: idleLockMinutesSchema,
+    clinicalReadScope: clinicalReadScopeSchema,
     createdAt: instantSchema,
     updatedAt: instantSchema,
     archivedAt: instantSchema.nullable(),
@@ -105,6 +109,17 @@ export const tenantSchema = z
   .meta({ id: 'Tenant' });
 
 export type Tenant = z.infer<typeof tenantSchema>;
+
+/** The owner's security settings (spec S02 rule 25), with the `updatedAt` the client read. */
+export const updateTenantSecuritySchema = z
+  .object({
+    idleLockMinutes: idleLockMinutesSchema,
+    clinicalReadScope: clinicalReadScopeSchema,
+    expectedUpdatedAt: instantSchema,
+  })
+  .meta({ id: 'UpdateTenantSecurity' });
+
+export type UpdateTenantSecurity = z.infer<typeof updateTenantSecuritySchema>;
 
 export const createTenantSchema = z
   .object({

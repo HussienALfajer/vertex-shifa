@@ -231,9 +231,57 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["DeviceManagementController.list"];
         put?: never;
         post: operations["DevicesController.register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/devices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DeviceManagementController.get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["DeviceManagementController.rename"];
+        trace?: never;
+    };
+    "/api/devices/{id}/enrollments/{enrollmentId}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DeviceManagementController.removeMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/devices/{id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DeviceManagementController.revoke"];
         delete?: never;
         options?: never;
         head?: never;
@@ -448,6 +496,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/practitioners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PractitionersController.list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/practitioners/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PractitionersController.get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["PractitionersController.update"];
+        trace?: never;
+    };
+    "/api/practitioners/{id}/photo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PractitionersController.getPhoto"];
+        put: operations["PractitionersController.replacePhoto"];
+        post?: never;
+        delete: operations["PractitionersController.archivePhoto"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sessions": {
         parameters: {
             query?: never;
@@ -506,6 +602,166 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["SessionsController.refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/specialties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SpecialtiesController.list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StaffController.list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StaffController.get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/{id}/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["StaffController.changeAccess"];
+        trace?: never;
+    };
+    "/api/staff/{id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffController.deactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/{id}/invitation/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffController.cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/{id}/invitation/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffController.resend"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/{id}/password-reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffController.authorizePasswordReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffController.reactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/staff/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StaffController.invite"];
         delete?: never;
         options?: never;
         head?: never;
@@ -576,6 +832,22 @@ export interface paths {
         patch: operations["TenantController.updateProfile"];
         trace?: never;
     };
+    "/api/tenant/security": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["TenantController.updateSecurity"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -607,7 +879,7 @@ export interface components {
         AreaLevel: "governorate" | "city";
         AreaList: components["schemas"]["Area"][];
         /** @enum {string} */
-        AuditAction: "tenant.created" | "tenant.status_changed" | "tenant.directory_listing_changed" | "tenant.profile_updated" | "tenant.onboarding_completed" | "tenant_logo.replaced" | "tenant_logo.archived" | "facility.created" | "facility.updated" | "facility.archived" | "facility.restored" | "tenant.security_updated" | "staff.invited" | "staff.invitation_resent" | "staff.invitation_cancelled" | "staff.invitation_accepted" | "staff.access_changed" | "staff.deactivated" | "staff.reactivated" | "staff.password_reset_authorized" | "device.registered" | "device.renamed" | "device.revoked" | "device.wiped" | "device_enrollment.created" | "device_enrollment.revoked" | "staff_session.started" | "practitioner.updated" | "practitioner_photo.replaced" | "practitioner_photo.archived" | "account.created" | "account.password_set" | "account.password_reset_authorized" | "account.phone_changed" | "account.sign_in_locked" | "console.request" | "platform_user.created" | "platform_user.role_changed" | "platform_user.disabled" | "platform_user.enabled" | "platform_user.reset" | "platform_user.setup_completed" | "platform_user.signed_in" | "platform_user.sign_in_failed" | "platform_user.sign_in_locked" | "platform_user.totp_failed" | "platform_user.recovery_code_used" | "platform_user.reauthenticated" | "platform_user.password_changed" | "platform_user.signed_out";
+        AuditAction: "tenant.created" | "tenant.status_changed" | "tenant.directory_listing_changed" | "tenant.profile_updated" | "tenant.onboarding_completed" | "tenant_logo.replaced" | "tenant_logo.archived" | "facility.created" | "facility.updated" | "facility.archived" | "facility.restored" | "tenant.security_updated" | "staff.invited" | "staff.invitation_resent" | "staff.invitation_cancelled" | "staff.invitation_accepted" | "staff.access_changed" | "staff.deactivated" | "staff.reactivated" | "staff.password_reset_authorized" | "device.registered" | "device.renamed" | "device.revoked" | "device.wiped" | "device_enrollment.created" | "device_enrollment.revoked" | "staff_session.started" | "practitioner.created" | "practitioner.updated" | "practitioner.archived" | "practitioner.restored" | "practitioner_photo.replaced" | "practitioner_photo.archived" | "account.created" | "account.password_set" | "account.password_reset_authorized" | "account.phone_changed" | "account.sign_in_locked" | "console.request" | "platform_user.created" | "platform_user.role_changed" | "platform_user.disabled" | "platform_user.enabled" | "platform_user.reset" | "platform_user.setup_completed" | "platform_user.signed_in" | "platform_user.sign_in_failed" | "platform_user.sign_in_locked" | "platform_user.totp_failed" | "platform_user.recovery_code_used" | "platform_user.reauthenticated" | "platform_user.password_changed" | "platform_user.signed_out";
         /** @enum {string} */
         AuditActorKind: "staff" | "patient" | "platform" | "system";
         BranchScope: {
@@ -714,6 +986,9 @@ export interface components {
                 /** Format: date-time */
                 lastConfirmedAt: string;
             }[];
+        };
+        DeactivateStaff: {
+            reason: string;
         };
         DeviceEnrollment: {
             /** Format: uuid */
@@ -844,6 +1119,9 @@ export interface components {
             /** Format: uuid */
             parentId?: string;
         };
+        ListDevicesQuery: {
+            status?: components["schemas"]["DeviceStatus"];
+        };
         ListFacilitiesQuery: {
             /** @default false */
             archived: boolean;
@@ -857,6 +1135,13 @@ export interface components {
              * @enum {string}
              */
             order: "asc" | "desc";
+            /** @default 1 */
+            page: number;
+            /** @default 50 */
+            pageSize: number;
+        };
+        ListStaffQuery: {
+            status?: components["schemas"]["MembershipStatus"];
             /** @default 1 */
             page: number;
             /** @default 50 */
@@ -879,6 +1164,34 @@ export interface components {
             /** @default 50 */
             pageSize: number;
         };
+        ManagedDevice: {
+            /** Format: uuid */
+            id: string;
+            facilityId: string | null;
+            name: string;
+            status: components["schemas"]["DeviceStatus"];
+            os: string;
+            appVersion: string;
+            /** Format: date-time */
+            lastSeenAt: string;
+            /** Format: date-time */
+            registeredAt: string;
+            revokedAt: string | null;
+            wipedAt: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+            members: {
+                /** Format: uuid */
+                enrollmentId: string;
+                /** Format: uuid */
+                membershipId: string;
+                name: string;
+                roles: components["schemas"]["StaffRole"][];
+                /** Format: date-time */
+                lastConfirmedAt: string;
+            }[];
+        };
+        ManagedDeviceList: components["schemas"]["ManagedDevice"][];
         Me: {
             account: {
                 /** Format: uuid */
@@ -897,6 +1210,7 @@ export interface components {
             /** Format: uuid */
             deviceId: string;
             facilityId: string | null;
+            practitioner: components["schemas"]["Practitioner"] | null;
         };
         /** @enum {string} */
         MembershipStatus: "invited" | "active" | "deactivated";
@@ -945,6 +1259,10 @@ export interface components {
             /** Format: date-time */
             passwordChangedAt: string;
         };
+        PasswordResetAuthorized: {
+            /** Format: date-time */
+            passwordResetAuthorizedUntil: string;
+        };
         PermissionAdjustments: {
             /** @default [] */
             granted: components["schemas"]["PermissionKey"][];
@@ -958,6 +1276,33 @@ export interface components {
         PlatformRole: "admin" | "support";
         /** @enum {string} */
         PlatformUserStatus: "pending_setup" | "active" | "disabled";
+        Practitioner: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            membershipId: string;
+            displayNameAr: string;
+            displayNameLatin: string | null;
+            gender: components["schemas"]["Gender"];
+            specialtyIds: string[];
+            syndicateNumber: string | null;
+            hasPhoto: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        PractitionerList: components["schemas"]["Practitioner"][];
+        PractitionerPhoto: {
+            /** @constant */
+            contentType: "image/jpeg";
+            /** Format: base64 */
+            data: string;
+            byteSize: number;
+            width: number;
+            height: number;
+            sha256: string;
+        };
         PractitionerProfileInput: {
             displayNameAr: string;
             /** @default null */
@@ -1012,9 +1357,27 @@ export interface components {
                 }[];
             }[];
         };
+        RenameDevice: {
+            name: components["schemas"]["DeviceName"];
+        };
         ResolveMapLink: {
             /** Format: uri */
             url: string;
+        };
+        RevokedEnrollment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            deviceId: string;
+            /** Format: uuid */
+            membershipId: string;
+            /** Format: date-time */
+            revokedAt: string;
+            revokeReason: components["schemas"]["EnrollmentRevokeReason"];
+        };
+        RevokeDevice: {
+            category: components["schemas"]["DeviceRevokeCategory"];
+            reason: string;
         };
         SessionEnded: {
             /** Format: date-time */
@@ -1068,6 +1431,37 @@ export interface components {
             nameLatin: string;
             position: number;
         };
+        SpecialtyList: components["schemas"]["Specialty"][];
+        StaffMember: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            phone: string;
+            status: components["schemas"]["MembershipStatus"];
+            roles: components["schemas"]["StaffRole"][];
+            branchScope: components["schemas"]["BranchScope"];
+            adjustments: {
+                granted: components["schemas"]["PermissionKey"][];
+                revoked: components["schemas"]["PermissionKey"][];
+            };
+            permissions: components["schemas"]["PermissionKey"][];
+            practitionerId: string | null;
+            invitationExpiresAt: string | null;
+            invitationMessageStatus: components["schemas"]["InvitationMessageStatus"] | null;
+            acceptedAt: string | null;
+            deactivatedAt: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            archivedAt: string | null;
+        };
+        StaffPage: {
+            items: components["schemas"]["StaffMember"][];
+            total: number;
+            page: number;
+            pageSize: number;
+        };
         /** @enum {string} */
         StaffRole: "owner" | "doctor" | "reception" | "nurse" | "accountant";
         Tenant: {
@@ -1082,6 +1476,8 @@ export interface components {
             onboardingCompletedAt: string | null;
             directoryListed: boolean;
             directoryShown: boolean;
+            idleLockMinutes: components["schemas"]["IdleLockMinutes"];
+            clinicalReadScope: components["schemas"]["ClinicalReadScope"];
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -1123,9 +1519,26 @@ export interface components {
             /** Format: date-time */
             expectedUpdatedAt: string;
         };
+        UpdatePractitioner: {
+            displayNameAr: string;
+            /** @default null */
+            displayNameLatin: string | null;
+            gender: components["schemas"]["Gender"];
+            specialtyIds: string[];
+            /** @default null */
+            syndicateNumber: string | null;
+            /** Format: date-time */
+            expectedUpdatedAt: string;
+        };
         UpdateTenantProfile: {
             nameAr: string;
             nameLatin: string | null;
+            /** Format: date-time */
+            expectedUpdatedAt: string;
+        };
+        UpdateTenantSecurity: {
+            idleLockMinutes: components["schemas"]["IdleLockMinutes"];
+            clinicalReadScope: components["schemas"]["ClinicalReadScope"];
             /** Format: date-time */
             expectedUpdatedAt: string;
         };
@@ -1620,6 +2033,37 @@ export interface operations {
             };
         };
     };
+    "DeviceManagementController.list": {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["DeviceStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedDeviceList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     "DevicesController.register": {
         parameters: {
             query?: never;
@@ -1640,6 +2084,139 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RegisteredDevice"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "DeviceManagementController.get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedDevice"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "DeviceManagementController.rename": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameDevice"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedDevice"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "DeviceManagementController.removeMember": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                enrollmentId: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokedEnrollment"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "DeviceManagementController.revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevokeDevice"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedDevice"];
                 };
             };
             /** @description Error */
@@ -2130,6 +2707,201 @@ export interface operations {
             };
         };
     };
+    "PractitionersController.list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PractitionerList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "PractitionersController.get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Practitioner"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "PractitionersController.update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePractitioner"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Practitioner"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "PractitionersController.getPhoto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PractitionerPhoto"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "PractitionersController.replacePhoto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PractitionerPhoto"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "PractitionersController.archivePhoto": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Practitioner"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     "SessionsController.open": {
         parameters: {
             query?: never;
@@ -2245,6 +3017,326 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SessionTokens"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "SpecialtiesController.list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpecialtyList"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "StaffController.list": {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["MembershipStatus"];
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffPage"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "StaffController.get": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffMember"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "StaffController.changeAccess": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeStaffAccess"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffMember"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "StaffController.deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeactivateStaff"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffMember"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "StaffController.cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffMember"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "StaffController.resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffMember"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "StaffController.authorizePasswordReset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordResetAuthorized"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "StaffController.reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffMember"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "StaffController.invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInvitation"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffMember"];
                 };
             };
             /** @description Error */
@@ -2420,6 +3512,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["UpdateTenantProfile"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Tenant"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "TenantController.updateSecurity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTenantSecurity"];
             };
         };
         responses: {

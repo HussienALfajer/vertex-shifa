@@ -35,6 +35,8 @@ import {
   inviteFirstOwner,
   isPendingInvitation,
   linkedTenantIds,
+  PRACTITIONER_PROFILES,
+  type PractitionerProfiles,
   permissionsOf,
   readMembership,
 } from '../access/index.js';
@@ -43,6 +45,7 @@ import { readFacilitiesInUse, readTenant } from '../tenancy/index.js';
 import { OtpChallenges } from './otp-challenges.js';
 import { ProofOfWork } from './proof-of-work.js';
 import { decoyPasswordHash, hashPassword, KeyedHash, verifyPassword } from './secrets.js';
+import { findOrCreateAccount } from './staff-accounts.js';
 import { endSessions } from './staff-sessions.js';
 import { Tickets } from './tickets.js';
 import { TokenSigner } from './tokens.js';
@@ -82,6 +85,7 @@ export class AuthService {
     @Inject(OtpChallenges) private readonly otps: OtpChallenges,
     @Inject(Tickets) private readonly tickets: Tickets,
     @Inject(TokenSigner) private readonly tokens: TokenSigner,
+    @Inject(PRACTITIONER_PROFILES) private readonly practitioners: PractitionerProfiles,
   ) {}
 
   proofOfWork(address: string) {
@@ -291,6 +295,9 @@ export class AuthService {
   async me(actor: StaffActor): Promise<Me> {
     const [account] = await this.db.select().from(accounts).where(eq(accounts.id, actor.accountId));
     if (!account) throw new DomainError('UNAUTHENTICATED', 'The account is gone');
+    const practitioner = await withTenant(this.db, actor.tenantId, (tx) =>
+      this.practitioners.current(tx, actor.membershipId),
+    );
     return {
       account: { id: account.id, phone: account.phone, nameAr: account.nameAr },
       tenantId: actor.tenantId,
@@ -301,6 +308,7 @@ export class AuthService {
       permissions: actor.permissions,
       deviceId: actor.deviceId,
       facilityId: actor.facilityId,
+      practitioner,
     };
   }
 
@@ -347,7 +355,7 @@ export class AuthService {
     owner: { phone: string; name: string },
     actor: StaffOfVertex,
   ): Promise<string> {
-    const accountId = await this.findOrCreateAccount(tx, owner.phone, actor);
+    const accountId = await findOrCreateAccount(tx, owner.phone, actor);
     return inviteFirstOwner(tx, { tenantId, accountId, invitedName: owner.name, actor });
   }
 
@@ -420,32 +428,6 @@ export class AuthService {
   }
 
   // Shared steps.
-
-  private async findOrCreateAccount(
-    tx: Transaction,
-    phone: string,
-    actor: StaffOfVertex,
-  ): Promise<string> {
-    const [created] = await tx
-      .insert(accounts)
-      .values({ phone })
-      .onConflictDoNothing({ target: accounts.phone })
-      .returning({ id: accounts.id });
-    if (created) {
-      await recordPlatformAudit(tx, {
-        actor,
-        action: 'account.created',
-        entityType: 'account',
-        entityId: created.id,
-      });
-      return created.id;
-    }
-    const [existing] = await tx
-      .select({ id: accounts.id })
-      .from(accounts)
-      .where(eq(accounts.phone, phone));
-    return (existing as { id: string }).id;
-  }
 
   /** The invited name of the account's first pending invitation, if it has one. */
   private async pendingInvitationName(accountId: string, now: Date): Promise<string | undefined> {

@@ -35,7 +35,10 @@ export const auditActions = [
   'device_enrollment.created',
   'device_enrollment.revoked',
   'staff_session.started',
+  'practitioner.created',
   'practitioner.updated',
+  'practitioner.archived',
+  'practitioner.restored',
   'practitioner_photo.replaced',
   'practitioner_photo.archived',
   // S02: account-level changes, in the platform audit (recovery also in each owner's tenant)

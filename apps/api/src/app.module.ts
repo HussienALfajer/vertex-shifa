@@ -8,6 +8,7 @@ import { DatabaseModule } from './core/database/database.module.js';
 import { ErrorFilter } from './core/errors/error.filter.js';
 import { HealthCheckModule } from './core/health/health-check.module.js';
 import { ContractSerializer } from './core/serialization/contract-serializer.js';
+import { PractitionersModule } from './modules/health/practitioners/index.js';
 import { AccessModule } from './modules/platform/access/index.js';
 import { IdentityModule } from './modules/platform/identity/index.js';
 import { TenancyModule } from './modules/platform/tenancy/index.js';
@@ -29,6 +30,7 @@ export class AppModule {
         TenancyModule,
         AccessModule,
         IdentityModule,
+        PractitionersModule,
       ],
       providers: [
         { provide: APP_GUARD, useClass: AccessGuard },
