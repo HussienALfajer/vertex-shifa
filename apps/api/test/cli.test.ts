@@ -42,9 +42,19 @@ describe('tenant CLI', () => {
   it('creates a tenant in onboarding and lists it', async () => {
     const tenant = await create();
     expect(tenant.status).toBe('onboarding');
-    const listed = await run('tenant:list', '--status', 'onboarding');
-    expect(listed.code).toBe(0);
-    const ids = (JSON.parse(listed.out) as { items: { id: string }[] }).items.map((t) => t.id);
+    // Other test files share the database: the tenant may be on any page (oldest first).
+    const ids: string[] = [];
+    for (let page = 1; ; page += 1) {
+      const listed = await run('tenant:list', '--status', 'onboarding', '--page', String(page));
+      expect(listed.code).toBe(0);
+      const { items, total, pageSize } = JSON.parse(listed.out) as {
+        items: { id: string }[];
+        total: number;
+        pageSize: number;
+      };
+      ids.push(...items.map((t) => t.id));
+      if (page * pageSize >= total) break;
+    }
     expect(ids).toContain(tenant.id);
   });
 
