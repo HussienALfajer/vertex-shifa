@@ -1,10 +1,5 @@
-import {
-  type DynamicModule,
-  Module,
-  StandardSchemaSerializerInterceptor,
-  StandardSchemaValidationPipe,
-} from '@nestjs/common';
-import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
+import { type DynamicModule, Module, StandardSchemaValidationPipe } from '@nestjs/common';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR, APP_PIPE, Reflector } from '@nestjs/core';
 import { DomainError } from '@vertex-shifa/contracts';
 import { AccessGuard } from './core/access/access.guard.js';
 import type { Config } from './core/config/config.js';
@@ -12,6 +7,9 @@ import { ConfigModule } from './core/config/config.module.js';
 import { DatabaseModule } from './core/database/database.module.js';
 import { ErrorFilter } from './core/errors/error.filter.js';
 import { HealthCheckModule } from './core/health/health-check.module.js';
+import { ContractSerializer } from './core/serialization/contract-serializer.js';
+import { AccessModule } from './modules/platform/access/index.js';
+import { IdentityModule } from './modules/platform/identity/index.js';
 import { TenancyModule } from './modules/platform/tenancy/index.js';
 
 /**
@@ -24,7 +22,14 @@ export class AppModule {
   static forRoot(config: Config): DynamicModule {
     return {
       module: AppModule,
-      imports: [ConfigModule.forRoot(config), DatabaseModule, HealthCheckModule, TenancyModule],
+      imports: [
+        ConfigModule.forRoot(config),
+        DatabaseModule,
+        HealthCheckModule,
+        TenancyModule,
+        AccessModule,
+        IdentityModule,
+      ],
       providers: [
         { provide: APP_GUARD, useClass: AccessGuard },
         { provide: APP_FILTER, useClass: ErrorFilter },
@@ -43,7 +48,11 @@ export class AppModule {
             },
           }),
         },
-        { provide: APP_INTERCEPTOR, useClass: StandardSchemaSerializerInterceptor },
+        {
+          provide: APP_INTERCEPTOR,
+          inject: [Reflector],
+          useFactory: (reflector: Reflector) => new ContractSerializer(reflector),
+        },
       ],
     };
   }

@@ -18,7 +18,19 @@ export async function withTenant<T>(
 ): Promise<T> {
   if (!UUID.test(tenantId)) throw new Error('withTenant needs the tenant id as a UUID');
   return db.transaction(async (tx) => {
-    await tx.execute(sql`select set_config(${TENANT_SETTING}, ${tenantId}, true)`);
+    await enterTenant(tx, tenantId);
     return work(tx);
   });
+}
+
+/**
+ * Points an open transaction at `tenantId`: the statements that follow see and write only its
+ * rows, until the next call or the end of the transaction. For the few account-level changes that
+ * must touch each of a person's tenants in one transaction (spec S02 rules 16 and 17: a password
+ * reset ends the person's sessions in every clinic; a recovery is audited in each clinic the
+ * person owns). The tenant ids come from the account's own links, never from client input.
+ */
+export async function enterTenant(tx: Transaction, tenantId: string): Promise<void> {
+  if (!UUID.test(tenantId)) throw new Error('enterTenant needs the tenant id as a UUID');
+  await tx.execute(sql`select set_config(${TENANT_SETTING}, ${tenantId}, true)`);
 }

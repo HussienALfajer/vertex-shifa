@@ -3,6 +3,7 @@ import { commonPasswords } from './common-passwords.js';
 import { DomainError } from './errors.js';
 import {
   assertPasswordStrong,
+  deviceTokenMessage,
   isTrivialPin,
   isWeakPassword,
   isWeakPin,
@@ -12,6 +13,9 @@ import {
   passwordSchema,
   pinSchema,
   publicKeySchema,
+  registerDeviceSchema,
+  signatureSchema,
+  staffSessionMessage,
 } from './identity.js';
 import { mobilePhoneNumberSchema } from './phone.js';
 
@@ -126,5 +130,36 @@ describe('offline window', () => {
     });
     expect(rolledBack.open).toBe(false);
     expect(rolledBack.clockBehind).toBe(true);
+  });
+});
+
+describe('route shapes', () => {
+  const key = (fill: string) => `${fill.repeat(43)}=`;
+
+  it('refuse a registration whose device and user keys are the same', () => {
+    const input = {
+      tenantId: '0190a000-0000-7000-8000-000000000001',
+      facilityId: null,
+      name: 'جهاز الاستقبال',
+      publicKey: key('A'),
+      os: 'Windows 11',
+      appVersion: '0.1.0',
+      userPublicKey: key('B'),
+    };
+    expect(registerDeviceSchema.safeParse(input).success).toBe(true);
+    expect(registerDeviceSchema.safeParse({ ...input, userPublicKey: key('A') }).success).toBe(
+      false,
+    );
+  });
+
+  it('sign messages bound to their purpose, nonce and ids', () => {
+    expect(deviceTokenMessage('n1', 'd1')).toBe('vertex-shifa/device-token/v1\nn1\nd1');
+    expect(staffSessionMessage('n1', 'd1', 'e1')).toBe('vertex-shifa/staff-session/v1\nn1\nd1\ne1');
+    expect(staffSessionMessage('n1', 'd1', 'e1')).not.toBe(staffSessionMessage('n1', 'd1', 'e2'));
+  });
+
+  it('accept base64 Ed25519 signatures only', () => {
+    expect(signatureSchema.safeParse(`${'A'.repeat(86)}==`).success).toBe(true);
+    expect(signatureSchema.safeParse(`${'A'.repeat(85)}==`).success).toBe(false);
   });
 });

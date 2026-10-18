@@ -6,6 +6,7 @@ import { afterAll, describe, expect, inject, it } from 'vitest';
 import {
   auditEntries,
   type Database,
+  enterTenant,
   outboxEvents,
   type Transaction,
   withTenant,
@@ -41,6 +42,25 @@ async function currentTenant(db: Database | Transaction) {
   );
   return result.rows[0]?.tenant;
 }
+
+describe('enterTenant', () => {
+  it('moves an open transaction to another tenant, and the setting ends with it', async () => {
+    const [first, second] = [uuidv7(), uuidv7()];
+    const seen = await withTenant(single, first, async (tx) => {
+      const before = await currentTenant(tx);
+      await tx.insert(auditEntries).values(entry(first));
+      await enterTenant(tx, second);
+      // The first tenant's rows are hidden once the transaction moved on.
+      const visible = await tx.select({ tenantId: auditEntries.tenantId }).from(auditEntries);
+      expect(visible.every((row) => row.tenantId === second)).toBe(true);
+      await tx.insert(auditEntries).values(entry(second));
+      await expect(enterTenant(tx, 'tenant-b')).rejects.toThrow(/UUID/);
+      return [before, await currentTenant(tx)];
+    });
+    expect(seen).toEqual([first, second]);
+    expect(await currentTenant(single)).toBeFalsy();
+  });
+});
 
 describe('withTenant', () => {
   it('refuses a tenant id that is not a UUID', async () => {

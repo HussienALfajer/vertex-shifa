@@ -3,7 +3,9 @@ import { NestFactory } from '@nestjs/core';
 import { describeForLog } from '@vertex-shifa/db';
 import { AppModule } from '../app.module.js';
 import { loadConfig } from '../core/config/config.js';
+import { AuthService } from '../modules/platform/identity/index.js';
 import { TenancyService } from '../modules/platform/tenancy/index.js';
+import { runAccountCommand } from './account-commands.js';
 import { runTenantCommand } from './tenant-commands.js';
 
 // The API CLI: `pnpm --filter @vertex-shifa/api cli <command> …` after `pnpm build`. It runs the
@@ -16,10 +18,15 @@ try {
     logger: false,
   });
   try {
-    process.exitCode = await runTenantCommand(process.argv.slice(2), app.get(TenancyService), {
-      out: (text) => process.stdout.write(`${text}\n`),
-      err: (text) => process.stderr.write(`${text}\n`),
-    });
+    const argv = process.argv.slice(2);
+    const output = {
+      out: (text: string) => process.stdout.write(`${text}\n`),
+      err: (text: string) => process.stderr.write(`${text}\n`),
+    };
+    const auth = app.get(AuthService);
+    process.exitCode = argv.some((arg) => arg.startsWith('account:'))
+      ? await runAccountCommand(argv, auth, output)
+      : await runTenantCommand(argv, { tenancy: app.get(TenancyService), auth }, output);
   } finally {
     await app.close();
   }

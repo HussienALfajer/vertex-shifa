@@ -16,7 +16,7 @@ export function routeViolations(routes: Route[]): string[] {
   for (const route of routes) {
     if (!route.access) {
       violations.push(
-        `${route.name} declares no access (@Public, @PatientRoute, @StaffRoute or @ConsoleRoute)`,
+        `${route.name} declares no access (@Public, @PatientRoute, @StaffRoute, @ConsoleRoute, @DeviceRoute or @TicketRoute)`,
       );
     }
     if (!route.entitlement) {

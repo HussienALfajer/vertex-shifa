@@ -3,15 +3,18 @@ import {
   changeTenantStatusSchema,
   createTenantSchema,
   DomainError,
+  invitedNameSchema,
   listTenantsQuerySchema,
+  mobilePhoneNumberSchema,
   setTenantDirectoryListingSchema,
 } from '@vertex-shifa/contracts';
 import { z } from 'zod';
 import type { SystemActor } from '../core/access/actor.js';
+import type { AuthService } from '../modules/platform/identity/index.js';
 import type { TenancyService } from '../modules/platform/tenancy/index.js';
 
 export const USAGE = `Usage (Vertex staff, with the API's .env):
-  tenant:create --name-ar <name> [--name-latin <name>] --reason <text>
+  tenant:create --name-ar <name> [--name-latin <name>] [--owner-phone <phone> --owner-name <name>] --reason <text>
   tenant:list [--status <onboarding|active|suspended|closed>] [--page <n>]
   tenant:set-status <tenant-id> --status <active|suspended|closed> [--reason-category <non_payment|other>] --reason <text>
   tenant:set-directory <tenant-id> --listed <true|false> --reason <text>`;
@@ -26,12 +29,30 @@ const options = {
   status: { type: 'string' },
   listed: { type: 'string' },
   page: { type: 'string' },
+  'owner-phone': { type: 'string' },
+  'owner-name': { type: 'string' },
 } as const;
 
 const tenantId = z.uuid();
 const listed = z.enum(['true', 'false']).transform((value) => value === 'true');
 
 export type Output = { out: (text: string) => void; err: (text: string) => void };
+
+/** The first owner of a new tenant: both options, or neither. */
+const ownerSchema = z
+  .object({
+    'owner-phone': mobilePhoneNumberSchema.optional(),
+    'owner-name': invitedNameSchema.optional(),
+  })
+  .refine((owner) => (owner['owner-phone'] === undefined) === (owner['owner-name'] === undefined), {
+    message: 'Give --owner-phone and --owner-name together',
+    path: ['owner-name'],
+  })
+  .transform((owner) =>
+    owner['owner-phone'] && owner['owner-name']
+      ? { phone: owner['owner-phone'], name: owner['owner-name'] }
+      : undefined,
+  );
 
 /**
  * The tenant commands for Vertex staff until the console screens (S22). They call the same
@@ -40,9 +61,10 @@ export type Output = { out: (text: string) => void; err: (text: string) => void 
  */
 export async function runTenantCommand(
   argv: string[],
-  tenancy: TenancyService,
+  services: { tenancy: TenancyService; auth: AuthService },
   output: Output,
 ): Promise<number> {
+  const { tenancy, auth } = services;
   let parsed: ReturnType<typeof parseArgs<{ options: typeof options; allowPositionals: true }>>;
   try {
     parsed = parseArgs({ args: argv, options, allowPositionals: true, strict: true });
@@ -55,19 +77,25 @@ export async function runTenantCommand(
   const print = (value: unknown) => output.out(JSON.stringify(value, null, 2));
   try {
     switch (extra.length === 0 ? command : undefined) {
-      case 'tenant:create':
+      case 'tenant:create': {
         if (id !== undefined) break;
+        const input = createTenantSchema.parse({
+          nameAr: values['name-ar'],
+          nameLatin: values['name-latin'],
+          reason: values.reason,
+        });
+        const owner = ownerSchema.parse({
+          'owner-phone': values['owner-phone'],
+          'owner-name': values['owner-name'],
+        });
+        // S02 rule 3: the first owner's invitation commits with the tenant, or neither does.
         print(
-          await tenancy.createTenant(
-            SYSTEM,
-            createTenantSchema.parse({
-              nameAr: values['name-ar'],
-              nameLatin: values['name-latin'],
-              reason: values.reason,
-            }),
+          await tenancy.createTenant(SYSTEM, input, (tx, tenantId) =>
+            owner ? auth.inviteFirstOwner(tx, tenantId, owner, SYSTEM) : Promise.resolve(),
           ),
         );
         return 0;
+      }
       case 'tenant:list':
         if (id !== undefined) break;
         print(

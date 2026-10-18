@@ -166,3 +166,40 @@ export type ClinicalReadScope = z.infer<typeof clinicalReadScopeSchema>;
 export const idleLockMinutesSchema = z.int().min(5).max(60).meta({ id: 'IdleLockMinutes' });
 
 export const DEFAULT_IDLE_LOCK_MINUTES = 15;
+
+/** The catalog as the clinic app shows it in the permission editor (`GET /api/access/catalog`). */
+export const accessCatalogSchema = z
+  .object({
+    permissions: z.array(
+      z.object({
+        key: permissionKeySchema,
+        group: z.enum(permissionGroups),
+        branchScoped: z.boolean(),
+        /** The roles a member needs to hold it, or `any`. */
+        limit: z.union([z.literal('any'), z.array(roleSchema)]),
+      }),
+    ),
+    presets: z.record(roleSchema, z.array(permissionKeySchema)),
+    ownerLocked: z.array(permissionKeySchema),
+  })
+  .meta({ id: 'AccessCatalog' });
+
+export type AccessCatalog = z.infer<typeof accessCatalogSchema>;
+
+export function accessCatalog(): AccessCatalog {
+  return {
+    permissions: permissionKeys.map((key) => {
+      const info = permissionCatalog[key] as PermissionInfo;
+      return {
+        key,
+        group: info.group,
+        branchScoped: info.branchScoped,
+        limit: info.limit === 'any' ? 'any' : [...info.limit],
+      };
+    }),
+    presets: Object.fromEntries(
+      roles.map((role) => [role, [...rolePresets[role]]]),
+    ) as AccessCatalog['presets'],
+    ownerLocked: [...ownerLockedPermissions],
+  };
+}

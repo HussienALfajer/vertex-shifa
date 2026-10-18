@@ -1,5 +1,37 @@
 // Generated from apps/api/openapi.json by test/api-schema.test.ts; never edit by hand.
 export interface paths {
+    "/api/.well-known/jwks.json": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["JwksController.jwks"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/access/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AccessController.catalog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/areas": {
         parameters: {
             query?: never;
@@ -26,6 +58,118 @@ export interface paths {
         get: operations["TenancyLookupController.area"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/otp/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController.requestOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/otp/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController.resendOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/otp/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController.verifyOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController.setPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/pow": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController.proofOfWork"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/registration-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AuthController.registrationOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/sign-in": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController.signIn"];
         delete?: never;
         options?: never;
         head?: never;
@@ -74,6 +218,102 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["TenancyConsoleController.changeStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DevicesController.register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/devices/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["DevicesController.current"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/devices/current/enrollments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DevicesController.enroll"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/devices/current/wiped": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DevicesController.wiped"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/devices/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DevicesController.token"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/devices/token/challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DevicesController.challenge"];
         delete?: never;
         options?: never;
         head?: never;
@@ -176,6 +416,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MeController.me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["MeController.changePassword"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SessionsController.open"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SessionsController.challenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/current/end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SessionsController.end"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sessions/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SessionsController.refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tenant": {
         parameters: {
             query?: never;
@@ -244,6 +580,19 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AccessCatalog: {
+            permissions: {
+                key: components["schemas"]["PermissionKey"];
+                /** @enum {string} */
+                group: "clinic" | "staff" | "devices" | "practitioners";
+                branchScoped: boolean;
+                limit: "any" | components["schemas"]["StaffRole"][];
+            }[];
+            presets: {
+                [key: string]: components["schemas"]["PermissionKey"][];
+            };
+            ownerLocked: components["schemas"]["PermissionKey"][];
+        };
         AccountName: string;
         Area: {
             /** Format: uuid */
@@ -268,6 +617,10 @@ export interface components {
             /** @constant */
             allFacilities: false;
             facilityIds: string[];
+        };
+        ChangePassword: {
+            currentPassword: string;
+            newPassword: components["schemas"]["Password"];
         };
         ChangeStaffAccess: {
             roles: components["schemas"]["StaffRole"][];
@@ -336,13 +689,92 @@ export interface components {
         };
         /** @enum {string} */
         CurrencyCode: "USD" | "TRY" | "SYP";
+        CurrentDevice: {
+            device: components["schemas"]["DeviceRegistration"];
+            tenant: {
+                /** Format: uuid */
+                id: string;
+                nameAr: string;
+                nameLatin: string | null;
+                status: components["schemas"]["TenantStatus"];
+                idleLockMinutes: components["schemas"]["IdleLockMinutes"];
+            };
+            facility: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            } | null;
+            members: {
+                /** Format: uuid */
+                enrollmentId: string;
+                /** Format: uuid */
+                membershipId: string;
+                name: string;
+                roles: components["schemas"]["StaffRole"][];
+                /** Format: date-time */
+                lastConfirmedAt: string;
+            }[];
+        };
+        DeviceEnrollment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            deviceId: string;
+            /** Format: uuid */
+            membershipId: string;
+            /** Format: date-time */
+            lastConfirmedAt: string;
+        };
         DeviceName: string;
+        DeviceRegistration: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            facilityId: string | null;
+            name: string;
+            status: components["schemas"]["DeviceStatus"];
+        };
         /** @enum {string} */
         DeviceRevokeCategory: "lost_or_stolen" | "replaced" | "other";
         /** @enum {string} */
         DeviceStatus: "active" | "revoked";
+        DeviceToken: {
+            deviceToken: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        DeviceTokenChallenge: {
+            /** Format: uuid */
+            tenantId: string;
+            /** Format: uuid */
+            deviceId: string;
+        };
+        DeviceTokenRequest: {
+            /** Format: uuid */
+            tenantId: string;
+            /** Format: uuid */
+            deviceId: string;
+            nonce: string;
+            signature: components["schemas"]["Signature"];
+            appVersion: string;
+        };
+        DeviceWiped: {
+            wipedAt: string | null;
+        };
         /** @enum {string} */
         DisplayNameFormat: "ticket_only" | "first_name_father_initial";
+        EndSession: {
+            /** @enum {string} */
+            reason: "signed_out" | "locked";
+        };
+        Enroll: {
+            userPublicKey: components["schemas"]["PublicKey"];
+        };
+        Enrolled: {
+            enrollment: components["schemas"]["DeviceEnrollment"];
+            session: components["schemas"]["SessionTokens"];
+        };
         /** @enum {string} */
         EnrollmentRevokeReason: "device_revoked" | "member_deactivated" | "removed_from_device" | "pin_forgotten" | "branch_left";
         /** @enum {string} */
@@ -394,6 +826,20 @@ export interface components {
         IdleLockMinutes: number;
         /** @enum {string} */
         InvitationMessageStatus: "pending" | "sent" | "failed";
+        Jwks: {
+            keys: {
+                /** @constant */
+                kty: "OKP";
+                /** @constant */
+                crv: "Ed25519";
+                x: string;
+                kid: string;
+                /** @constant */
+                alg: "EdDSA";
+                /** @constant */
+                use: "sig";
+            }[];
+        };
         ListAreasQuery: {
             /** Format: uuid */
             parentId?: string;
@@ -433,6 +879,25 @@ export interface components {
             /** @default 50 */
             pageSize: number;
         };
+        Me: {
+            account: {
+                /** Format: uuid */
+                id: string;
+                phone: string;
+                nameAr: string | null;
+            };
+            /** Format: uuid */
+            tenantId: string;
+            /** Format: uuid */
+            membershipId: string;
+            roles: components["schemas"]["StaffRole"][];
+            allFacilities: boolean;
+            facilityIds: string[];
+            permissions: components["schemas"]["PermissionKey"][];
+            /** Format: uuid */
+            deviceId: string;
+            facilityId: string | null;
+        };
         /** @enum {string} */
         MembershipStatus: "invited" | "active" | "deactivated";
         MobilePhoneNumber: components["schemas"]["PhoneNumber"];
@@ -440,10 +905,46 @@ export interface components {
             amount: number;
             currency: components["schemas"]["CurrencyCode"];
         };
+        Nonce: {
+            nonce: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        OpenSession: {
+            /** Format: uuid */
+            enrollmentId: string;
+            nonce: string;
+            signature: components["schemas"]["Signature"];
+        };
+        OtpChallenge: {
+            /** Format: uuid */
+            challengeId: string;
+        };
         OtpCode: string;
         /** @enum {string} */
         OtpPurpose: "device_sign_in" | "first_sign_in" | "password_reset";
+        OtpRequest: {
+            phone: components["schemas"]["MobilePhoneNumber"];
+            /** @enum {string} */
+            purpose: "first_sign_in" | "password_reset";
+            proofOfWork: components["schemas"]["ProofOfWorkSolution"];
+        };
+        OtpVerified: {
+            ticket: string;
+            needsPassword: boolean;
+            needsName: boolean;
+            suggestedName: string | null;
+        };
+        OtpVerify: {
+            /** Format: uuid */
+            challengeId: string;
+            code: components["schemas"]["OtpCode"];
+        };
         Password: string;
+        PasswordChanged: {
+            /** Format: date-time */
+            passwordChangedAt: string;
+        };
         PermissionAdjustments: {
             /** @default [] */
             granted: components["schemas"]["PermissionKey"][];
@@ -466,19 +967,99 @@ export interface components {
             /** @default null */
             syndicateNumber: string | null;
         };
+        ProofOfWorkChallenge: {
+            challenge: string;
+            difficulty: number;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        ProofOfWorkSolution: {
+            challenge: string;
+            nonce: string;
+        };
         PublicKey: string;
         RecoveryCode: string;
+        RefreshSession: {
+            refreshToken: string;
+        };
+        RegisterDevice: {
+            /** Format: uuid */
+            tenantId: string;
+            facilityId: string | null;
+            name: components["schemas"]["DeviceName"];
+            publicKey: components["schemas"]["PublicKey"];
+            os: string;
+            appVersion: string;
+            userPublicKey: components["schemas"]["PublicKey"];
+        };
+        RegisteredDevice: {
+            device: components["schemas"]["DeviceRegistration"];
+            enrollment: components["schemas"]["DeviceEnrollment"];
+            session: components["schemas"]["SessionTokens"];
+        };
+        RegistrationOptions: {
+            clinics: {
+                /** Format: uuid */
+                tenantId: string;
+                nameAr: string;
+                nameLatin: string | null;
+                status: components["schemas"]["TenantStatus"];
+                roles: components["schemas"]["StaffRole"][];
+                branches: {
+                    /** Format: uuid */
+                    id: string;
+                    name: string;
+                }[];
+            }[];
+        };
         ResolveMapLink: {
             /** Format: uri */
             url: string;
         };
+        SessionEnded: {
+            /** Format: date-time */
+            endedAt: string;
+        };
         /** @enum {string} */
         SessionEndReason: "signed_out" | "locked" | "expired" | "member_deactivated" | "device_revoked" | "enrollment_revoked" | "password_reset";
+        SessionTokens: {
+            /** Format: uuid */
+            sessionId: string;
+            accessToken: string;
+            /** Format: date-time */
+            accessTokenExpiresAt: string;
+            refreshToken: string;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        SetPassword: {
+            name?: components["schemas"]["AccountName"];
+            password: components["schemas"]["Password"];
+        };
         SetTenantDirectoryListing: {
             listed: boolean;
             reason: string;
         };
         SetupCode: string;
+        Signature: string;
+        SignIn: {
+            phone: components["schemas"]["MobilePhoneNumber"];
+            password: string;
+            proofOfWork: components["schemas"]["ProofOfWorkSolution"];
+        };
+        SignInResult: {
+            /** @constant */
+            step: "otp";
+            /** Format: uuid */
+            challengeId: string;
+        } | {
+            /** @constant */
+            step: "done";
+            ticket: string;
+        };
+        SignInTicket: {
+            ticket: string;
+        };
         Specialty: {
             /** Format: uuid */
             id: string;
@@ -558,6 +1139,64 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    "JwksController.jwks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Jwks"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "AccessController.catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessCatalog"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     "TenancyLookupController.areas": {
         parameters: {
             query?: {
@@ -607,6 +1246,229 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Area"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "AuthController.requestOtp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OtpRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtpChallenge"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "AuthController.resendOtp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OtpChallenge"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtpChallenge"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "AuthController.verifyOtp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OtpVerify"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtpVerified"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "AuthController.setPassword": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPassword"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignInTicket"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "AuthController.proofOfWork": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProofOfWorkChallenge"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "AuthController.registrationOptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationOptions"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "AuthController.signIn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignIn"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignInResult"];
                 };
             };
             /** @description Error */
@@ -745,6 +1607,196 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Tenant"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "DevicesController.register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterDevice"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisteredDevice"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "DevicesController.current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentDevice"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "DevicesController.enroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Enroll"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Enrolled"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "DevicesController.wiped": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceWiped"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "DevicesController.token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeviceTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeviceToken"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "DevicesController.challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeviceTokenChallenge"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Nonce"];
                 };
             };
             /** @description Error */
@@ -1003,6 +2055,196 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Coordinates"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "MeController.me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "MeController.changePassword": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePassword"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PasswordChanged"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "SessionsController.open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenSession"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionTokens"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "SessionsController.challenge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Nonce"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "SessionsController.end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EndSession"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionEnded"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "SessionsController.refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshSession"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionTokens"];
                 };
             };
             /** @description Error */
