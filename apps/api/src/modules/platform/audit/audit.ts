@@ -8,7 +8,7 @@ import type { PlatformActor, SystemActor } from '../../../core/access/actor.js';
  */
 export type AuditActor =
   | { kind: 'staff'; membershipId: string; deviceId: string | null }
-  | PlatformActor
+  | Pick<PlatformActor, 'kind' | 'userId'>
   | SystemActor;
 
 export type AuditInput = {
@@ -50,17 +50,18 @@ export async function recordAudit(tx: Transaction, tenantId: string, input: Audi
  */
 export type PlatformAuditActor =
   | { kind: 'staff'; accountId: string; deviceId?: string | null }
-  | PlatformActor
+  | Pick<PlatformActor, 'kind' | 'userId'>
   | SystemActor;
 
 export type PlatformAuditInput = {
   actor: PlatformAuditActor;
   action: AuditAction;
   entityType: string;
-  entityId: string;
+  /** Null for a console request that names no single entity (a list). */
+  entityId: string | null;
   reason?: string;
   /** The tenant a console action concerns. */
-  subjectTenantId?: string;
+  subjectTenantId?: string | null;
   /** The console route id, never the body. */
   requestRoute?: string;
 };

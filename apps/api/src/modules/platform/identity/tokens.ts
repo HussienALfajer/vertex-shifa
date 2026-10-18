@@ -5,7 +5,8 @@ import { z } from 'zod';
 /**
  * The API's signed tokens (spec S02): EdDSA JWTs (RFC 7519, RFC 8037) signed with
  * `IDENTITY_TOKEN_KEY`. Access tokens name a staff session, device tokens a registered device,
- * tickets a person in the middle of signing in. Each kind has its own claims, so one is never
+ * tickets a person in the middle of signing in, console steps a platform user in the middle of
+ * signing in to the console. Each kind has its own claims, so one is never
  * accepted as another; the header must be exactly EdDSA with this key's id.
  */
 
@@ -21,6 +22,7 @@ const claimsOf = {
     did: z.uuid().nullable(),
     tid: z.uuid().nullable(),
   }),
+  console_step: z.object({ jti: z.string(), step: z.enum(['totp', 'setup']), uid: z.uuid() }),
 } as const;
 
 export type TokenKind = keyof typeof claimsOf;
@@ -85,7 +87,7 @@ export class TokenSigner {
     }
     if (body.exp * 1000 <= now.getTime()) return undefined;
     const claims = claimsOf[kind].safeParse(body);
-    return claims.success ? ({ ...claims.data, exp: body.exp } as Claims<K>) : undefined;
+    return claims.success ? ({ ...claims.data, exp: body.exp } as unknown as Claims<K>) : undefined;
   }
 
   /** The public key as a JSON Web Key Set, for the sync service (S04). */

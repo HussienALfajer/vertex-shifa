@@ -39,6 +39,7 @@ export const audit = {
   'account.password_set': 'تعيين كلمة المرور',
   'account.password_reset_authorized': 'السماح بإعادة تعيين كلمة المرور',
   'account.phone_changed': 'تغيير رقم الهاتف',
+  'account.looked_up': 'البحث عن حساب مالك عيادة',
   'account.sign_in_locked': 'قفل تسجيل الدخول بعد محاولات خاطئة',
   'console.request': 'طلب من لوحة التحكم',
   'platform_user.created': 'إنشاء مستخدم لوحة التحكم',

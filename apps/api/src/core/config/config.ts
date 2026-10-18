@@ -45,6 +45,13 @@ const configSchema = z
     IDENTITY_POW_DIFFICULTY: z.coerce.number().int().min(0).max(32).default(18),
     /** Only the fake exists until S03 adds the WhatsApp gateway sender. */
     OTP_SENDER: z.enum(['fake']).default('fake'),
+    /** AES-256-GCM key of secrets the server must read back (the console TOTP secrets). */
+    IDENTITY_ENCRYPTION_KEY: base64Key(32).refine((key) => key.length === 32),
+    /** The console's origin (`https://console.example`): console writes from elsewhere are refused. */
+    CONSOLE_ORIGIN: z
+      .url({ protocol: /^https?$/ })
+      .transform((url) => new URL(url).origin)
+      .default('http://localhost:5174'),
   })
   .superRefine((env, context) => {
     if (env.NODE_ENV !== 'production') return;
@@ -58,6 +65,10 @@ const configSchema = z
     if (env.IDENTITY_POW_DIFFICULTY < MIN_PRODUCTION_POW) {
       refuse('IDENTITY_POW_DIFFICULTY', 'Too easy a proof of work');
     }
+    if (isAllZero(env.IDENTITY_ENCRYPTION_KEY))
+      refuse('IDENTITY_ENCRYPTION_KEY', 'The example key');
+    // The session cookie is `Secure`: the console is served over HTTPS (rule 39).
+    if (!env.CONSOLE_ORIGIN.startsWith('https://')) refuse('CONSOLE_ORIGIN', 'Not HTTPS');
   })
   .transform((env) => ({
     databaseUrl: env.DATABASE_APP_URL,
@@ -68,7 +79,9 @@ const configSchema = z
       tokenKey: env.IDENTITY_TOKEN_KEY,
       powDifficulty: env.IDENTITY_POW_DIFFICULTY,
       otpSender: env.OTP_SENDER,
+      encryptionKey: env.IDENTITY_ENCRYPTION_KEY,
     },
+    consoleOrigin: env.CONSOLE_ORIGIN,
   }));
 
 export type Config = z.output<typeof configSchema>;

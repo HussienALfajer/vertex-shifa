@@ -46,6 +46,7 @@ export const auditActions = [
   'account.password_set',
   'account.password_reset_authorized',
   'account.phone_changed',
+  'account.looked_up',
   'account.sign_in_locked',
   // S02: the console, in the platform audit
   'console.request',

@@ -23,7 +23,10 @@ import { TenancyService } from './tenancy.service.js';
 
 const idParam = { schema: z.uuid() };
 
-/** The tenant registry for Vertex staff (screens in S22; the CLI calls the same service). */
+/**
+ * The tenant registry for Vertex staff (screens in S22; the CLI calls the same service). Status and
+ * directory changes need a recent TOTP (spec S02 rule 38).
+ */
 @Controller('console/tenants')
 @NoFeature()
 export class TenancyConsoleController {
@@ -47,7 +50,7 @@ export class TenancyConsoleController {
   }
 
   @Post(':id/status')
-  @ConsoleRoute('tenants.change-status')
+  @ConsoleRoute('tenants.change-status', { reauth: true })
   @SerializeOptions({ schema: tenantSchema })
   changeStatus(
     @CurrentPlatformUser() user: PlatformActor,
@@ -58,7 +61,7 @@ export class TenancyConsoleController {
   }
 
   @Post(':id/directory')
-  @ConsoleRoute('tenants.manage-directory')
+  @ConsoleRoute('tenants.manage-directory', { reauth: true })
   @SerializeOptions({ schema: tenantSchema })
   setDirectory(
     @CurrentPlatformUser() user: PlatformActor,

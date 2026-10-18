@@ -357,7 +357,7 @@ export const platformSessions = pgTable(
     check('platform_sessions_ended', sql`(${t.endedAt} is null) = (${t.endReason} is null)`),
     check(
       'platform_sessions_end_reason',
-      sql`${t.endReason} in ('signed_out', 'expired', 'idle', 'user_disabled', 'user_reset', 'password_changed')`,
+      sql`${t.endReason} in ('signed_out', 'expired', 'idle', 'user_disabled', 'user_reset', 'password_changed', 'reauth_failed')`,
     ),
     index('platform_sessions_user_ended_idx').on(t.platformUserId, t.endedAt),
   ],

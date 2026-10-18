@@ -102,7 +102,7 @@ describe('the rules catch', () => {
     bare() {}
 
     @Get('console-outside')
-    @ConsoleRoute('probe.read')
+    @ConsoleRoute('tenants.read')
     @NoFeature()
     consoleOutside() {}
 
@@ -163,7 +163,7 @@ describe('the rules catch', () => {
     const violations = routeViolations(routes);
     expect(violations).toEqual(
       expect.arrayContaining([
-        'BrokenController.bare declares no access (@Public, @PatientRoute, @StaffRoute, @ConsoleRoute, @DeviceRoute or @TicketRoute)',
+        'BrokenController.bare declares no access (@Public, @PatientRoute, @StaffRoute, @ConsoleRoute, @ConsoleSignInRoute, @DeviceRoute or @TicketRoute)',
         'BrokenController.bare declares no entitlement (@RequiresFeature or @NoFeature)',
         'BrokenController.bare declares no response schema with an id (@SerializeOptions({ schema }))',
         'BrokenController.consoleOutside: console routes, and only they, live under /api/console/',

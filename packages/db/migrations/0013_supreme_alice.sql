@@ -1,0 +1,2 @@
+ALTER TABLE "platform_sessions" DROP CONSTRAINT "platform_sessions_end_reason";--> statement-breakpoint
+ALTER TABLE "platform_sessions" ADD CONSTRAINT "platform_sessions_end_reason" CHECK ("platform_sessions"."end_reason" in ('signed_out', 'expired', 'idle', 'user_disabled', 'user_reset', 'password_changed', 'reauth_failed'));

@@ -47,7 +47,7 @@ export async function runAccountCommand(
     switch (positionals.length === 1 ? positionals[0] : undefined) {
       case 'account:authorize-password-reset': {
         const { phone, reason } = input.parse(values);
-        print(await auth.authorizePasswordReset(SYSTEM, phone, reason));
+        print(await auth.authorizePasswordReset(SYSTEM, { phone }, reason));
         return 0;
       }
       case 'account:change-phone': {
@@ -56,7 +56,7 @@ export async function runAccountCommand(
           reason,
           'new-phone': newPhone,
         } = input.required({ 'new-phone': true }).parse(values);
-        print(await auth.changePhone(SYSTEM, phone, newPhone, reason));
+        print(await auth.changePhone(SYSTEM, { phone }, newPhone, reason));
         return 0;
       }
     }

@@ -14,6 +14,7 @@ const identityEnv = {
     .privateKey.export({ format: 'der', type: 'pkcs8' })
     .toString('base64'),
   IDENTITY_POW_DIFFICULTY: '4',
+  IDENTITY_ENCRYPTION_KEY: randomBytes(32).toString('base64'),
 };
 
 /**

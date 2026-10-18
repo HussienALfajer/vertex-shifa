@@ -4,6 +4,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { listRoutes, type Route } from '../src/core/routes.js';
 import { createTestApp } from './app.js';
+import { CONSOLE_ORIGIN, ConsoleClient } from './console.js';
 import { newPhone, type Session, StaffClient } from './staff.js';
 
 // The HTTP access tests of spec S02 (Acceptance, "Tests"): every staff route of S01 and S02 with
@@ -338,6 +339,20 @@ describe('console, device and ticket routes', () => {
     }
   });
 
+  it('refuse a console session on every staff, device and ticket route', async () => {
+    const consoleUser = await new ConsoleClient(client).setUp('admin');
+    const routes = listRoutes(app).filter((route) =>
+      ['staff', 'device', 'ticket'].includes(route.access?.kind ?? ''),
+    );
+    for (const route of routes) {
+      const response = await call(route, withIds(route.path, a.tenantId))
+        .set('origin', CONSOLE_ORIGIN)
+        .set('cookie', consoleUser.cookie)
+        .send({});
+      expect(response.status, key(route)).toBe(401);
+    }
+  });
+
   it('refuse device routes without a device token, or with an access token in its place', async () => {
     const routes = listRoutes(app).filter((route) => route.access?.kind === 'device');
     expect(routes.map(key).sort()).toEqual([
@@ -380,7 +395,7 @@ describe('console, device and ticket routes', () => {
 
   it('declare no feature (identity belongs to every package)', () => {
     const routes = listRoutes(app).filter((route) =>
-      /^\/api\/(auth|me|devices|sessions|access|staff|practitioners|specialties|\.well-known)(\/|$)/.test(
+      /^\/api\/(auth|me|devices|sessions|access|staff|practitioners|specialties|\.well-known|console\/(auth|me|platform-users|accounts))(\/|$)/.test(
         route.path,
       ),
     );
