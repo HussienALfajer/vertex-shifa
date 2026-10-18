@@ -3,8 +3,8 @@ import { app, BrowserWindow, net, protocol, session } from 'electron';
 import {
   APP_ORIGIN,
   APP_SCHEME,
+  connectOrigins,
   contentSecurityPolicy,
-  mapOrigins,
   resolveAppFile,
 } from './app-protocol.js';
 import { devServerUrl, isAllowedNavigation } from './navigation.js';
@@ -15,9 +15,9 @@ import { devServerUrl, isAllowedNavigation } from './navigation.js';
 const rendererDir = fileURLToPath(new URL('../renderer/', import.meta.url));
 const devServer = devServerUrl(process.argv, app.isPackaged);
 const rendererOrigin = devServer ?? APP_ORIGIN;
-// The map URLs are read at start from the variables the renderer was built with (Vite reads the
-// same ones); S04's packaging bakes them in.
-const contentSecurity = contentSecurityPolicy(mapOrigins(process.env));
+// The API and map URLs are read at start from the variables the renderer was built with (Vite
+// reads the same ones); S04's packaging bakes them in.
+const contentSecurity = contentSecurityPolicy(connectOrigins(process.env));
 
 protocol.registerSchemesAsPrivileged([
   { scheme: APP_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true } },

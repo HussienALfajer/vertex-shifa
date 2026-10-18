@@ -92,7 +92,7 @@
             "in": "query",
             "required": false,
             "schema": {
-              "$ref": "#/$defs/TenantStatus"
+              "$ref": "#/components/schemas/TenantStatus"
             }
           },
           {

@@ -45,3 +45,5 @@ From S01 tenancy, the first module.
 | Database | `packages/db/src/schema/tenancy.ts`, `migrations/0006_tenancy-isolation.sql` (RLS and grants), `test/tenancy.test.ts` |
 | API module | `apps/api/src/modules/platform/tenancy/` (controllers, service, `index.ts`), `test/tenancy.test.ts` |
 | CLI | `apps/api/src/cli/tenant-commands.ts`, `test/cli.test.ts` |
+| Clinic online-only screen | `apps/clinic/src/features/tenancy/queries.ts` (queries and API calls), `features/settings/clinic-settings-screen.tsx` (form, conflict reload, offline), `components/query-states.tsx` |
+| Clinic E2E with a mocked API | `apps/clinic/e2e/mock-api.ts`, `e2e/settings.spec.ts` |

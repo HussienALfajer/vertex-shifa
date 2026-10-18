@@ -1,13 +1,12 @@
-import { expect, type Page, type TestInfo, test } from '@playwright/test';
-
-/** An RTL screenshot per color scheme, kept in test-results/ (uploaded by CI) and in the report. */
-async function screenshot(page: Page, testInfo: TestInfo, name: string): Promise<void> {
-  const path = testInfo.outputPath(`${name}-${testInfo.project.name}.png`);
-  await page.screenshot({ path, fullPage: true });
-  await testInfo.attach(name, { path, contentType: 'image/png' });
-}
+import { expect, test } from '@playwright/test';
+import { facility, mockApi, tenant } from './mock-api.js';
+import { screenshot } from './screenshot.js';
 
 test.describe('clinic shell', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockApi(page, { tenant: tenant({ status: 'active' }), facilities: [facility()] });
+  });
+
   test('renders in Arabic, right to left, with Vertex Shifa always visible', async ({
     page,
   }, testInfo) => {

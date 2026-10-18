@@ -19,9 +19,9 @@ Spec: `docs/specs/S01-tenancy-and-clinic-setup.md` (Approved). Online only: no s
 - [x] Checks (`checker`), `reviewer`, external audit fixes (CSP host check, short-link races, retry, camera, cleared value, pin name), owner acceptance, PR with auto-merge
 
 ## PR 3 — `feat/s01-clinic-setup-screens`: clinic screens and E2E
-- [ ] Bridge: `pnpm build`, OpenAPI client for the clinic app; TanStack Query added (first online-only screen)
-- [ ] Screens: onboarding wizard (5 steps), setup in progress, clinic settings, branches, branch settings / location, directory status, suspended or closed banner; loading, error and offline states; i18n keys
-- [ ] E2E with a mocked API: wizard end to end (paste field), settings, branch list with one and two branches, offline, read-only banner; RTL screenshots light and dark, looked at
-- [ ] Map wiring: `VITE_MAP_*` read by the renderer, `maplibre-gl` added to the clinic for the worker URL (`?url`), and a decision on how the ODbL licence page is reachable (the attribution is plain text; Electron blocks outside links)
-- [ ] Docs: `apps/clinic/CLAUDE.md`, `docs/ROADMAP.md` (S01 done)
-- [ ] Checks (`checker`), `reviewer`, owner acceptance (screenshots), PR with auto-merge
+- [x] Bridge: `pnpm build`, OpenAPI client for the clinic app (`openapi-typescript` types with a drift test, `openapi-fetch`); TanStack Query added (first online-only screen); dangling `#/$defs` references in the API's query parameters fixed, with a test
+- [x] Screens: onboarding wizard (5 steps), setup in progress, clinic settings, branches, branch settings / location, directory status, suspended or closed banner; loading, error and offline states; i18n keys
+- [x] E2E with a mocked API: wizard end to end (paste field), settings, branch list with one and two branches, offline, read-only banner; RTL screenshots light and dark, looked at
+- [x] Map wiring: `VITE_MAP_*` read by the renderer, `maplibre-gl` added to the clinic for the worker URL (`?url`); the ODbL licence is a text line under the map (`openstreetmap.org/copyright`), since the app opens no outside links; `VITE_API_URL` joins the CSP's `connect-src`
+- [x] Docs: `apps/clinic/CLAUDE.md`, `docs/ROADMAP.md` (S01 done), `AGENTS.md` command, `wiring.md` patterns
+- [x] Checks (`checker`), `reviewer`, external audit fixes (lost create answers never overwritten, forms locked while saving, saves never paused offline, area load errors, first branch name), owner acceptance (screenshots), PR with auto-merge

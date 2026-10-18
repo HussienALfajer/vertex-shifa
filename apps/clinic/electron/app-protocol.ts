@@ -7,18 +7,18 @@ export const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
 
 /**
  * The content security policy of every renderer response: only the app's own files, plus the
- * origins of our map server (ADR 0023) for the style, tiles, sprites and glyphs the map fetches.
- * MapLibre's worker is a file of the app (`setWorkerUrl`), so no blob worker is allowed. The sync
- * service and API origins join `connect-src` with S04.
+ * origins of the API (online-only screens, ADR 0020) and of our map server (ADR 0023) for the
+ * style, tiles, sprites and glyphs the map fetches. MapLibre's worker is a file of the app
+ * (`setWorkerUrl`), so no blob worker is allowed. The sync service's origin joins with S04.
  */
-export function contentSecurityPolicy(mapOrigins: readonly string[]): string {
+export function contentSecurityPolicy(connectOrigins: readonly string[]): string {
   return [
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self'",
     "img-src 'self' data:",
     "font-src 'self'",
-    ["connect-src 'self'", ...mapOrigins].join(' '),
+    ["connect-src 'self'", ...connectOrigins].join(' '),
     "worker-src 'self'",
     "object-src 'none'",
     "base-uri 'none'",
@@ -27,8 +27,12 @@ export function contentSecurityPolicy(mapOrigins: readonly string[]): string {
   ].join('; ');
 }
 
-/** The variables that hold the map URLs; Vite gives the renderer the same ones at build. */
-export const MAP_URL_VARIABLES = [
+/**
+ * The variables that hold the URLs the renderer fetches from: the API and the map. Vite gives the
+ * renderer the same ones at build.
+ */
+export const CONNECT_URL_VARIABLES = [
+  'VITE_API_URL',
   'VITE_MAP_STYLE_URL',
   'VITE_MAP_TILES_URL',
   'VITE_MAP_GLYPHS_URL',
@@ -38,13 +42,13 @@ export const MAP_URL_VARIABLES = [
 const HOSTNAME = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*$/;
 
 /**
- * The origins of the configured map URLs: HTTPS, or HTTP on the loopback interface for the local
- * extract. Anything else is left out, so the map fails to load and the renderer keeps the paste
- * field.
+ * The origins of the configured API and map URLs: HTTPS, or HTTP on the loopback interface for a
+ * local API or map extract. Anything else is left out: the map fails to load and the renderer keeps
+ * the paste field, and the API's screens show their error state.
  */
-export function mapOrigins(env: Readonly<Record<string, string | undefined>>): string[] {
+export function connectOrigins(env: Readonly<Record<string, string | undefined>>): string[] {
   const origins = new Set<string>();
-  for (const name of MAP_URL_VARIABLES) {
+  for (const name of CONNECT_URL_VARIABLES) {
     let url: URL;
     try {
       url = new URL(env[name] ?? '');
