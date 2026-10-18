@@ -244,6 +244,7 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AccountName: string;
         Area: {
             /** Format: uuid */
             id: string;
@@ -257,9 +258,31 @@ export interface components {
         AreaLevel: "governorate" | "city";
         AreaList: components["schemas"]["Area"][];
         /** @enum {string} */
-        AuditAction: "tenant.created" | "tenant.status_changed" | "tenant.directory_listing_changed" | "tenant.profile_updated" | "tenant.onboarding_completed" | "tenant_logo.replaced" | "tenant_logo.archived" | "facility.created" | "facility.updated" | "facility.archived" | "facility.restored";
+        AuditAction: "tenant.created" | "tenant.status_changed" | "tenant.directory_listing_changed" | "tenant.profile_updated" | "tenant.onboarding_completed" | "tenant_logo.replaced" | "tenant_logo.archived" | "facility.created" | "facility.updated" | "facility.archived" | "facility.restored" | "tenant.security_updated" | "staff.invited" | "staff.invitation_resent" | "staff.invitation_cancelled" | "staff.invitation_accepted" | "staff.access_changed" | "staff.deactivated" | "staff.reactivated" | "staff.password_reset_authorized" | "device.registered" | "device.renamed" | "device.revoked" | "device.wiped" | "device_enrollment.created" | "device_enrollment.revoked" | "staff_session.started" | "practitioner.updated" | "practitioner_photo.replaced" | "practitioner_photo.archived" | "account.created" | "account.password_set" | "account.password_reset_authorized" | "account.phone_changed" | "account.sign_in_locked" | "console.request" | "platform_user.created" | "platform_user.role_changed" | "platform_user.disabled" | "platform_user.enabled" | "platform_user.reset" | "platform_user.setup_completed" | "platform_user.signed_in" | "platform_user.sign_in_failed" | "platform_user.sign_in_locked" | "platform_user.totp_failed" | "platform_user.recovery_code_used" | "platform_user.reauthenticated" | "platform_user.password_changed" | "platform_user.signed_out";
         /** @enum {string} */
         AuditActorKind: "staff" | "patient" | "platform" | "system";
+        BranchScope: {
+            /** @constant */
+            allFacilities: true;
+        } | {
+            /** @constant */
+            allFacilities: false;
+            facilityIds: string[];
+        };
+        ChangeStaffAccess: {
+            roles: components["schemas"]["StaffRole"][];
+            branchScope: components["schemas"]["BranchScope"];
+            /**
+             * @default {
+             *       "granted": [],
+             *       "revoked": []
+             *     }
+             */
+            adjustments: components["schemas"]["PermissionAdjustments"];
+            practitioner?: components["schemas"]["PractitionerProfileInput"];
+            /** Format: date-time */
+            expectedUpdatedAt: string;
+        };
         ChangeTenantStatus: {
             /** @enum {string} */
             status: "active" | "suspended" | "closed";
@@ -267,6 +290,8 @@ export interface components {
             reasonCategory: components["schemas"]["TenantStatusReason"];
             reason: string;
         };
+        /** @enum {string} */
+        ClinicalReadScope: "branch" | "own_patients";
         ContactPhone: {
             phone: components["schemas"]["PhoneNumber"];
             whatsapp: boolean;
@@ -290,6 +315,20 @@ export interface components {
             /** @default true */
             displayCallSound: boolean;
         };
+        CreateInvitation: {
+            phone: components["schemas"]["MobilePhoneNumber"];
+            name: string;
+            roles: components["schemas"]["StaffRole"][];
+            branchScope: components["schemas"]["BranchScope"];
+            /**
+             * @default {
+             *       "granted": [],
+             *       "revoked": []
+             *     }
+             */
+            adjustments: components["schemas"]["PermissionAdjustments"];
+            practitioner?: components["schemas"]["PractitionerProfileInput"];
+        };
         CreateTenant: {
             nameAr: string;
             nameLatin?: string;
@@ -297,10 +336,17 @@ export interface components {
         };
         /** @enum {string} */
         CurrencyCode: "USD" | "TRY" | "SYP";
+        DeviceName: string;
+        /** @enum {string} */
+        DeviceRevokeCategory: "lost_or_stolen" | "replaced" | "other";
+        /** @enum {string} */
+        DeviceStatus: "active" | "revoked";
         /** @enum {string} */
         DisplayNameFormat: "ticket_only" | "first_name_father_initial";
         /** @enum {string} */
-        ErrorCode: "VALIDATION_FAILED" | "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_ENTITLED" | "TENANT_SUSPENDED" | "TENANT_CLOSED" | "NOT_FOUND" | "CONFLICT" | "INVALID_STATUS_TRANSITION" | "LAST_ACTIVE_FACILITY" | "CURRENCY_MISMATCH" | "INVALID_AMOUNT" | "ONBOARDING_INCOMPLETE" | "FILE_REJECTED" | "MAP_LINK_UNRECOGNIZED" | "RATE_LIMITED" | "INTERNAL_ERROR" | "SERVICE_UNAVAILABLE";
+        EnrollmentRevokeReason: "device_revoked" | "member_deactivated" | "removed_from_device" | "pin_forgotten" | "branch_left";
+        /** @enum {string} */
+        ErrorCode: "VALIDATION_FAILED" | "POW_INVALID" | "UNAUTHENTICATED" | "INVALID_CREDENTIALS" | "TICKET_INVALID" | "SESSION_ENDED" | "SIGNATURE_INVALID" | "DEVICE_UNKNOWN" | "FORBIDDEN" | "DEVICE_REVOKED" | "ENROLLMENT_REVOKED" | "MEMBERSHIP_INACTIVE" | "BRANCH_NOT_IN_SCOPE" | "REAUTH_REQUIRED" | "NOT_ENTITLED" | "TENANT_SUSPENDED" | "TENANT_CLOSED" | "NOT_FOUND" | "CONFLICT" | "INVALID_STATUS_TRANSITION" | "LAST_ACTIVE_FACILITY" | "ALREADY_MEMBER" | "LAST_OWNER" | "LAST_ADMIN" | "FACILITY_HAS_DEVICES" | "CURRENCY_MISMATCH" | "INVALID_AMOUNT" | "ONBOARDING_INCOMPLETE" | "FILE_REJECTED" | "MAP_LINK_UNRECOGNIZED" | "OTP_INVALID" | "OTP_EXPIRED" | "PASSWORD_TOO_WEAK" | "TOTP_INVALID" | "PERMISSION_NOT_GRANTABLE" | "RATE_LIMITED" | "OTP_ATTEMPTS_EXCEEDED" | "OTP_COOLDOWN" | "INTERNAL_ERROR" | "SERVICE_UNAVAILABLE" | "OTP_DELIVERY_UNAVAILABLE";
         ErrorResponse: {
             code: components["schemas"]["ErrorCode"];
             message: string;
@@ -337,12 +383,17 @@ export interface components {
             page: number;
             pageSize: number;
         };
+        /** @enum {string} */
+        Gender: "male" | "female";
         HealthCheck: {
             /** @constant */
             status: "ok";
             /** @constant */
             database: "ok";
         };
+        IdleLockMinutes: number;
+        /** @enum {string} */
+        InvitationMessageStatus: "pending" | "sent" | "failed";
         ListAreasQuery: {
             /** Format: uuid */
             parentId?: string;
@@ -382,19 +433,62 @@ export interface components {
             /** @default 50 */
             pageSize: number;
         };
+        /** @enum {string} */
+        MembershipStatus: "invited" | "active" | "deactivated";
+        MobilePhoneNumber: components["schemas"]["PhoneNumber"];
         Money: {
             amount: number;
             currency: components["schemas"]["CurrencyCode"];
         };
+        OtpCode: string;
+        /** @enum {string} */
+        OtpPurpose: "device_sign_in" | "first_sign_in" | "password_reset";
+        Password: string;
+        PermissionAdjustments: {
+            /** @default [] */
+            granted: components["schemas"]["PermissionKey"][];
+            /** @default [] */
+            revoked: components["schemas"]["PermissionKey"][];
+        };
+        /** @enum {string} */
+        PermissionKey: "tenant.read" | "tenant.manage" | "facility.manage" | "staff.read" | "staff.manage" | "devices.manage" | "practitioners.read" | "practitioner.edit_own";
         PhoneNumber: string;
+        /** @enum {string} */
+        PlatformRole: "admin" | "support";
+        /** @enum {string} */
+        PlatformUserStatus: "pending_setup" | "active" | "disabled";
+        PractitionerProfileInput: {
+            displayNameAr: string;
+            /** @default null */
+            displayNameLatin: string | null;
+            gender: components["schemas"]["Gender"];
+            specialtyIds: string[];
+            /** @default null */
+            syndicateNumber: string | null;
+        };
+        PublicKey: string;
+        RecoveryCode: string;
         ResolveMapLink: {
             /** Format: uri */
             url: string;
         };
+        /** @enum {string} */
+        SessionEndReason: "signed_out" | "locked" | "expired" | "member_deactivated" | "device_revoked" | "enrollment_revoked" | "password_reset";
         SetTenantDirectoryListing: {
             listed: boolean;
             reason: string;
         };
+        SetupCode: string;
+        Specialty: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            nameAr: string;
+            nameLatin: string;
+            position: number;
+        };
+        /** @enum {string} */
+        StaffRole: "owner" | "doctor" | "reception" | "nurse" | "accountant";
         Tenant: {
             /** Format: uuid */
             id: string;
@@ -433,6 +527,7 @@ export interface components {
         TenantStatus: "onboarding" | "active" | "suspended" | "closed";
         /** @enum {string} */
         TenantStatusReason: "non_payment" | "other";
+        TotpCode: string;
         UpdateFacility: {
             name: string;
             /** Format: uuid */

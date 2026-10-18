@@ -48,6 +48,10 @@ export const tenants = pgTable(
     directoryListed: boolean().notNull().default(false),
     /** `pool` (shared database) in V1; the silo option of ADR 0004 comes later. */
     dataLocation: text().notNull().default('pool'),
+    /** Minutes without input before the clinic app locks (S02); the owner sets 5–60. */
+    idleLockMinutes: smallint().notNull().default(15),
+    /** `branch` or `own_patients`: which patients a doctor reads (S02, applied by S11). */
+    clinicalReadScope: text().notNull().default('branch'),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
     /** Set when the tenant is closed. */
@@ -68,6 +72,8 @@ export const tenants = pgTable(
     check('tenants_name_ar', sql`char_length(${t.nameAr}) between 2 and 100`),
     check('tenants_name_latin', sql`char_length(${t.nameLatin}) between 2 and 100`),
     check('tenants_data_location', sql`${t.dataLocation} = 'pool'`),
+    check('tenants_idle_lock_minutes', sql`${t.idleLockMinutes} between 5 and 60`),
+    check('tenants_clinical_read_scope', sql`${t.clinicalReadScope} in ('branch', 'own_patients')`),
     index('tenants_status_idx').on(t.status),
   ],
 );
