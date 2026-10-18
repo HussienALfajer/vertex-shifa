@@ -11,7 +11,7 @@
     "includes": [
       "**",
       "!**/migrations/meta",
-      "!**/routeTree.gen.ts",
+      "!**/*.gen.ts",
       "!apps/api/openapi.json",
       "!docs",
       "!spikes"

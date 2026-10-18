@@ -39,8 +39,16 @@ function queryParameters(schema: unknown) {
     name,
     in: 'query',
     required: json.required?.includes(name) ?? false,
-    schema: property,
+    schema: componentReferences(property),
   }));
+}
+
+/**
+ * A query property's references to schemas with an id (`#/$defs/TenantStatus`), pointed at the
+ * document's components, which hold every such schema.
+ */
+function componentReferences(property: unknown): unknown {
+  return JSON.parse(JSON.stringify(property).replaceAll('"#/$defs/', `"${COMPONENTS}`));
 }
 
 function requestOf(route: Route) {

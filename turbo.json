@@ -49,6 +49,17 @@
         "DATABASE_QUEUE_URL"
       ]
     },
+    "@vertex-shifa/clinic#test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/api/openapi.json"],
+      "outputs": [],
+      "passThroughEnv": [
+        "DATABASE_OWNER_URL",
+        "DATABASE_APP_URL",
+        "DATABASE_JOBS_URL",
+        "DATABASE_QUEUE_URL"
+      ]
+    },
     "@vertex-shifa/ui-native#test": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/patient/src/**"],

@@ -1,3 +1,4 @@
+import { QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { textDirection } from '@vertex-shifa/i18n';
 import { DirectionProvider } from '@vertex-shifa/ui';
@@ -6,13 +7,16 @@ import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { logErrorLabel, redactConsoleErrors } from './lib/error-logging';
 import { i18n } from './lib/i18n';
+import { createQueryClient } from './lib/query-client';
 import { routeTree } from './routeTree.gen';
 import './styles.css';
 
 // Errors may carry patient data: nothing in the renderer logs their message (ADR 0016).
 redactConsoleErrors(console);
 
-const router = createRouter({ routeTree, defaultOnCatch: logErrorLabel });
+// A screen's code loads when a link to it is pointed at, before it is opened.
+const router = createRouter({ routeTree, defaultOnCatch: logErrorLabel, defaultPreload: 'intent' });
+const queryClient = createQueryClient();
 
 declare module '@tanstack/react-router' {
   interface Register {
@@ -34,7 +38,9 @@ createRoot(root, {
     <I18nextProvider i18n={i18n}>
       {/* Base UI reads the direction from this provider, not from <html dir> (keyboard, placement). */}
       <DirectionProvider direction={textDirection}>
-        <RouterProvider router={router} />
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
       </DirectionProvider>
     </I18nextProvider>
   </StrictMode>,

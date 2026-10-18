@@ -1,6 +1,6 @@
 import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { contentSecurityPolicy, mapOrigins, resolveAppFile } from './app-protocol.js';
+import { connectOrigins, contentSecurityPolicy, resolveAppFile } from './app-protocol.js';
 
 const root = resolve('/renderer');
 
@@ -52,10 +52,10 @@ describe('contentSecurityPolicy', () => {
   });
 });
 
-describe('mapOrigins', () => {
+describe('connectOrigins', () => {
   it('takes the origin of each configured map URL once', () => {
     expect(
-      mapOrigins({
+      connectOrigins({
         VITE_MAP_STYLE_URL: 'https://maps.example.test/style.json',
         VITE_MAP_TILES_URL: 'https://tiles.example.test/syria.pmtiles',
         VITE_MAP_GLYPHS_URL: 'https://maps.example.test/fonts/{fontstack}/{range}.pbf',
@@ -63,30 +63,42 @@ describe('mapOrigins', () => {
     ).toEqual(['https://maps.example.test', 'https://tiles.example.test']);
   });
 
+  it('takes the API origin, without its path', () => {
+    expect(connectOrigins({ VITE_API_URL: 'https://api.example.test/' })).toEqual([
+      'https://api.example.test',
+    ]);
+    expect(connectOrigins({ VITE_API_URL: 'http://127.0.0.1:3000' })).toEqual([
+      'http://127.0.0.1:3000',
+    ]);
+    expect(connectOrigins({ VITE_API_URL: 'http://api.example.test' })).toEqual([]);
+  });
+
   it('allows plain HTTP on the loopback interface only, for the local extract', () => {
-    expect(mapOrigins({ VITE_MAP_TILES_URL: 'http://localhost:8080/azaz.pmtiles' })).toEqual([
+    expect(connectOrigins({ VITE_MAP_TILES_URL: 'http://localhost:8080/azaz.pmtiles' })).toEqual([
       'http://localhost:8080',
     ]);
-    expect(mapOrigins({ VITE_MAP_TILES_URL: 'http://maps.example.test/azaz.pmtiles' })).toEqual([]);
+    expect(connectOrigins({ VITE_MAP_TILES_URL: 'http://maps.example.test/azaz.pmtiles' })).toEqual(
+      [],
+    );
   });
 
   it('refuses hosts that would widen or break the policy', () => {
     expect(
-      mapOrigins({
+      connectOrigins({
         VITE_MAP_STYLE_URL: 'https://*/style.json',
         VITE_MAP_TILES_URL: 'https://maps.example.test;sandbox/x.pmtiles',
         VITE_MAP_GLYPHS_URL: 'https://maps.example.test%3Bsandbox/{fontstack}/{range}.pbf',
       }),
     ).toEqual([]);
-    expect(mapOrigins({ VITE_MAP_STYLE_URL: 'https://MAPS.Example.test:8443/style.json' })).toEqual(
-      ['https://maps.example.test:8443'],
-    );
+    expect(
+      connectOrigins({ VITE_MAP_STYLE_URL: 'https://MAPS.Example.test:8443/style.json' }),
+    ).toEqual(['https://maps.example.test:8443']);
   });
 
   it('ignores unset, malformed, credentialed and non-HTTP URLs', () => {
-    expect(mapOrigins({})).toEqual([]);
+    expect(connectOrigins({})).toEqual([]);
     expect(
-      mapOrigins({
+      connectOrigins({
         VITE_MAP_STYLE_URL: 'not a url',
         VITE_MAP_TILES_URL: 'https://user:secret@maps.example.test/x.pmtiles',
         VITE_MAP_GLYPHS_URL: "javascript:alert('x')",

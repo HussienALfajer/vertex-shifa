@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SetupRouteImport } from './routes/setup'
+import { Route as SettingsClinicRouteImport } from './routes/settings/clinic'
+import { Route as SettingsLocationRouteImport } from './routes/settings/location'
+import { Route as SettingsBranchesIndexRouteImport } from './routes/settings/branches/index'
+import { Route as SettingsBranchesIdRouteImport } from './routes/settings/branches/$id'
+import { Route as SettingsBranchesNewRouteImport } from './routes/settings/branches/new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsClinicRoute = SettingsClinicRouteImport.update({
+  id: '/settings/clinic',
+  path: '/settings/clinic',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsLocationRoute = SettingsLocationRouteImport.update({
+  id: '/settings/location',
+  path: '/settings/location',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsBranchesIndexRoute = SettingsBranchesIndexRouteImport.update({
+  id: '/settings/branches/',
+  path: '/settings/branches/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsBranchesIdRoute = SettingsBranchesIdRouteImport.update({
+  id: '/settings/branches/$id',
+  path: '/settings/branches/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsBranchesNewRoute = SettingsBranchesNewRouteImport.update({
+  id: '/settings/branches/new',
+  path: '/settings/branches/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/setup': typeof SetupRoute
+  '/settings/clinic': typeof SettingsClinicRoute
+  '/settings/location': typeof SettingsLocationRoute
+  '/settings/branches/$id': typeof SettingsBranchesIdRoute
+  '/settings/branches/new': typeof SettingsBranchesNewRoute
+  '/settings/branches/': typeof SettingsBranchesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/setup': typeof SetupRoute
+  '/settings/clinic': typeof SettingsClinicRoute
+  '/settings/location': typeof SettingsLocationRoute
+  '/settings/branches/$id': typeof SettingsBranchesIdRoute
+  '/settings/branches/new': typeof SettingsBranchesNewRoute
+  '/settings/branches': typeof SettingsBranchesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/setup': typeof SetupRoute
+  '/settings/clinic': typeof SettingsClinicRoute
+  '/settings/location': typeof SettingsLocationRoute
+  '/settings/branches/$id': typeof SettingsBranchesIdRoute
+  '/settings/branches/new': typeof SettingsBranchesNewRoute
+  '/settings/branches/': typeof SettingsBranchesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/setup'
+    | '/settings/clinic'
+    | '/settings/location'
+    | '/settings/branches/$id'
+    | '/settings/branches/new'
+    | '/settings/branches/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/setup'
+    | '/settings/clinic'
+    | '/settings/location'
+    | '/settings/branches/$id'
+    | '/settings/branches/new'
+    | '/settings/branches'
+  id:
+    | '__root__'
+    | '/'
+    | '/setup'
+    | '/settings/clinic'
+    | '/settings/location'
+    | '/settings/branches/$id'
+    | '/settings/branches/new'
+    | '/settings/branches/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SetupRoute: typeof SetupRoute
+  SettingsClinicRoute: typeof SettingsClinicRoute
+  SettingsLocationRoute: typeof SettingsLocationRoute
+  SettingsBranchesIdRoute: typeof SettingsBranchesIdRoute
+  SettingsBranchesNewRoute: typeof SettingsBranchesNewRoute
+  SettingsBranchesIndexRoute: typeof SettingsBranchesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +130,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/clinic': {
+      id: '/settings/clinic'
+      path: '/settings/clinic'
+      fullPath: '/settings/clinic'
+      preLoaderRoute: typeof SettingsClinicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/location': {
+      id: '/settings/location'
+      path: '/settings/location'
+      fullPath: '/settings/location'
+      preLoaderRoute: typeof SettingsLocationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/branches/': {
+      id: '/settings/branches/'
+      path: '/settings/branches'
+      fullPath: '/settings/branches/'
+      preLoaderRoute: typeof SettingsBranchesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/branches/$id': {
+      id: '/settings/branches/$id'
+      path: '/settings/branches/$id'
+      fullPath: '/settings/branches/$id'
+      preLoaderRoute: typeof SettingsBranchesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/branches/new': {
+      id: '/settings/branches/new'
+      path: '/settings/branches/new'
+      fullPath: '/settings/branches/new'
+      preLoaderRoute: typeof SettingsBranchesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SetupRoute: SetupRoute,
+  SettingsClinicRoute: SettingsClinicRoute,
+  SettingsLocationRoute: SettingsLocationRoute,
+  SettingsBranchesIdRoute: SettingsBranchesIdRoute,
+  SettingsBranchesNewRoute: SettingsBranchesNewRoute,
+  SettingsBranchesIndexRoute: SettingsBranchesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
