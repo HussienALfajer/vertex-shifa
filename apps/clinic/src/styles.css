@@ -1,3 +1,4 @@
-/* The Vertex design system (packages/ui, ADR 0018): tokens, fonts and base styles. */
+/* The Vertex design system (packages/ui, ADR 0018): typefaces, tokens and base styles. */
 @import "tailwindcss";
+@import "@vertex-shifa/ui/fonts-desktop.css";
 @import "@vertex-shifa/ui/styles.css";

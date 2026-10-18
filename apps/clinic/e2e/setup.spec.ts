@@ -77,12 +77,16 @@ test.describe('onboarding wizard', () => {
     await expect(page.getByText('مثال: 12 · محمد أ.')).toBeVisible();
     await screenshot(page, testInfo, 'setup-4-display');
 
-    // While a step is being saved, its fields and the way back are locked.
+    // While a step is being saved its fields are locked without moving: the button shows the
+    // progress, the fields are inert, the way back is disabled.
     api.writeDelayMs = 800;
-    await page.getByRole('button', { name: 'التالي' }).click();
-    await expect(page.getByRole('button', { name: 'جارٍ الحفظ…' })).toBeDisabled();
-    await expect(page.getByRole('switch', { name: 'صوت النداء' })).toBeDisabled();
+    const nextButton = page.getByRole('button', { name: 'التالي' });
+    const before = await nextButton.boundingBox();
+    await nextButton.click();
+    await expect(nextButton).toHaveAttribute('aria-busy', 'true');
+    await expect(page.locator('[data-slot="form-fields"]')).toHaveAttribute('inert', '');
     await expect(page.getByRole('button', { name: 'السابق' })).toBeDisabled();
+    expect(await nextButton.boundingBox()).toEqual(before);
     api.writeDelayMs = 0;
 
     // Step 5: the review, then finish.

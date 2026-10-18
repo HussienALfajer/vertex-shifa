@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, Navigate, useNavigate } from '@tanstack/react-router';
 import type { Facility } from '@vertex-shifa/contracts';
-import { Button, EmptyState, PageHeader } from '@vertex-shifa/ui';
+import { BackButton, Button, EmptyState, PageHeader } from '@vertex-shifa/ui';
 import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { QueryStates } from '../../components/query-states';
@@ -48,6 +48,7 @@ export function LocationSettingsScreen() {
         return (
           <section className="flex flex-col gap-6">
             <PageHeader
+              back={<BackButton render={<Link to="/" />}>{t('nav.home')}</BackButton>}
               title={t('settings.location.title')}
               description={t('settings.location.description')}
               actions={
@@ -92,7 +93,15 @@ export function BranchSettingsScreen({ id }: { id: string }) {
           const facility = branch.data as Facility;
           return (
             <>
-              <PageHeader title={facility.name} description={t('branches.settingsDescription')} />
+              <PageHeader
+                back={
+                  <BackButton render={<Link to="/settings/branches" />}>
+                    {t('nav.branches')}
+                  </BackButton>
+                }
+                title={facility.name}
+                description={t('branches.settingsDescription')}
+              />
               <SavedFacilityForm facility={facility} showName />
             </>
           );
@@ -102,14 +111,29 @@ export function BranchSettingsScreen({ id }: { id: string }) {
   );
 }
 
-/** `/settings/branches/new`: "Add a branch", then the branch list (screen 4). */
+/**
+ * `/settings/branches/new`: "Add a branch", then the branch list (screen 4). Back leads where it
+ * was opened from: the branch list, or a single-branch clinic's location screen.
+ */
 export function NewBranchScreen() {
   const { t } = useTranslation('clinic');
   const access = useStaffAccess();
   const navigate = useNavigate();
+  const inUse = useQuery(facilitiesQuery(false));
+  const several = (inUse.data?.total ?? 0) >= 2;
   return (
     <section className="flex flex-col gap-6">
-      <PageHeader title={t('branches.new.title')} description={t('branches.new.description')} />
+      <PageHeader
+        back={
+          several ? (
+            <BackButton render={<Link to="/settings/branches" />}>{t('nav.branches')}</BackButton>
+          ) : (
+            <BackButton render={<Link to="/settings/location" />}>{t('nav.location')}</BackButton>
+          )
+        }
+        title={t('branches.new.title')}
+        description={t('branches.new.description')}
+      />
       <FacilityForm
         showName
         allowed={access.manageTenant}

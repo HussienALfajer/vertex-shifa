@@ -35,8 +35,8 @@ function roles(block: string): Record<string, string> {
   );
 }
 
-const lightBlock = theme.slice(theme.indexOf(':root {'), theme.indexOf('@media'));
-const darkBlock = theme.slice(theme.indexOf('@media (prefers-color-scheme: dark)'));
+const lightBlock = theme.slice(theme.indexOf(':root {'), theme.indexOf('.dark {'));
+const darkBlock = theme.slice(theme.indexOf('.dark {'));
 
 /** `primaryForeground` → `primary-foreground` */
 const cssName = (role: string) => role.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
@@ -110,5 +110,25 @@ describe('generated utilities', async () => {
     ]) {
       expect(build(candidate), candidate).not.toContain(`.${candidate}`);
     }
+  });
+});
+
+describe('dark theme', async () => {
+  const compiler = await compile(
+    ['@import "tailwindcss";', '@import "./styles/index.css";'].join('\n'),
+    { base: srcDir, onDependency: () => {} },
+  );
+  const css = compiler.build(['dark:bg-surface']);
+
+  it('applies with the dark class on <html>, whatever the system says', () => {
+    const start = css.indexOf('.dark {');
+    expect(css.slice(start, css.indexOf('}', start))).toContain(
+      '--background: var(--color-green-950);',
+    );
+    expect(css).not.toContain('prefers-color-scheme');
+  });
+
+  it('gives the dark: variant the same class', () => {
+    expect(css).toContain(String.raw`.dark\:bg-surface:where(.dark, .dark *)`);
   });
 });

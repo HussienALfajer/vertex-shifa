@@ -8,7 +8,11 @@
   ],
   "exports": {
     ".": "./src/index.ts",
-    "./styles.css": "./src/styles/index.css"
+    "./styles.css": "./src/styles/index.css",
+    "./fonts.css": "./src/styles/fonts.css",
+    "./fonts-desktop.css": "./src/styles/fonts-desktop.css",
+    "./vite": "./src/vite.ts",
+    "./theme": "./src/theme/theme.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -44,6 +48,7 @@
     "react-dom": "^19.3.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.3",
+    "vite": "^8.3.3",
     "vitest": "^5.0.3"
   }
 }

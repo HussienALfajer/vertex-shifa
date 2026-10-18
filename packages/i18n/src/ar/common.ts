@@ -8,4 +8,16 @@ export const common = {
   errorDescription: 'لم تكتمل العملية. أعد المحاولة، وإن تكرر الخطأ فتواصل مع الدعم.',
   notFoundTitle: 'الصفحة غير موجودة',
   notFoundDescription: 'لا توجد صفحة بهذا العنوان.',
+  close: 'إغلاق',
+  theme: {
+    toDark: 'فعّل الوضع الداكن',
+    toLight: 'فعّل الوضع الفاتح',
+  },
+  discardChanges: 'تجاهل التغييرات',
+  unsavedChanges: {
+    title: 'لم تُحفظ تغييراتك',
+    description: 'إن غادرت الآن فستضيع التغييرات التي أجريتها على هذه الصفحة.',
+    stay: 'البقاء',
+    leave: 'المغادرة دون حفظ',
+  },
 };

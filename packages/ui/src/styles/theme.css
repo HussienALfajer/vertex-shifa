@@ -114,7 +114,14 @@
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
 }
 
-/* Semantic roles (§2). The dark theme follows the system setting (Electron follows the OS). */
+/*
+ * Light or dark, as in Vertex Hub (ADR 0018): `theme-init.js` puts the `dark` class on <html>
+ * before the first paint, from the device's saved choice or else the system's setting. The `dark:`
+ * variant follows the same class.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Semantic roles (§2), switched by the `.dark` class on <html>. */
 :root {
   --background: var(--color-neutral-50);
   --foreground: var(--color-neutral-900);
@@ -170,57 +177,55 @@
 }
 
 /* The logo's own inverse: sand on deep green. */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: var(--color-green-950);
-    --foreground: var(--color-neutral-100);
-    --surface: var(--color-green-900);
-    --surface-foreground: var(--color-neutral-100);
-    --muted: var(--color-green-800);
-    /* neutral-300: muted text also sits on the muted surface (table heads, toggles). */
-    --muted-foreground: var(--color-neutral-300);
-    --border: var(--color-green-700);
-    --input: var(--color-green-500);
-    --primary: var(--color-gold-400);
-    --primary-hover: var(--color-gold-300);
-    --primary-foreground: var(--color-green-950);
-    --secondary: var(--color-green-800);
-    --secondary-hover: var(--color-green-700);
-    --secondary-foreground: var(--color-neutral-100);
-    --accent: var(--color-gold-400);
-    --accent-foreground: var(--color-green-950);
-    --accent-text: var(--color-gold-300);
-    --destructive: var(--color-danger-600);
-    --destructive-hover: var(--color-danger-700);
-    --destructive-foreground: var(--color-white);
-    --destructive-text: color-mix(in oklch, var(--color-danger-500), var(--color-danger-100));
-    --ring: var(--color-gold-400);
-    --overlay: rgb(3 27 23 / 0.6);
+.dark {
+  --background: var(--color-green-950);
+  --foreground: var(--color-neutral-100);
+  --surface: var(--color-green-900);
+  --surface-foreground: var(--color-neutral-100);
+  --muted: var(--color-green-800);
+  /* neutral-300: muted text also sits on the muted surface (table heads, toggles). */
+  --muted-foreground: var(--color-neutral-300);
+  --border: var(--color-green-700);
+  --input: var(--color-green-500);
+  --primary: var(--color-gold-400);
+  --primary-hover: var(--color-gold-300);
+  --primary-foreground: var(--color-green-950);
+  --secondary: var(--color-green-800);
+  --secondary-hover: var(--color-green-700);
+  --secondary-foreground: var(--color-neutral-100);
+  --accent: var(--color-gold-400);
+  --accent-foreground: var(--color-green-950);
+  --accent-text: var(--color-gold-300);
+  --destructive: var(--color-danger-600);
+  --destructive-hover: var(--color-danger-700);
+  --destructive-foreground: var(--color-white);
+  --destructive-text: color-mix(in oklch, var(--color-danger-500), var(--color-danger-100));
+  --ring: var(--color-gold-400);
+  --overlay: rgb(3 27 23 / 0.6);
 
-    --sidebar: var(--color-green-950);
-    --sidebar-foreground: var(--color-neutral-100);
-    --sidebar-muted-foreground: var(--color-neutral-400);
-    --sidebar-hover: var(--color-green-900);
-    --sidebar-active: var(--color-green-800);
-    --sidebar-border: var(--color-green-800);
+  --sidebar: var(--color-green-950);
+  --sidebar-foreground: var(--color-neutral-100);
+  --sidebar-muted-foreground: var(--color-neutral-400);
+  --sidebar-hover: var(--color-green-900);
+  --sidebar-active: var(--color-green-800);
+  --sidebar-border: var(--color-green-800);
 
-    --status-neutral: var(--color-neutral-800);
-    --status-neutral-foreground: var(--color-neutral-100);
-    --status-info: color-mix(in oklch, var(--color-info-500) 24%, transparent);
-    --status-info-foreground: var(--color-info-100);
-    --status-gold: color-mix(in oklch, var(--color-gold-400) 20%, transparent);
-    --status-gold-foreground: var(--color-gold-300);
-    --status-warning: color-mix(in oklch, var(--color-warning-500) 24%, transparent);
-    --status-warning-foreground: var(--color-warning-100);
-    --status-danger: color-mix(in oklch, var(--color-danger-500) 20%, transparent);
-    --status-danger-foreground: var(--color-danger-100);
-    --status-success: color-mix(in oklch, var(--color-success-500) 24%, transparent);
-    --status-success-foreground: var(--color-success-100);
-    --status-brand: var(--color-green-700);
-    --status-brand-foreground: var(--color-neutral-100);
+  --status-neutral: var(--color-neutral-800);
+  --status-neutral-foreground: var(--color-neutral-100);
+  --status-info: color-mix(in oklch, var(--color-info-500) 24%, transparent);
+  --status-info-foreground: var(--color-info-100);
+  --status-gold: color-mix(in oklch, var(--color-gold-400) 20%, transparent);
+  --status-gold-foreground: var(--color-gold-300);
+  --status-warning: color-mix(in oklch, var(--color-warning-500) 24%, transparent);
+  --status-warning-foreground: var(--color-warning-100);
+  --status-danger: color-mix(in oklch, var(--color-danger-500) 20%, transparent);
+  --status-danger-foreground: var(--color-danger-100);
+  --status-success: color-mix(in oklch, var(--color-success-500) 24%, transparent);
+  --status-success-foreground: var(--color-success-100);
+  --status-brand: var(--color-green-700);
+  --status-brand-foreground: var(--color-neutral-100);
 
-    color-scheme: dark;
-  }
+  color-scheme: dark;
 }
 
 @theme inline {

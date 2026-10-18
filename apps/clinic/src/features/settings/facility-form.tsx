@@ -1,9 +1,23 @@
 import { useMutation } from '@tanstack/react-query';
 import type { Facility } from '@vertex-shifa/contracts';
-import { Button, Callout, Card, Field, FieldError, FieldLabel, Input } from '@vertex-shifa/ui';
+import {
+  Button,
+  Callout,
+  Card,
+  Field,
+  FieldError,
+  FieldLabel,
+  Form,
+  FormActions,
+  FormFields,
+  Input,
+  toast,
+  useDraft,
+} from '@vertex-shifa/ui';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OfflineNotice } from '../../components/offline-notice';
+import { useUnsavedChangesGuard } from '../../components/unsaved-changes';
 import { ApiError } from '../../lib/api';
 import { useErrorText } from '../../lib/error-text';
 import {
@@ -23,12 +37,14 @@ import { isTenantWritable, useCanSave } from '../tenancy/setup-access';
 import { useTenant } from '../tenancy/tenant-gate';
 import { DisplayFields, WeekFields } from '../tenancy/week-fields';
 
-type Notice = { tone: 'info' | 'warning' | 'danger'; text: string };
+type Notice = { tone: 'warning' | 'danger'; text: string };
 
 /**
  * A branch's settings in one form (screen 5): its name, the location fields (step 2), the week
  * (step 3) and the waiting-room display (step 4). Without `facility` it adds a branch.
- * A single-branch clinic hides the name (rule 9).
+ * A single-branch clinic hides the name (rule 9). Saving waits for a change; a saved change shows
+ * as a toast, and a notice that needs attention shows under the actions, so nothing above the
+ * cursor moves.
  */
 export function FacilityForm({
   facility,
@@ -44,7 +60,7 @@ export function FacilityForm({
   allowed: boolean;
   onCreated?: (facility: Facility) => void;
 }) {
-  const { t } = useTranslation('clinic');
+  const { t } = useTranslation(['clinic', 'common']);
   const tenant = useTenant();
   const errorText = useErrorText();
   const cache = useSetupCache();
@@ -54,9 +70,10 @@ export function FacilityForm({
   // names sent. After a failed create, a new branch with one of those names is the one whose answer
   // was lost.
   const creating = useRef<{ known: Set<string>; names: Set<string> }>(undefined);
-  const [draft, setDraft] = useState<FacilityDraft>(() =>
+  const { draft, setDraft, dirty, discard, reset } = useDraft<FacilityDraft>(() =>
     facility ? draftFromFacility(facility, governorateId) : emptyDraft(''),
   );
+  const guard = useUnsavedChangesGuard(dirty);
   // Errors show once the owner tried to save, and follow every change after that.
   const [checking, setChecking] = useState(false);
   const problems: DraftErrors = checking
@@ -70,14 +87,14 @@ export function FacilityForm({
   async function showSaved(record: Facility) {
     const city = await cache.reloadArea(record.areaId);
     setSaved(record);
-    setDraft(draftFromFacility(record, city.parentId ?? undefined));
+    reset(draftFromFacility(record, city.parentId ?? undefined));
   }
 
   // The form is locked while a save runs, so the values saved are the values shown.
   const save = useMutation({
     // `saved.updatedAt` is the version this form started from (rule 16).
-    mutationFn: async (): Promise<Facility | 'recovered'> => {
-      if (saved) return updateFacility(saved.id, facilityUpdate(draft, saved, saved.updatedAt));
+    mutationFn: async (sent: FacilityDraft): Promise<Facility | 'recovered'> => {
+      if (saved) return updateFacility(saved.id, facilityUpdate(sent, saved, saved.updatedAt));
       const branches = (await cache.reloadFacilities()).items;
       if (creating.current) {
         const { known, names } = creating.current;
@@ -89,7 +106,7 @@ export function FacilityForm({
           return 'recovered';
         }
       }
-      const input = facilityInput(draft);
+      const input = facilityInput(sent);
       creating.current ??= {
         known: new Set(branches.map((branch) => branch.id)),
         names: new Set(),
@@ -97,18 +114,22 @@ export function FacilityForm({
       creating.current.names.add(input.name);
       return createFacility(input);
     },
-    onSuccess: async (result) => {
+    onSuccess: async (result, sent) => {
       if (result === 'recovered') {
         setNotice({ tone: 'warning', text: t('states.createRecovered') });
         return;
       }
       await cache.facilitySaved(result);
       if (!saved && onCreated) {
+        // Saved, not lost: leaving for the list asks nothing.
+        guard.allowLeaving();
         onCreated(result);
         return;
       }
+      // The values as the server keeps them (phones in E.164) become the new starting point.
       setSaved(result);
-      setNotice({ tone: 'info', text: t('states.saved') });
+      reset(draftFromFacility(result, sent.governorateId));
+      toast.add({ title: t('states.saved'), type: 'success' });
     },
     onError: async (error) => {
       if (saved && error instanceof ApiError && error.code === 'CONFLICT') {
@@ -125,9 +146,9 @@ export function FacilityForm({
     },
   });
 
-  const editable = allowed && isTenantWritable(tenant) && !save.isPending;
+  const editable = allowed && isTenantWritable(tenant);
 
-  function submit() {
+  function submit(): boolean {
     setNotice(undefined);
     setChecking(true);
     const found = {
@@ -135,43 +156,60 @@ export function FacilityForm({
       ...locationErrors(draft),
       ...weekErrors(draft),
     };
-    if (Object.keys(found).length === 0) save.mutate();
+    if (Object.keys(found).length > 0) return false;
+    save.mutate(draft);
+    return true;
+  }
+
+  function discardChanges() {
+    setNotice(undefined);
+    setChecking(false);
+    discard();
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <Form onSubmit={submit} busy={save.isPending} className="flex flex-col gap-6">
       <OfflineNotice />
       {!allowed && <Callout title={t('settings.readOnly')} />}
-      {notice && (
-        <Callout
-          role={notice.tone === 'info' ? 'status' : 'alert'}
-          tone={notice.tone}
-          title={notice.text}
-        />
-      )}
-      <Card className="flex flex-col gap-6 p-6">
-        {showName && (
-          <Field invalid={problems.name !== undefined} disabled={!editable}>
-            <FieldLabel>{t('fields.branchName.label')}</FieldLabel>
-            <Input value={draft.name} onValueChange={(name) => change({ name })} maxLength={100} />
-            <FieldError match={problems.name !== undefined}>
-              {t('fields.branchName.invalid')}
-            </FieldError>
-          </Field>
-        )}
-        <LocationFields draft={draft} onChange={change} errors={problems} disabled={!editable} />
-      </Card>
-      <Card className="flex flex-col gap-6 p-6">
-        <WeekFields draft={draft} onChange={change} errors={problems} disabled={!editable} />
-      </Card>
-      <Card className="flex flex-col gap-6 p-6">
-        <DisplayFields draft={draft} onChange={change} disabled={!editable} />
-      </Card>
+      <FormFields>
+        <Card className="flex flex-col gap-6 p-6">
+          {showName && (
+            <Field invalid={problems.name !== undefined} disabled={!editable}>
+              <FieldLabel>{t('fields.branchName.label')}</FieldLabel>
+              <Input
+                value={draft.name}
+                onValueChange={(name) => change({ name })}
+                maxLength={100}
+              />
+              <FieldError match={problems.name !== undefined}>
+                {t('fields.branchName.invalid')}
+              </FieldError>
+            </Field>
+          )}
+          <LocationFields draft={draft} onChange={change} errors={problems} disabled={!editable} />
+        </Card>
+        <Card className="flex flex-col gap-6 p-6">
+          <WeekFields draft={draft} onChange={change} errors={problems} disabled={!editable} />
+        </Card>
+        <Card className="flex flex-col gap-6 p-6">
+          <DisplayFields draft={draft} onChange={change} disabled={!editable} />
+        </Card>
+      </FormFields>
       {allowed && (
-        <Button className="w-fit" onClick={submit} disabled={!canSave || save.isPending}>
-          {saved ? t('settings.save') : t('branches.new.create')}
-        </Button>
+        <FormActions>
+          <Button type="submit" loading={save.isPending} disabled={!canSave || !dirty}>
+            {saved ? t('settings.save') : t('branches.new.create')}
+          </Button>
+          {/* After the save button, so its appearing never moves it. */}
+          {dirty && (
+            <Button variant="ghost" onClick={discardChanges} disabled={save.isPending}>
+              {t('common:discardChanges')}
+            </Button>
+          )}
+        </FormActions>
       )}
-    </div>
+      {notice && <Callout role="alert" tone={notice.tone} title={notice.text} />}
+      {guard.dialog}
+    </Form>
   );
 }

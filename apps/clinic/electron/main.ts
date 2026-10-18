@@ -1,5 +1,6 @@
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { app, BrowserWindow, net, protocol, session } from 'electron';
+import { ar } from '@vertex-shifa/i18n';
+import { app, BrowserWindow, dialog, net, protocol, session } from 'electron';
 import {
   APP_ORIGIN,
   APP_SCHEME,
@@ -8,6 +9,7 @@ import {
   resolveAppFile,
 } from './app-protocol.js';
 import { devServerUrl, isAllowedNavigation } from './navigation.js';
+import { confirmLeaving } from './unsaved-changes.js';
 
 // The main process will own the local database and the sync client (ADR 0021); the renderer
 // reaches them only through IPC. Today it opens one locked-down window on the renderer.
@@ -68,6 +70,13 @@ function createWindow(): BrowserWindow {
     if (!isAllowedNavigation(url, rendererOrigin)) event.preventDefault();
   });
   window.webContents.on('will-attach-webview', (event) => event.preventDefault());
+  // A form with unsaved changes holds `beforeunload`: closing or reloading asks first.
+  window.webContents.on('will-prevent-unload', (event) => {
+    const leave = confirmLeaving(ar.common.unsavedChanges, (options) =>
+      dialog.showMessageBoxSync(window, options),
+    );
+    if (leave) event.preventDefault();
+  });
   window.once('ready-to-show', () => window.show());
 
   void window.loadURL(`${rendererOrigin}/`);

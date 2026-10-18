@@ -32,7 +32,7 @@ export function TenantGate({ children }: { children: ReactNode }) {
         if (status === 'onboarding' && !onSetup) return <Navigate to="/setup" replace />;
         if (status !== 'onboarding' && onSetup) return <Navigate to="/" replace />;
         return (
-          <div className="mx-auto flex max-w-5xl flex-col gap-6">
+          <div className="flex flex-col gap-6">
             <ReadOnlyBanner tenant={tenant.data as Tenant} />
             {status !== 'onboarding' && <MainNav />}
             {children}

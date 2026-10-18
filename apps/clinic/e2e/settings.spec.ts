@@ -17,10 +17,13 @@ test.describe('clinic settings', () => {
     ).toBeVisible();
     await expect(page.getByText('يدير فريق فيرتكس هذا الإعداد.')).toBeVisible();
 
+    // Saving waits for a change.
+    await expect(page.getByRole('button', { name: 'حفظ' })).toBeDisabled();
     await page.getByLabel('اسم العيادة بالأحرف اللاتينية (اختياري)').fill('Test Clinic');
     await page.getByRole('button', { name: 'حفظ' }).click();
-    await expect(page.getByRole('status').filter({ hasText: 'حُفظت التغييرات.' })).toBeVisible();
+    await expect(page.getByText('حُفظت التغييرات.')).toBeVisible();
     expect(api.tenant.nameLatin).toBe('Test Clinic');
+    await expect(page.getByRole('button', { name: 'حفظ' })).toBeDisabled();
     await screenshot(page, testInfo, 'settings-clinic');
 
     // Another owner renames the clinic meanwhile: this save is refused and the form reloads.
@@ -161,7 +164,7 @@ test.describe('adding a branch', () => {
     expect(api.writes.filter((write) => write.startsWith('PATCH /api/facilities'))).toEqual([]);
     await page.getByLabel('تفاصيل العنوان').fill('شارع السوق، بناء 7');
     await page.getByRole('button', { name: 'حفظ' }).click();
-    await expect(page.getByRole('status').filter({ hasText: 'حُفظت التغييرات.' })).toBeVisible();
+    await expect(page.getByText('حُفظت التغييرات.')).toBeVisible();
 
     expect(api.facilities).toHaveLength(2);
     expect(api.facilities[1]?.addressDetails).toBe('شارع السوق، بناء 7');
@@ -177,6 +180,7 @@ test.describe('offline', () => {
       facilities: [facility()],
     });
     await page.goto('/settings/clinic');
+    await page.getByLabel('اسم العيادة بالأحرف اللاتينية (اختياري)').fill('Test Clinic');
     await expect(page.getByRole('button', { name: 'حفظ' })).toBeEnabled();
 
     // The preview server stands in for the app's local files: load the next screen's code first,
@@ -195,8 +199,10 @@ test.describe('offline', () => {
     ).toBeDisabled();
     await screenshot(page, testInfo, 'offline-settings');
 
-    // A screen whose data is not loaded yet waits for the connection: nothing is queued.
+    // A screen whose data is not loaded yet waits for the connection: nothing is queued. The
+    // change typed above is left on purpose.
     await page.getByRole('link', { name: 'الموقع والإعدادات' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'المغادرة دون حفظ' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('لا يوجد اتصال بالإنترنت');
     await screenshot(page, testInfo, 'offline-state');
 
@@ -224,7 +230,7 @@ test.describe('read-only clinic', () => {
     await expect(page.getByRole('link', { name: 'إضافة فرع' })).toHaveCount(0);
     await screenshot(page, testInfo, 'read-only-banner');
 
-    await page.getByRole('link', { name: 'الرئيسية' }).click();
+    await page.getByRole('navigation').getByRole('link', { name: 'الرئيسية' }).click();
     await expect(banner).toBeVisible();
   });
 

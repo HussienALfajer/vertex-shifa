@@ -1,6 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
+import { Link } from '@tanstack/react-router';
 import type { Tenant } from '@vertex-shifa/contracts';
 import {
+  BackButton,
   Badge,
   Button,
   Callout,
@@ -8,11 +10,17 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Form,
+  FormActions,
+  FormFields,
   PageHeader,
+  toast,
+  useDraft,
 } from '@vertex-shifa/ui';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OfflineNotice } from '../../components/offline-notice';
+import { useUnsavedChangesGuard } from '../../components/unsaved-changes';
 import { ApiError } from '../../lib/api';
 import { useErrorText } from '../../lib/error-text';
 import { useStaffAccess } from '../../lib/staff-access';
@@ -28,20 +36,21 @@ import { updateProfile, useSetupCache } from '../tenancy/queries';
 import { isTenantWritable, useCanSave } from '../tenancy/setup-access';
 import { useTenant } from '../tenancy/tenant-gate';
 
-type Notice = { tone: 'info' | 'warning' | 'danger'; text: string };
+type Notice = { tone: 'warning' | 'danger'; text: string };
 
 /**
  * `/settings/clinic` (screen 3): the clinic's names and logo, editable by the owner and read-only
  * for other staff, with its directory status (screen 6).
  */
 export function ClinicSettingsScreen() {
-  const { t } = useTranslation('clinic');
+  const { t } = useTranslation(['clinic', 'common']);
   const tenant = useTenant();
   const access = useStaffAccess();
   const errorText = useErrorText();
   const cache = useSetupCache();
   const canSave = useCanSave(tenant, access.manageTenant);
-  const [draft, setDraft] = useState(() => profileDraft(tenant));
+  const { draft, setDraft, dirty, discard, reset } = useDraft(() => profileDraft(tenant));
+  const guard = useUnsavedChangesGuard(dirty);
   // The version the owner started editing: a newer one on the server is a conflict (rule 16).
   const [base, setBase] = useState(tenant.updatedAt);
   // Errors show once the owner tried to save, and follow every change after that.
@@ -50,18 +59,18 @@ export function ClinicSettingsScreen() {
   const [notice, setNotice] = useState<Notice>();
 
   const save = useMutation({
-    mutationFn: () => updateProfile(profileInput(draft, base)),
+    mutationFn: (sent: typeof draft) => updateProfile(profileInput(sent, base)),
     onSuccess: (saved) => {
       cache.tenantSaved(saved);
       setBase(saved.updatedAt);
-      setDraft(profileDraft(saved));
-      setNotice({ tone: 'info', text: t('states.saved') });
+      reset(profileDraft(saved));
+      toast.add({ title: t('states.saved'), type: 'success' });
     },
     onError: async (error) => {
       if (error instanceof ApiError && error.code === 'CONFLICT') {
         try {
           const fresh = await cache.reloadTenant();
-          setDraft(profileDraft(fresh));
+          reset(profileDraft(fresh));
           setBase(fresh.updatedAt);
           setNotice({ tone: 'warning', text: t('states.conflictReloaded') });
           return;
@@ -74,40 +83,61 @@ export function ClinicSettingsScreen() {
     },
   });
 
-  // Locked while a save runs, so the values saved are the values shown.
-  const editable = access.manageTenant && isTenantWritable(tenant) && !save.isPending;
+  // Locked while a save runs (`Form`), so the values saved are the values shown.
+  const editable = access.manageTenant && isTenantWritable(tenant);
 
-  function submit() {
+  function submit(): boolean {
     setNotice(undefined);
     setChecking(true);
-    if (Object.keys(profileErrors(draft)).length === 0) save.mutate();
+    if (Object.keys(profileErrors(draft)).length > 0) return false;
+    save.mutate(draft);
+    return true;
+  }
+
+  function discardChanges() {
+    setNotice(undefined);
+    setChecking(false);
+    discard();
   }
 
   return (
     <section className="flex flex-col gap-6">
       <PageHeader
+        back={<BackButton render={<Link to="/" />}>{t('nav.home')}</BackButton>}
         title={t('settings.clinic.title')}
         description={t('settings.clinic.description')}
       />
       <OfflineNotice />
       {!access.manageTenant && <Callout title={t('settings.readOnly')} />}
-      {notice && (
-        <Callout
-          role={notice.tone === 'info' ? 'status' : 'alert'}
-          tone={notice.tone}
-          title={notice.text}
-        />
-      )}
-      <Card className="flex flex-col gap-6 p-6">
-        <ProfileFields draft={draft} onChange={setDraft} errors={problems} disabled={!editable} />
-        <LogoField disabled={!canSave || save.isPending} />
-        {access.manageTenant && (
-          <Button className="w-fit" onClick={submit} disabled={!canSave || save.isPending}>
-            {t('settings.save')}
-          </Button>
-        )}
-      </Card>
+      <Form onSubmit={submit} busy={save.isPending}>
+        <Card className="flex flex-col gap-6 p-6">
+          <FormFields>
+            <ProfileFields
+              draft={draft}
+              onChange={setDraft}
+              errors={problems}
+              disabled={!editable}
+            />
+            <LogoField disabled={!canSave} />
+          </FormFields>
+          {access.manageTenant && (
+            <FormActions>
+              <Button type="submit" loading={save.isPending} disabled={!canSave || !dirty}>
+                {t('settings.save')}
+              </Button>
+              {/* After the save button, so its appearing never moves it. */}
+              {dirty && (
+                <Button variant="ghost" onClick={discardChanges} disabled={save.isPending}>
+                  {t('common:discardChanges')}
+                </Button>
+              )}
+            </FormActions>
+          )}
+          {notice && <Callout role="alert" tone={notice.tone} title={notice.text} />}
+        </Card>
+      </Form>
       <DirectoryStatus tenant={tenant} />
+      {guard.dialog}
     </section>
   );
 }

@@ -1,10 +1,10 @@
 /*
- * The Vertex design system stylesheet. An app imports Tailwind first, then this file:
+ * The Vertex design system stylesheet. An app imports Tailwind, its typefaces, then this file:
  *
  *   @import "tailwindcss";
+ *   @import "@vertex-shifa/ui/fonts-desktop.css";   (clinic, console; the site: fonts.css)
  *   @import "@vertex-shifa/ui/styles.css";
  */
-@import "./fonts.css";
 @import "./theme.css";
 @import "./base.css";
 
