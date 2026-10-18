@@ -57,7 +57,7 @@ Roles are presets with adjustable permissions within limits (F02).
 
 ★ marks a feature that sells the system.
 
-### Clinic system (desktop app and web)
+### Clinic system (desktop app; no web version in V1, owner 2026-10-18)
 
 **F01 — Clinic setup and structure.** Onboarding wizard: name, logo, address, default currency, working days. One model for a solo doctor, a clinic with several doctors and several branches (ADR 0004). Branch settings: address, map location, contact phone, queue display options.
 
