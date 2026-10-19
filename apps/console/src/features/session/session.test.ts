@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import type { ConsoleMe } from '@vertex-shifa/contracts';
 import { describe, expect, it } from 'vitest';
-import { holds, meQuery, needsReauth, signedIn } from './session';
+import { forgetSession, holds, meQuery, needsReauth, signedIn } from './session';
 
 const now = Date.parse('2026-10-19T09:00:00.000Z');
 
@@ -31,6 +31,21 @@ describe('holds', () => {
     expect(holds(me(null), 'accounts.recover')).toBe(true);
     expect(holds(me(null), 'platform-users.manage')).toBe(false);
     expect(holds(undefined, 'tenants.read')).toBe(false);
+  });
+});
+
+describe('forgetSession', () => {
+  it('drops the queries and the answers kept by mutations', async () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(meQuery.queryKey, me(null));
+    await queryClient
+      .getMutationCache()
+      .build(queryClient, { mutationFn: async () => ({ setupCode: 'ABCD-EFGH-JKLM' }) })
+      .execute(undefined);
+    expect(queryClient.getMutationCache().getAll()).toHaveLength(1);
+    forgetSession(queryClient);
+    expect(queryClient.getQueryData(meQuery.queryKey)).toBeUndefined();
+    expect(queryClient.getMutationCache().getAll()).toHaveLength(0);
   });
 });
 

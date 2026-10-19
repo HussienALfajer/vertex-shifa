@@ -19,9 +19,12 @@ export function signedIn(queryClient: QueryClient, me: ConsoleMe | ConsoleSetUp)
   queryClient.setQueryData(meQuery.queryKey, view);
 }
 
-/** Everything the console holds of the platform goes with the session. */
+/**
+ * Everything the console holds of the platform goes with the session: queries, and the answers
+ * kept by mutations (a setup's TOTP secret and recovery codes, setup codes).
+ */
 export function forgetSession(queryClient: QueryClient): void {
-  queryClient.removeQueries();
+  queryClient.clear();
 }
 
 export async function signOut(queryClient: QueryClient): Promise<void> {

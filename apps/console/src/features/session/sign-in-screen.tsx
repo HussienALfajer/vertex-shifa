@@ -199,6 +199,8 @@ function CredentialsStep({
         : t('signIn.setupCodeInvalid');
 
   const send = useMutation({
+    // The answer may hold the new TOTP secret: never kept once the step is gone.
+    gcTime: 0,
     mutationFn: (e164: string) =>
       signIn(
         mode === 'password'
@@ -488,6 +490,8 @@ function AuthenticatorStep({
   const [code, setCode] = useState('');
 
   const confirm = useMutation({
+    // The answer holds the recovery codes, shown once (rule 37).
+    gcTime: 0,
     mutationFn: (value: string) => setUp(step.ticket, step.password, value),
     onSuccess: (result: ConsoleSetUp) => {
       signedIn(queryClient, result);

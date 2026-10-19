@@ -285,6 +285,8 @@ function CreateDialog({
       : undefined;
 
   const create = useMutation({
+    // The answer holds the setup code, shown once (rule 36).
+    gcTime: 0,
     mutationFn: (e164: string) =>
       withReauth(() => createPlatformUser({ phone: e164, name: name.trim(), role })),
     onSuccess: async (setup) => {
@@ -493,6 +495,7 @@ function ResetAction({
   const withReauth = useReauth();
   const changed = usePlatformUsersCache();
   const reset = useMutation({
+    gcTime: 0,
     mutationFn: () => withReauth(() => resetPlatformUser(user.id)),
     onSuccess: async (setup) => {
       onReset(setup);
