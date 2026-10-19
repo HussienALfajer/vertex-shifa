@@ -425,6 +425,146 @@ test.describe('lock screen', () => {
   });
 });
 
+test.describe('forgotten password (rule 16)', () => {
+  const resetHint = 'لم يصلك الرمز؟ يصل فقط إن سمح لك مالك العيادة';
+
+  /** From the lock screen, "Another user", then "Forgot your password?". */
+  async function openReset(page: Page) {
+    await page.getByRole('button', { name: 'قفل' }).click();
+    await expect(page).toHaveURL('/lock');
+    await page.getByRole('button', { name: 'مستخدم آخر' }).click();
+    await page.getByRole('link', { name: 'نسيت كلمة المرور؟' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('نسيت كلمة المرور');
+  }
+
+  async function requestCode(page: Page, phone: string) {
+    await page.getByLabel('رقم الهاتف').fill(phone);
+    await page.getByRole('button', { name: 'إرسال رمز التحقق' }).click();
+    await expect(page.getByText(resetHint, { exact: false })).toBeVisible();
+  }
+
+  test('the owner authorizes a reset; the member sets a new password and signs in', async ({
+    page,
+  }, testInfo) => {
+    const api = await mockApi(page, {
+      tenant: tenant({ status: 'active' }),
+      facilities: [facility()],
+    });
+    const receptionist = addMember(api.identity, {
+      tenantId: api.tenant.id,
+      phone: receptionistPhone,
+      name: 'موظف استقبال',
+      roles: ['reception'],
+      password: receptionistPassword,
+    });
+
+    // The owner authorizes the reset on the member's record (screen 7).
+    await page.goto(`/settings/staff/${receptionist.memberships[0]?.id}`);
+    await page.getByRole('button', { name: 'السماح بتعيين كلمة مرور جديدة' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'السماح' }).click();
+    await expect(
+      page.getByRole('status').filter({ hasText: 'يستطيع تعيين كلمة مرور جديدة حتى' }),
+    ).toBeVisible();
+    expect(receptionist.resetUntil).toBeGreaterThan(Date.now());
+
+    // The member, on this computer: "Forgot your password?" from the password sign-in.
+    await openReset(page);
+    await screenshot(page, testInfo, 'password-reset');
+    await requestCode(page, '0900000102');
+    await expect(page.getByRole('button', { name: /إعادة الإرسال بعد \d+ ثانية/ })).toBeDisabled();
+    await typeCode(page, 'رمز التحقق', '000000');
+    await expect(page.getByText('رمز التحقق غير صحيح.')).toBeVisible();
+    await screenshot(page, testInfo, 'password-reset-otp');
+    await typeCode(page, 'رمز التحقق', otpCode);
+
+    // The new password alone (the name is the account's), with the strength rules.
+    await expect(page.getByLabel('اسمك')).toHaveCount(0);
+    await page.getByLabel('كلمة المرور الجديدة').fill('short');
+    await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
+    await expect(page.getByText('كلمة المرور لا تستوفي الشروط.')).toBeVisible();
+    await page.getByLabel('كلمة المرور الجديدة').fill('synthetic-renewed-pass');
+    await screenshot(page, testInfo, 'password-reset-new');
+    await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
+
+    // Then the PIN, as any sign-in on this computer, and the member is signed in.
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('اختر رمزك السري');
+    await typeCode(page, 'الرمز السري', '369258');
+    await typeCode(page, 'أعد كتابة الرمز السري', '369258');
+    await page.getByRole('button', { name: 'حفظ الرمز السري' }).click();
+    await expect(page).toHaveURL('/');
+    await expect(page.getByRole('banner')).toContainText('موظف استقبال');
+    expect(receptionist.password).toBe('synthetic-renewed-pass');
+    expect(receptionist.resetUntil).toBeUndefined();
+  });
+
+  test('answers the same without an authorization, and explains one that ended', async ({
+    page,
+  }, testInfo) => {
+    const api = await mockApi(page, {
+      tenant: tenant({ status: 'active' }),
+      facilities: [facility()],
+    });
+    const receptionist = addMember(api.identity, {
+      tenantId: api.tenant.id,
+      phone: receptionistPhone,
+      name: 'موظف استقبال',
+      roles: ['reception'],
+      password: receptionistPassword,
+    });
+    await page.goto('/');
+
+    // No authorization: the same answer and words, and no code verifies.
+    await openReset(page);
+    await requestCode(page, '0900000101');
+    await typeCode(page, 'رمز التحقق', otpCode);
+    await expect(page.getByText('رمز التحقق غير صحيح.')).toBeVisible();
+
+    // The authorization ends before the code is checked.
+    receptionist.resetUntil = Date.now() + 60_000;
+    await page.getByRole('link', { name: 'شاشة القفل' }).click();
+    await page.getByRole('button', { name: 'مستخدم آخر' }).click();
+    await page.getByRole('link', { name: 'نسيت كلمة المرور؟' }).click();
+    await requestCode(page, '0900000102');
+    receptionist.resetUntil = Date.now() - 1;
+    await typeCode(page, 'رمز التحقق', otpCode);
+    const alert = page.getByRole('alert');
+    await expect(alert).toContainText('انتهت صلاحية رمز التحقق.');
+    await expect(alert).toContainText('اطلب من مالك العيادة السماح مرة أخرى');
+    await screenshot(page, testInfo, 'password-reset-expired');
+
+    // Authorized again, it ends after the code but before the new password is saved.
+    receptionist.resetUntil = Date.now() + 60_000;
+    await alert.getByRole('button', { name: 'البدء من جديد' }).click();
+    await requestCode(page, '0900000102');
+    await typeCode(page, 'رمز التحقق', otpCode);
+    receptionist.resetUntil = Date.now() - 1;
+    await page.getByLabel('كلمة المرور الجديدة').fill('synthetic-renewed-pass');
+    await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
+    await expect(page.getByRole('alert')).toHaveText(
+      'انتهى السماح بتعيين كلمة مرور جديدة. اطلب من مالك العيادة السماح مرة أخرى، ثم ابدأ من جديد.',
+    );
+    expect(receptionist.password).toBe(receptionistPassword);
+  });
+
+  test('a first sign-in of an account with a password points to the right path', async ({
+    page,
+  }) => {
+    await mockApi(page, { tenant: tenant({ status: 'active' }), facilities: [facility()] });
+    await page.goto('/');
+    await page.getByRole('button', { name: 'قفل' }).click();
+    await page.getByRole('button', { name: 'مستخدم آخر' }).click();
+    await page.getByRole('link', { name: 'سجّل الدخول برقم هاتفك' }).click();
+    await page.getByLabel('رقم الهاتف').fill('0900000101');
+    await page.getByRole('button', { name: 'إرسال رمز التحقق' }).click();
+    // The answer of a phone with a password is a decoy: no code, and the words say what to do.
+    await expect(
+      page.getByText('إن كانت لديك كلمة مرور فسجّل الدخول بها', { exact: false }),
+    ).toBeVisible();
+    await typeCode(page, 'رمز التحقق', otpCode);
+    await expect(page.getByText('رمز التحقق غير صحيح.')).toBeVisible();
+  });
+});
+
 test.describe('several clinics on one computer', () => {
   test('an answer for one clinic’s owner never reaches a member of another clinic unlocked after them', async ({
     page,

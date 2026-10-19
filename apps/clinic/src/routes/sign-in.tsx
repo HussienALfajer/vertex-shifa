@@ -9,6 +9,7 @@ export const Route = createFileRoute('/sign-in')({
       ? (search.purpose as SignInSearch['purpose'])
       : 'register',
     ...(search.first === true ? { first: true } : {}),
+    ...(search.reset === true ? { reset: true } : {}),
     ...(typeof search.member === 'string' ? { member: search.member } : {}),
   }),
   component: function SignInRoute() {

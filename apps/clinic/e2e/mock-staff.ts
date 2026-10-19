@@ -386,8 +386,9 @@ export function staffRoutes(state: MockApi) {
       }
       if (action === 'password-reset' && method === 'POST') {
         if (membership.status !== 'active') return invalid();
+        account.resetUntil = Date.now() + 72 * 3_600_000;
         return ok(
-          { passwordResetAuthorizedUntil: new Date(Date.now() + 72 * 3_600_000).toISOString() },
+          { passwordResetAuthorizedUntil: new Date(account.resetUntil).toISOString() },
           201,
         );
       }

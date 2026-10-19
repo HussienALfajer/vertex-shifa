@@ -40,6 +40,19 @@ export async function requestFirstSignIn(phone: string) {
   );
 }
 
+/**
+ * Rule 16: a password reset's OTP, sent only within the 72 hours an owner (or Vertex support)
+ * authorized; the answer is the same for any other phone.
+ */
+export async function requestPasswordReset(phone: string) {
+  const proof = await proofOfWork();
+  return unwrap(
+    api.POST('/api/auth/otp/request', {
+      body: { phone, purpose: 'password_reset', proofOfWork: proof },
+    }),
+  );
+}
+
 export function resendOtp(challengeId: string) {
   return unwrap(api.POST('/api/auth/otp/resend', { body: { challengeId } }));
 }
@@ -55,6 +68,14 @@ export async function setFirstPassword(ticket: string, name: string, password: s
       headers: { [TICKET_HEADER]: ticket },
       body: { name, password },
     }),
+  );
+  return signedIn;
+}
+
+/** Rule 16: the new password after an authorized reset; answers a `signed_in` ticket. */
+export async function setNewPassword(ticket: string, password: string) {
+  const { ticket: signedIn } = await unwrap(
+    api.POST('/api/auth/password', { headers: { [TICKET_HEADER]: ticket }, body: { password } }),
   );
   return signedIn;
 }

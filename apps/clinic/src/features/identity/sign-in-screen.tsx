@@ -43,13 +43,32 @@ import { remember } from './session';
 import {
   registrationOptions,
   requestFirstSignIn,
+  requestPasswordReset,
   resendOtp,
   setFirstPassword,
+  setNewPassword,
   signIn,
   verifyOtp,
 } from './sign-in-api';
 
-export type SignInSearch = { purpose: SignInPurpose; first?: boolean; member?: string };
+export type SignInSearch = {
+  purpose: SignInPurpose;
+  first?: boolean;
+  /** "Forgot your password?" (rule 16): a new password after the owner authorized a reset. */
+  reset?: boolean;
+  member?: string;
+};
+
+/**
+ * How the person proves who they are: phone and password; the phone alone the first time (rule
+ * 15); or the phone alone to set a new password after an authorized reset (rule 16).
+ */
+type Mode = 'password' | 'first' | 'reset';
+
+function modeOf(search: SignInSearch): Mode {
+  if (search.reset) return 'reset';
+  return search.first ? 'first' : 'password';
+}
 
 type Step =
   | { kind: 'credentials' }
@@ -59,7 +78,8 @@ type Step =
 
 /**
  * `/sign-in` (screen 2): phone and password, then the OTP sent by WhatsApp; or, the first time,
- * phone, OTP, name and password. What follows depends on why the person signs in (`purpose`).
+ * phone, OTP, name and password; or, after a forgotten password, phone, OTP and a new password.
+ * What follows depends on why the person signs in (`purpose`).
  */
 export function SignInScreen({ search }: { search: SignInSearch }) {
   const installation = useInstallation();
@@ -75,7 +95,7 @@ export function SignInScreen({ search }: { search: SignInSearch }) {
   }
   return (
     <SignInSteps
-      key={`${search.purpose}:${search.first ? 'first' : 'password'}`}
+      key={`${search.purpose}:${modeOf(search)}`}
       search={search}
       view={view}
       registration={search.purpose === 'register' ? undefined : active}
@@ -97,7 +117,8 @@ function SignInSteps({
 }) {
   const { t } = useTranslation('clinic');
   const navigate = useNavigate();
-  const first = search.first === true;
+  const mode = modeOf(search);
+  const first = mode === 'first';
   const [step, setStep] = useState<Step>({ kind: 'credentials' });
 
   /** The person proved who they are: on to the registration or the new PIN. */
@@ -161,13 +182,15 @@ function SignInSteps({
             {back === '/lock' ? t('identity.lock.back') : t('identity.welcome.back')}
           </BackButton>
         }
-        title={titles[search.purpose]}
-        description={descriptions[search.purpose]}
+        title={mode === 'reset' ? t('identity.reset.title') : titles[search.purpose]}
+        description={
+          mode === 'reset' ? t('identity.reset.description') : descriptions[search.purpose]
+        }
       />
       <OfflineNotice description={t('identity.offline.signIn')} />
       {step.kind === 'credentials' && (
         <CredentialsStep
-          first={first}
+          mode={mode}
           purpose={search.purpose}
           registration={registration}
           member={member}
@@ -182,6 +205,7 @@ function SignInSteps({
       )}
       {step.kind === 'otp' && (
         <OtpStep
+          mode={mode}
           step={step}
           onResent={(challengeId) => setStep({ ...step, challengeId, sentAt: Date.now() })}
           onRestart={() => setStep({ kind: 'credentials' })}
@@ -196,7 +220,8 @@ function SignInSteps({
         />
       )}
       {step.kind === 'password' && (
-        <FirstPasswordStep
+        <NewPasswordStep
+          reset={mode === 'reset'}
           step={step}
           onDone={(ticket, name) => signedIn(ticket, step.phone, name)}
         />
@@ -209,7 +234,23 @@ function SignInSteps({
           description={t('identity.signIn.noClinicDescription')}
         />
       )}
-      {search.purpose !== 'forgot' &&
+      {mode === 'reset' && step.kind === 'credentials' && (
+        <p className="text-sm text-muted-foreground">
+          {t('identity.reset.remembered')}{' '}
+          <Link
+            to="/sign-in"
+            search={{
+              purpose: search.purpose,
+              ...(search.member ? { member: search.member } : {}),
+            }}
+            className="font-medium text-foreground underline underline-offset-4"
+          >
+            {t('identity.signIn.withPassword')}
+          </Link>
+        </p>
+      )}
+      {mode !== 'reset' &&
+        search.purpose !== 'forgot' &&
         search.purpose !== 'reenable' &&
         step.kind === 'credentials' && (
           <p className="text-sm text-muted-foreground">
@@ -227,9 +268,9 @@ function SignInSteps({
   );
 }
 
-/** Phone and password, or the phone alone the first time. */
+/** Phone and password, or the phone alone the first time and after a forgotten password. */
 function CredentialsStep({
-  first,
+  mode,
   purpose,
   registration,
   member,
@@ -237,7 +278,7 @@ function CredentialsStep({
   onDone,
   onReenabled,
 }: {
-  first: boolean;
+  mode: Mode;
   purpose: SignInPurpose;
   registration: RegistrationView | undefined;
   member: MemberView | undefined;
@@ -248,6 +289,7 @@ function CredentialsStep({
   const { t } = useTranslation(['clinic', 'common']);
   const errorText = useErrorText();
   const online = useOnline();
+  const phoneOnly = mode !== 'password';
   const [phone, setPhone] = useState(member?.phone ?? '');
   const [password, setPassword] = useState('');
   const [checking, setChecking] = useState(false);
@@ -255,12 +297,13 @@ function CredentialsStep({
   const phoneError =
     checking && parsed?.kind !== 'mobile' ? t('identity.signIn.phoneInvalid') : undefined;
   const passwordError =
-    checking && !first && password === '' ? t('identity.signIn.passwordRequired') : undefined;
+    checking && !phoneOnly && password === '' ? t('identity.signIn.passwordRequired') : undefined;
 
   const send = useMutation({
     mutationFn: async (e164: string) => {
-      if (first) {
-        const { challengeId } = await requestFirstSignIn(e164);
+      if (phoneOnly) {
+        const request = mode === 'reset' ? requestPasswordReset : requestFirstSignIn;
+        const { challengeId } = await request(e164);
         onOtp(challengeId, e164);
         return;
       }
@@ -287,7 +330,7 @@ function CredentialsStep({
 
   function submit(): boolean {
     setChecking(true);
-    if (parsed?.kind !== 'mobile' || (!first && password === '')) return false;
+    if (parsed?.kind !== 'mobile' || (!phoneOnly && password === '')) return false;
     send.mutate(parsed.e164);
     return true;
   }
@@ -310,7 +353,7 @@ function CredentialsStep({
             <FieldDescription>{t('identity.signIn.phoneHint')}</FieldDescription>
             <FieldError match={phoneError !== undefined}>{phoneError}</FieldError>
           </Field>
-          {!first && (
+          {!phoneOnly && (
             <Field invalid={passwordError !== undefined}>
               <FieldLabel>{t('identity.signIn.password')}</FieldLabel>
               <PasswordInput
@@ -322,12 +365,23 @@ function CredentialsStep({
                 hideLabel={t('identity.password.hide')}
               />
               <FieldError match={passwordError !== undefined}>{passwordError}</FieldError>
+              <Link
+                to="/sign-in"
+                search={{
+                  purpose,
+                  ...(member ? { member: member.enrollmentId } : {}),
+                  reset: true,
+                }}
+                className="self-start text-sm font-medium text-foreground underline underline-offset-4"
+              >
+                {t('identity.signIn.forgotPassword')}
+              </Link>
             </Field>
           )}
         </FormFields>
         <FormActions>
           <Button type="submit" loading={send.isPending} disabled={!online}>
-            {first ? t('identity.signIn.sendCode') : t('identity.signIn.submit')}
+            {phoneOnly ? t('identity.signIn.sendCode') : t('identity.signIn.submit')}
           </Button>
         </FormActions>
         {send.error && (
@@ -336,13 +390,13 @@ function CredentialsStep({
             tone="danger"
             title={errorText(send.error)}
             description={
-              code === 'RATE_LIMITED' && !first
+              code === 'RATE_LIMITED' && !phoneOnly
                 ? t('identity.signIn.lockedHint', { minutes: signInPolicy.lockMinutes })
                 : undefined
             }
           />
         )}
-        {purpose === 'register' && !first && (
+        {purpose === 'register' && !phoneOnly && (
           <p className="text-sm text-muted-foreground">{t('identity.signIn.registerHint')}</p>
         )}
       </Card>
@@ -352,11 +406,13 @@ function CredentialsStep({
 
 /** The six-digit code sent by WhatsApp, with the resend countdown (ADR 0022). */
 function OtpStep({
+  mode,
   step,
   onResent,
   onRestart,
   onVerified,
 }: {
+  mode: Mode;
   step: Extract<Step, { kind: 'otp' }>;
   onResent: (challengeId: string) => void;
   onRestart: () => void;
@@ -412,6 +468,13 @@ function OtpStep({
             autoFocus
             disabled={spent}
           />
+          {mode !== 'password' && (
+            // The same words whether a code was sent or not (no enumeration): what a missing code
+            // may mean, and the right path.
+            <p className="text-sm text-muted-foreground">
+              {mode === 'reset' ? t('identity.reset.noCode') : t('identity.otp.firstNoCode')}
+            </p>
+          )}
         </FormFields>
         <FormActions>
           <Button
@@ -435,6 +498,7 @@ function OtpStep({
             role="alert"
             tone="warning"
             title={errorText(verify.error)}
+            description={mode === 'reset' ? t('identity.reset.askOwner') : undefined}
             action={
               <Button variant="outline" size="sm" onClick={onRestart}>
                 {t('identity.otp.restart')}
@@ -456,11 +520,16 @@ function passwordHints(password: string, phone: string) {
   };
 }
 
-/** First sign-in (rule 15): the person confirms their name and sets a password. */
-function FirstPasswordStep({
+/**
+ * First sign-in (rule 15): the person confirms their name and sets a password. After an authorized
+ * reset (rule 16): the new password alone.
+ */
+function NewPasswordStep({
+  reset,
   step,
   onDone,
 }: {
+  reset: boolean;
   step: Extract<Step, { kind: 'password' }>;
   onDone: (ticket: string, name: string) => Promise<void>;
 }) {
@@ -471,19 +540,21 @@ function FirstPasswordStep({
   const [password, setPassword] = useState('');
   const [checking, setChecking] = useState(false);
   const hints = passwordHints(password, step.phone);
-  const nameError =
-    checking && name.trim().length < 2 ? t('identity.firstSignIn.nameInvalid') : undefined;
+  const nameInvalid = !reset && name.trim().length < 2;
+  const nameError = checking && nameInvalid ? t('identity.firstSignIn.nameInvalid') : undefined;
   const passwordError =
     checking && !(hints.length && hints.common) ? t('identity.password.weak') : undefined;
 
   const save = useMutation({
     mutationFn: async () =>
-      onDone(await setFirstPassword(step.ticket, name.trim(), password), name.trim()),
+      reset
+        ? onDone(await setNewPassword(step.ticket, password), step.name)
+        : onDone(await setFirstPassword(step.ticket, name.trim(), password), name.trim()),
   });
 
   function submit(): boolean {
     setChecking(true);
-    if (name.trim().length < 2 || !(hints.length && hints.common)) return false;
+    if (nameInvalid || !(hints.length && hints.common)) return false;
     save.mutate();
     return true;
   }
@@ -492,16 +563,19 @@ function FirstPasswordStep({
     <Form onSubmit={submit} busy={save.isPending}>
       <Card className="flex flex-col gap-6 p-6">
         <FormFields>
-          <Field invalid={nameError !== undefined}>
-            <FieldLabel>{t('identity.firstSignIn.name')}</FieldLabel>
-            <Input autoComplete="name" autoFocus value={name} onValueChange={setName} />
-            <FieldDescription>{t('identity.firstSignIn.nameHint')}</FieldDescription>
-            <FieldError match={nameError !== undefined}>{nameError}</FieldError>
-          </Field>
+          {!reset && (
+            <Field invalid={nameError !== undefined}>
+              <FieldLabel>{t('identity.firstSignIn.name')}</FieldLabel>
+              <Input autoComplete="name" autoFocus value={name} onValueChange={setName} />
+              <FieldDescription>{t('identity.firstSignIn.nameHint')}</FieldDescription>
+              <FieldError match={nameError !== undefined}>{nameError}</FieldError>
+            </Field>
+          )}
           <Field invalid={passwordError !== undefined}>
             <FieldLabel>{t('identity.firstSignIn.password')}</FieldLabel>
             <PasswordInput
               autoComplete="new-password"
+              autoFocus={reset}
               value={password}
               onValueChange={setPassword}
               showLabel={t('identity.password.show')}
@@ -516,7 +590,17 @@ function FirstPasswordStep({
             {t('identity.firstSignIn.submit')}
           </Button>
         </FormActions>
-        {save.error && <Callout role="alert" tone="danger" title={errorText(save.error)} />}
+        {save.error && (
+          <Callout
+            role="alert"
+            tone="danger"
+            title={
+              reset && apiErrorCode(save.error) === 'TICKET_INVALID'
+                ? t('identity.reset.expired')
+                : errorText(save.error)
+            }
+          />
+        )}
       </Card>
     </Form>
   );
