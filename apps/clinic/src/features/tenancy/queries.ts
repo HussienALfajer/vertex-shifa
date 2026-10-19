@@ -9,6 +9,7 @@ import type {
   TenantLogo,
   UpdateFacility,
   UpdateTenantProfile,
+  UpdateTenantSecurity,
 } from '@vertex-shifa/contracts';
 import { ApiError, api, unwrap } from '../../lib/api';
 import { fetchNow } from '../../lib/query-client';
@@ -81,6 +82,10 @@ export function areaQuery(id: string) {
 
 export function updateProfile(input: UpdateTenantProfile): Promise<Tenant> {
   return unwrap(api.PATCH('/api/tenant/profile', { body: input }));
+}
+
+export function updateSecurity(input: UpdateTenantSecurity): Promise<Tenant> {
+  return unwrap(api.PATCH('/api/tenant/security', { body: input }));
 }
 
 export function replaceLogo(file: File): Promise<TenantLogo> {

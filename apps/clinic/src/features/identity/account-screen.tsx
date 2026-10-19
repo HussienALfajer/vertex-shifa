@@ -78,6 +78,13 @@ function Profile({ me }: { me: Me }) {
           <span>{t('identity.account.phoneHint')}</span>
         </CardDescription>
       </CardHeader>
+      {me.practitioner && (
+        <div>
+          <Button variant="outline" render={<Link to="/me/profile" />}>
+            {t('practitioner.ownTitle')}
+          </Button>
+        </div>
+      )}
     </Card>
   );
 }

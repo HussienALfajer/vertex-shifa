@@ -5,6 +5,7 @@ import { Button } from '@vertex-shifa/ui';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { QueryStates } from '../../components/query-states';
+import { useStaffAccess } from '../../lib/staff-access';
 import { facilitiesQuery, tenantQuery } from './queries';
 import { ReadOnlyBanner } from './read-only-banner';
 
@@ -29,8 +30,8 @@ export function TenantGate({ children }: { children: ReactNode }) {
       {() => {
         const { status } = tenant.data as Tenant;
         const onSetup = pathname === '/setup';
-        // The member's own account is theirs in every status.
-        const onAccount = pathname === '/me';
+        // The member's own account and doctor profile are theirs in every status.
+        const onAccount = pathname === '/me' || pathname.startsWith('/me/');
         if (status === 'onboarding' && !onSetup && !onAccount) {
           return <Navigate to="/setup" replace />;
         }
@@ -49,10 +50,12 @@ export function TenantGate({ children }: { children: ReactNode }) {
 
 /**
  * The clinic's screens. A single-branch clinic never sees the word "branch" (rule 9): its
- * location screen stands where the branch list would.
+ * location screen stands where the branch list would. Staff, devices and security show to the
+ * members whose permissions open them (cosmetic: the API decides).
  */
 function MainNav() {
   const { t } = useTranslation('clinic');
+  const access = useStaffAccess();
   const branches = useQuery(facilitiesQuery(false));
   const several = (branches.data?.total ?? 0) >= 2;
   const link = 'data-[status=active]:bg-muted data-[status=active]:font-bold';
@@ -78,6 +81,21 @@ function MainNav() {
             {t('nav.location')}
           </Button>
         ))}
+      {access.readStaff && (
+        <Button variant="ghost" className={link} render={<Link to="/settings/staff" />}>
+          {t('nav.staff')}
+        </Button>
+      )}
+      {access.manageDevices && (
+        <Button variant="ghost" className={link} render={<Link to="/settings/devices" />}>
+          {t('nav.devices')}
+        </Button>
+      )}
+      {access.manageTenant && (
+        <Button variant="ghost" className={link} render={<Link to="/settings/security" />}>
+          {t('nav.security')}
+        </Button>
+      )}
     </nav>
   );
 }
