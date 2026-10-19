@@ -28,7 +28,7 @@ import { connect, refusal } from './connections.js';
 const { owner, app } = connect();
 
 const RLS_REFUSAL = /new row violates row-level security policy/;
-const key = (fill: string) => `${fill.repeat(43)}=`;
+const key = (fill: string) => `${fill.repeat(42)}A=`;
 let phoneSeq = 0;
 const phone = () => `+9639000001${String(++phoneSeq).padStart(2, '0')}`;
 
@@ -339,6 +339,19 @@ describe('devices, enrollments and sessions', () => {
       }),
     );
     expect(await refusal(duplicate)).toMatch(/devices_tenant_public_key_unique/);
+    // The same 32 bytes spelled with nonzero padding bits: refused, so the unique key holds.
+    const alias = withTenant(app, a.tenantId, (tx) =>
+      tx.insert(devices).values({
+        tenantId: a.tenantId,
+        facilityId: a.facilityId,
+        name: 'حاسوب آخر',
+        publicKey: `${'D'.repeat(42)}B=`,
+        os: 'windows',
+        appVersion: '0.1.0',
+        registeredByMembershipId: a.ownerId,
+      }),
+    );
+    expect(await refusal(alias)).toMatch(/devices_public_key/);
     const enroll = () =>
       withTenant(app, a.tenantId, (tx) =>
         tx.insert(deviceEnrollments).values({
@@ -349,6 +362,18 @@ describe('devices, enrollments and sessions', () => {
         }),
       );
     expect(await refusal(enroll())).toMatch(/device_enrollments_current_idx/);
+    expect(
+      await refusal(
+        withTenant(app, a.tenantId, (tx) =>
+          tx.insert(deviceEnrollments).values({
+            tenantId: a.tenantId,
+            deviceId: a.deviceId,
+            membershipId: a.ownerId,
+            publicKey: `${'V'.repeat(42)}B=`,
+          }),
+        ),
+      ),
+    ).toMatch(/device_enrollments_public_key/);
     await withTenant(app, a.tenantId, (tx) =>
       tx
         .update(deviceEnrollments)

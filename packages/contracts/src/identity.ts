@@ -127,10 +127,15 @@ export function offlineWindow(input: {
   };
 }
 
-/** Ed25519 public keys made on the device, base64 of the raw 32 bytes. */
+/**
+ * Ed25519 public keys made on the device, base64 of the raw 32 bytes. Canonical only: the last
+ * character before `=` carries 4 bits and 2 padding bits that must be zero, so each key has one
+ * spelling and the unique and different-keys checks compare keys, not spellings. The database
+ * checks the same pattern on `devices` and `device_enrollments`.
+ */
 export const publicKeySchema = z
   .string()
-  .regex(/^[A-Za-z0-9+/]{43}=$/)
+  .regex(/^[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=$/)
   .meta({ id: 'PublicKey' });
 
 /** A computer's name in the clinic ("Reception PC"). */

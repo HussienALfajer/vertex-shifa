@@ -102,6 +102,17 @@ describe('public keys', () => {
     expect(publicKeySchema.safeParse(`${'A'.repeat(43)}=`).success).toBe(true);
     expect(publicKeySchema.safeParse('A'.repeat(44)).success).toBe(false);
   });
+
+  it('accept the canonical spelling only, so equal keys are equal strings', () => {
+    // The last character before `=` carries 4 key bits and 2 padding bits that must be zero:
+    // each canonical character has 3 aliases (the next 3 characters) that decode to the same key.
+    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    [...alphabet].forEach((last, index) => {
+      expect(publicKeySchema.safeParse(`${'Zm9v'.repeat(10)}AB${last}=`).success, last).toBe(
+        index % 4 === 0,
+      );
+    });
+  });
 });
 
 describe('offline window', () => {
@@ -134,7 +145,7 @@ describe('offline window', () => {
 });
 
 describe('route shapes', () => {
-  const key = (fill: string) => `${fill.repeat(43)}=`;
+  const key = (fill: string) => `${fill.repeat(42)}A=`;
 
   it('refuse a registration whose device and user keys are the same', () => {
     const input = {

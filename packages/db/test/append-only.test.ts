@@ -45,11 +45,20 @@ describe('audit_entries', () => {
   });
 
   it('refuses an id that is not a UUIDv7 and an unknown actor kind', async () => {
-    expect(
-      await refusal(
-        withTenant(app, tenant, (tx) => tx.insert(auditEntries).values({ ...entry, id: uuidv4() })),
-      ),
-    ).toMatch(/audit_entries_id_is_uuidv7/);
+    // The nil, max and wrong-variant UUIDs have no version for `uuid_extract_version` (null).
+    for (const id of [
+      uuidv4(),
+      '00000000-0000-0000-0000-000000000000',
+      'ffffffff-ffff-ffff-ffff-ffffffffffff',
+      '01890a5d-ac96-7000-0000-000000000000',
+    ]) {
+      expect(
+        await refusal(
+          withTenant(app, tenant, (tx) => tx.insert(auditEntries).values({ ...entry, id })),
+        ),
+        id,
+      ).toMatch(/audit_entries_id_is_uuidv7/);
+    }
     expect(
       await refusal(
         withTenant(app, tenant, (tx) =>
