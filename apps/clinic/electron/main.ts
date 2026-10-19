@@ -1,5 +1,6 @@
 import { release } from 'node:os';
 import { join } from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ar } from '@vertex-shifa/i18n';
 import {
@@ -9,6 +10,7 @@ import {
   ipcMain,
   Menu,
   net,
+  powerMonitor,
   protocol,
   safeStorage,
   session,
@@ -20,12 +22,14 @@ import {
   contentSecurityPolicy,
   resolveAppFile,
 } from './app-protocol.js';
-import { DEVICE_CHANNEL } from './identity/bridge.js';
+import { DEVICE_CHANNEL, DEVICE_EVENT_CHANNEL, type DeviceEvent } from './identity/bridge.js';
 import { Installation } from './identity/installation.js';
 import { handleDeviceCall } from './identity/ipc.js';
 import type { Protector } from './identity/keys.js';
+import { httpTransport } from './identity/server.js';
 import { stateFile } from './identity/state-file.js';
 import { devServerUrl, isAllowedNavigation } from './navigation.js';
+import { sleepTracker } from './power.js';
 import { confirmLeaving } from './unsaved-changes.js';
 
 // The main process owns the installation's identity (S02: keys, PINs, registrations) and will own
@@ -38,6 +42,8 @@ const rendererOrigin = devServer ?? APP_ORIGIN;
 // The API and map URLs are read at start from the variables the renderer was built with (Vite
 // reads the same ones); S04's packaging bakes them in.
 const contentSecurity = contentSecurityPolicy(connectOrigins(process.env));
+/** The API the main process asks itself (sessions, registrations, enrollments: ADR 0021). */
+const apiOrigin = connectOrigins({ VITE_API_URL: process.env.VITE_API_URL })[0];
 
 protocol.registerSchemesAsPrivileged([
   { scheme: APP_SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true } },
@@ -71,22 +77,42 @@ function deviceProtector(): Protector | undefined {
   };
 }
 
-/** The device bridge: calls from the app's own renderer only, each checked by `handleDeviceCall`. */
-function serveDeviceBridge(): void {
+/**
+ * The device bridge: calls from the app's own renderer only, each checked by `handleDeviceCall`;
+ * the main process's events (`DeviceEvent`) go to the window. When the computer wakes, the
+ * offline window is checked at once and the renderer hears how long it slept (rule 25).
+ */
+function serveDeviceBridge(send: (event: DeviceEvent) => void): void {
   const protector = deviceProtector();
+  const appInfo = { os: `${process.platform} ${release()}`, appVersion: app.getVersion() };
   const installation = protector
     ? new Installation(
         stateFile(join(app.getPath('userData'), 'identity', 'installation.bin'), protector),
         protector,
+        undefined,
+        undefined,
+        {
+          server: httpTransport(apiOrigin, (url, init) => net.fetch(url, init)),
+          appInfo,
+          onEvent: send,
+        },
       )
     : undefined;
-  const appInfo = { os: `${process.platform} ${release()}`, appVersion: app.getVersion() };
   ipcMain.handle(DEVICE_CHANNEL, (event, method: unknown, input: unknown) => {
     if (!isAllowedNavigation(event.senderFrame?.url ?? '', rendererOrigin)) {
       return { ok: false, code: 'INVALID_INPUT' };
     }
     if (!installation) return { ok: false, code: 'STORAGE_UNAVAILABLE' };
     return handleDeviceCall(installation, appInfo, method, input);
+  });
+  const sleep = sleepTracker({ wall: () => Date.now(), monotonic: () => performance.now() });
+  powerMonitor.on('suspend', () => {
+    sleep.suspended();
+    send({ type: 'suspended' });
+  });
+  powerMonitor.on('resume', () => {
+    send({ type: 'resumed', sleptMs: sleep.resumed() });
+    void installation?.checkWindow().catch(() => undefined);
   });
 }
 
@@ -157,7 +183,13 @@ if (!app.requestSingleInstanceLock()) {
     if (!devServer) Menu.setApplicationMenu(null);
     lockDownSession();
     serveRenderer();
-    serveDeviceBridge();
+    serveDeviceBridge((event) => {
+      // Only to the app's own renderer, never to a page it was navigated away to.
+      const contents = mainWindow?.webContents;
+      if (contents && isAllowedNavigation(contents.getURL(), rendererOrigin)) {
+        contents.send(DEVICE_EVENT_CHANNEL, event);
+      }
+    });
     mainWindow = createWindow();
     mainWindow.on('closed', () => {
       mainWindow = null;

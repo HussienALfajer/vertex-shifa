@@ -2,8 +2,10 @@ import type {
   DeviceBridgeWindow,
   DeviceCalls,
   DeviceErrorCode,
+  DeviceEvent,
   DeviceMethod,
 } from '../../electron/identity/bridge';
+import { ApiError } from './api';
 
 declare global {
   interface Window {
@@ -26,7 +28,11 @@ export function hasDevice(): boolean {
   return typeof window !== 'undefined' && window.vertexShifaDevice !== undefined;
 }
 
-/** One call of the device bridge; keys and PINs stay in the main process. */
+/**
+ * One call of the device bridge; keys, PINs and refresh tokens stay in the main process. When the
+ * main process's own request to the API was refused, the call throws that refusal as an
+ * `ApiError`, as a request of the renderer would.
+ */
 export async function device<M extends DeviceMethod>(
   method: M,
   input: DeviceCalls[M]['input'],
@@ -34,8 +40,16 @@ export async function device<M extends DeviceMethod>(
   const bridge = window.vertexShifaDevice;
   if (!bridge) throw new DeviceCallError('UNAVAILABLE');
   const result = await bridge.call(method, input);
-  if (!result.ok) throw new DeviceCallError(result.code);
+  if (!result.ok) {
+    if (result.code === 'REFUSED') throw new ApiError(result.refusal ?? 'INTERNAL_ERROR');
+    throw new DeviceCallError(result.code);
+  }
   return result.value as DeviceCalls[M]['output'];
+}
+
+/** Listens to what the main process says on its own; answers the call that stops listening. */
+export function onDeviceEvent(listener: (event: DeviceEvent) => void): () => void {
+  return window.vertexShifaDevice?.onEvent(listener) ?? (() => undefined);
 }
 
 export function deviceErrorCode(error: unknown): DeviceCallError['code'] | undefined {
@@ -43,7 +57,9 @@ export function deviceErrorCode(error: unknown): DeviceCallError['code'] | undef
 }
 
 export type {
+  AccessGrant,
   ChangePinResult,
+  DeviceEvent,
   InstallationView,
   MemberView,
   RegistrationView,

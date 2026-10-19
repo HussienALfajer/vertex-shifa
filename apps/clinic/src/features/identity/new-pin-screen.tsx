@@ -15,13 +15,13 @@ import {
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OfflineNotice } from '../../components/offline-notice';
-import { api, apiErrorCode, TICKET_HEADER, unwrap } from '../../lib/api';
+import { apiErrorCode } from '../../lib/api';
 import { device, deviceErrorCode, type RegistrationView } from '../../lib/device';
 import { useErrorText } from '../../lib/error-text';
 import { useOnline } from '../../lib/online';
 import { type SignInFlow, setSignInFlow, useSignInFlow } from './flow';
 import { useInstallation } from './installation';
-import { asDevice, clearLockReason, deviceInfo, remember, sessionStarted } from './session';
+import { clearLockReason, remember, sessionStarted } from './session';
 
 /**
  * `/pin/new` (screen 4, rules 20–21): the PIN twice. Then the installation makes the keys, the API
@@ -161,7 +161,10 @@ function NewPinForm({
   );
 }
 
-/** Rule 18: registers this computer to the chosen clinic and enrolls the member in one step. */
+/**
+ * Rule 18: the main process registers this computer to the chosen clinic and enrolls the member in
+ * one step, with the person's ticket; the session it opens stays there but its access token.
+ */
 async function register(
   flow: SignInFlow,
   choice: NonNullable<SignInFlow['registration']>,
@@ -169,50 +172,27 @@ async function register(
 ): Promise<void> {
   const keys = await device('prepareKeys', { tenantId: choice.tenantId, phone: flow.phone, pin });
   try {
-    const { os, appVersion } = await deviceInfo();
-    const registered = await unwrap(
-      api.POST('/api/devices', {
-        headers: { [TICKET_HEADER]: flow.ticket },
-        body: {
-          tenantId: choice.tenantId,
-          facilityId: choice.facilityId,
-          name: choice.deviceName,
-          publicKey: keys.devicePublicKey ?? '',
-          os,
-          appVersion,
-          userPublicKey: keys.userPublicKey,
-        },
-      }),
-    );
-    remember(
-      await device('completeRegistration', {
-        pendingId: keys.pendingId,
-        deviceId: registered.device.id,
-        tenantId: registered.device.tenantId,
-        clinicName: choice.clinicName,
-        clinicNameLatin: choice.clinicNameLatin,
-        facilityName: choice.facilityName,
-        member: {
-          enrollmentId: registered.enrollment.id,
-          membershipId: registered.enrollment.membershipId,
-          name: flow.name,
-          roles: choice.roles,
-        },
-        lastConfirmedAt: registered.enrollment.lastConfirmedAt,
-        session: registered.session,
-      }),
-    );
-    void sessionStarted(
-      { deviceId: registered.device.id, tenantId: registered.device.tenantId },
-      registered.session.accessToken,
-    );
+    const { view, access } = await device('register', {
+      pendingId: keys.pendingId,
+      ticket: flow.ticket,
+      facilityId: choice.facilityId,
+      deviceName: choice.deviceName,
+      clinicName: choice.clinicName,
+      clinicNameLatin: choice.clinicNameLatin,
+      facilityName: choice.facilityName,
+      memberName: flow.name,
+      roles: choice.roles,
+    });
+    remember(view);
+    const registered = view.registrations.find((item) => item.deviceId === view.currentDeviceId);
+    if (registered) void sessionStarted(registered, access.accessToken);
   } catch (error) {
     await device('discardKeys', { pendingId: keys.pendingId }).catch(() => undefined);
     throw error;
   }
 }
 
-/** Rules 20 and 22: enrolls the member on this computer (again, after a forgotten PIN). */
+/** Rules 20 and 22: the main process enrolls the member on this computer (again, after a forgotten PIN). */
 async function enroll(
   flow: SignInFlow,
   registration: RegistrationView,
@@ -224,26 +204,13 @@ async function enroll(
     pin,
   });
   try {
-    const enrolled = await asDevice(registration, (headers) =>
-      api.POST('/api/devices/current/enrollments', {
-        headers: { ...headers, [TICKET_HEADER]: flow.ticket },
-        body: { userPublicKey: keys.userPublicKey },
-      }),
-    );
-    remember(
-      await device('completeEnrollment', {
-        pendingId: keys.pendingId,
-        member: {
-          enrollmentId: enrolled.enrollment.id,
-          membershipId: enrolled.enrollment.membershipId,
-          name: flow.name,
-          roles: [],
-        },
-        lastConfirmedAt: enrolled.enrollment.lastConfirmedAt,
-        session: enrolled.session,
-      }),
-    );
-    void sessionStarted(registration, enrolled.session.accessToken);
+    const { view, access } = await device('enroll', {
+      pendingId: keys.pendingId,
+      ticket: flow.ticket,
+      memberName: flow.name,
+    });
+    remember(view);
+    void sessionStarted(registration, access.accessToken);
   } catch (error) {
     await device('discardKeys', { pendingId: keys.pendingId }).catch(() => undefined);
     throw error;

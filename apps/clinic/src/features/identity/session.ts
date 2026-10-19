@@ -1,10 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import {
-  deviceTokenTtlSeconds,
-  type ErrorCode,
-  type SessionTokens,
-  staffSessionPolicy,
-} from '@vertex-shifa/contracts';
+import { deviceTokenTtlSeconds, type ErrorCode, staffSessionPolicy } from '@vertex-shifa/contracts';
 import type { SessionOwner } from '../../../electron/identity/bridge';
 import {
   ApiError,
@@ -14,15 +9,23 @@ import {
   identityApi,
   unwrap,
 } from '../../lib/api';
-import { device, type InstallationView, type RegistrationView } from '../../lib/device';
+import {
+  type AccessGrant,
+  device,
+  type InstallationView,
+  onDeviceEvent,
+  type RegistrationView,
+} from '../../lib/device';
 import { logErrorLabel } from '../../lib/error-logging';
 import { enterIdentity, memberKey } from '../../lib/identity-scope';
 import { installationQuery, unlockedIdentity } from './installation';
 
-// The staff session of the unlocked member (spec S02 rules 23, 25 and 29): device tokens signed by
-// the registration's device key, the session opened with the member's user key, refreshed before
-// its access token expires, ended by the lock; and what the device does when the API refuses it.
-// The tokens live in the main process, so a reload of the window keeps the session. Every session
+// The staff session of the unlocked member (spec S02 rules 23, 25 and 29): the main process opens
+// it with the member's user key and refreshes it with the refresh token it keeps (ADR 0021), and
+// the renderer holds the access token only; refreshed before the access token expires, ended by
+// the lock; and what the device does when the API refuses it. Device tokens signed by the
+// registration's device key serve the sign-in and the wipe's confirmation here. The session lives
+// in the main process, so a reload of the window keeps it. Every session
 // and every refusal belongs to the member it was made for (`SessionOwner`): an answer that comes
 // back after another member unlocked never lands on them.
 
@@ -81,38 +84,13 @@ export async function deviceToken(registration: Registration): Promise<string> {
   return issued.deviceToken;
 }
 
-type Answer<T> = Promise<{ data?: T; error?: unknown; response: Response }>;
-
 /**
- * A request of the registration's device (`@DeviceRoute`): with its device token, asked again once
- * with a new token when the server finds it expired, and the revocation handled (rule 29) when the
- * API answers `DEVICE_REVOKED`.
+ * The lock screen's data from the server (clinic, branch, members, last confirmations), read by
+ * the main process itself; a revoked computer is wiped (rule 29).
  */
-export async function asDevice<T>(
-  registration: Registration,
-  request: (headers: Record<string, string>) => Answer<T>,
-): Promise<T> {
-  const send = async () => {
-    let token: string;
-    try {
-      token = await deviceToken(registration);
-    } catch (error) {
-      // Once its wipe is confirmed, a revoked device gets no token at all.
-      if (error instanceof ApiError && error.code === 'DEVICE_REVOKED') {
-        await wipeRegistration(registration, { confirmed: true });
-      }
-      throw error;
-    }
-    return unwrap(request({ [DEVICE_TOKEN_HEADER]: token }));
-  };
+export async function refreshDevice(registration: Registration): Promise<InstallationView> {
   try {
-    try {
-      return await send();
-    } catch (error) {
-      if (!(error instanceof ApiError && error.code === 'UNAUTHENTICATED')) throw error;
-      deviceTokens.delete(registration.deviceId);
-      return await send();
-    }
+    return remember(await device('refreshDevice', { deviceId: registration.deviceId }));
   } catch (error) {
     if (error instanceof ApiError && error.code === 'DEVICE_REVOKED') {
       await wipeRegistration(registration);
@@ -121,44 +99,26 @@ export async function asDevice<T>(
   }
 }
 
-/** The lock screen's data from the server: clinic, branch, members, last confirmations. */
-export async function refreshDevice(registration: Registration): Promise<InstallationView> {
-  const current = await asDevice(registration, (headers) =>
-    identityApi.GET('/api/devices/current', { headers }),
-  );
-  return remember(await device('updateDevice', { current }));
-}
-
-async function storeSession(owner: SessionOwner, session: SessionTokens): Promise<void> {
+/** Notes when the access token expires: from its arrival, with its known lifetime. */
+function received(access: AccessGrant): AccessGrant {
   accessTokenExpiry.set(
-    session.sessionId,
+    access.sessionId,
     Date.now() + staffSessionPolicy.accessTokenMinutes * 60_000,
   );
-  await device('setSession', { ...owner, session });
+  return access;
 }
 
 /**
- * Rule 23: opens a staff session for `owner` with their key, unlocked in the main process. The
+ * Rule 23: the main process opens a staff session for `owner` with their key, unlocked there. The
  * server rechecks the device, the enrollment, the membership, the branch and the clinic, and
  * confirms the enrollment again (the offline window starts over); the lock screen's data and the
  * clinic's logo are refreshed.
  */
-export async function openSession(owner: SessionOwner): Promise<SessionTokens> {
+export async function openSession(owner: SessionOwner): Promise<AccessGrant> {
   try {
-    const { nonce } = await asDevice(owner, (headers) =>
-      identityApi.POST('/api/sessions/challenge', { headers }),
-    );
-    const proof = await device('signSession', { nonce });
-    if (memberKey(proof) !== memberKey(owner)) throw new ApiError('UNAUTHENTICATED');
-    const session = await asDevice(owner, (headers) =>
-      identityApi.POST('/api/sessions', {
-        headers,
-        body: { enrollmentId: proof.enrollmentId, nonce, signature: proof.signature },
-      }),
-    );
-    await storeSession(owner, session);
-    void sessionStarted(owner, session.accessToken);
-    return session;
+    const access = received(await device('openSession', owner));
+    void sessionStarted(owner, access.accessToken);
+    return access;
   } catch (error) {
     if (error instanceof ApiError) await sessionRefused(error.code, owner);
     throw error;
@@ -192,16 +152,10 @@ export async function sessionStarted(
   }
 }
 
-async function refreshSession(owner: SessionOwner, session: SessionTokens): Promise<SessionTokens> {
+/** The main process refreshes the session with the refresh token only it holds. */
+async function refreshSession(owner: SessionOwner, access: AccessGrant): Promise<AccessGrant> {
   try {
-    const next = await asDevice(owner, (headers) =>
-      identityApi.POST('/api/sessions/refresh', {
-        headers,
-        body: { refreshToken: session.refreshToken },
-      }),
-    );
-    await storeSession(owner, next);
-    return next;
+    return received(await device('refreshSession', { ...owner, sessionId: access.sessionId }));
   } catch (error) {
     if (error instanceof ApiError) await sessionRefused(error.code, owner);
     throw error;
@@ -219,14 +173,14 @@ let obtaining: { key: string; promise: Promise<Authorization> } | undefined;
 export async function accessToken(): Promise<Authorization> {
   const current = await device('session', null).catch(() => null);
   if (!current) throw new ApiError('UNAUTHENTICATED');
-  const { session, ...owner } = current;
+  const { access, ...owner } = current;
   const key = memberKey(owner);
   if (obtaining?.key === key) return obtaining.promise;
   const promise = (async (): Promise<Authorization> => {
-    if (!session) return { token: (await openSession(owner)).accessToken, owner };
-    const expiry = accessTokenExpiry.get(session.sessionId) ?? 0;
-    if (expiry - Date.now() > ACCESS_TOKEN_MARGIN_MS) return { token: session.accessToken, owner };
-    return { token: (await refreshSession(owner, session)).accessToken, owner };
+    if (!access) return { token: (await openSession(owner)).accessToken, owner };
+    const expiry = accessTokenExpiry.get(access.sessionId) ?? 0;
+    if (expiry - Date.now() > ACCESS_TOKEN_MARGIN_MS) return { token: access.accessToken, owner };
+    return { token: (await refreshSession(owner, access)).accessToken, owner };
   })().finally(() => {
     if (obtaining?.key === key) obtaining = undefined;
   });
@@ -259,9 +213,9 @@ async function sessionRefused(code: ApiErrorCode, owner: SessionOwner): Promise<
     if (code === 'ENROLLMENT_REVOKED') {
       remember(await device('removeMember', owner));
     }
-    if (code === 'UNAUTHENTICATED' && theirs) {
+    if (code === 'UNAUTHENTICATED' && theirs && current.access) {
       // The server no longer takes this access token: a new session is opened on the next request.
-      await device('setSession', { ...owner, session: null });
+      await device('dropSession', { ...owner, sessionId: current.access.sessionId });
     }
     if (locking.has(code) && code !== 'NETWORK_ERROR' && theirs) await lockApp(code);
   } catch (error) {
@@ -282,7 +236,7 @@ export async function lockApp(reason?: ErrorCode): Promise<void> {
  */
 export async function lockSession(): Promise<void> {
   const current = await device('session', null).catch(() => null);
-  const session = current?.session;
+  const session = current?.access;
   if (session && (accessTokenExpiry.get(session.sessionId) ?? 0) > Date.now()) {
     // Best effort, and never waiting long: the lock must not depend on the connection.
     const ended = identityApi
@@ -357,11 +311,19 @@ export function subscribeLockReason(listener: () => void): () => void {
   return () => lockReasonListeners.delete(listener);
 }
 
-/** Wires the session into the API client, once, when the app starts. */
+/**
+ * Wires the session into the API client, once, when the app starts, and listens to the main
+ * process: when it locks the member itself (rule 24: the offline window passed during the
+ * session), the screens follow.
+ */
 export function startIdentity(client: QueryClient): void {
   queryClient = client;
   authorizeRequests<SessionOwner>({
     accessToken,
     refused: (code, owner) => void sessionRefused(code, owner),
+  });
+  onDeviceEvent((event) => {
+    if (event.type !== 'locked') return;
+    device('view', null).then(remember).catch(logErrorLabel);
   });
 }

@@ -19,6 +19,7 @@ import {
   staffSessionMessage,
   type TenantStatus,
 } from '@vertex-shifa/contracts';
+import type { Transport } from '../electron/identity/server.js';
 import { verifySignature } from '../electron/identity/test-support.js';
 import type { DeviceBridge } from './device-bridge.js';
 
@@ -257,9 +258,17 @@ function enroll(identity: MockIdentity, device: Device, membership: Membership, 
   };
 }
 
+/** A `signed_in` ticket for `account`, as a finished sign-in leaves. */
+function signedInTicket(identity: MockIdentity, account: Account): string {
+  const ticket = `ticket-${randomUUID()}`;
+  identity.tickets.set(ticket, { accountId: account.id, purpose: 'signed_in' });
+  return ticket;
+}
+
 /**
  * Registers the computer of `bridge` to the clinic for `account`, as the registration screen
- * would, and leaves the member unlocked with an open session: the app opens signed in.
+ * would (the main process asks the mocked API itself), and leaves the member unlocked with an
+ * open session: the app opens signed in.
  */
 export async function signInBeforehand(
   identity: MockIdentity,
@@ -276,35 +285,22 @@ export async function signInBeforehand(
     phone: account.phone,
     pin: seededPin,
   });
-  const device: Device = {
-    id: randomUUID(),
-    tenantId,
-    facilityId: options.facilityId ?? clinic.branches[0]?.id ?? null,
-    name: 'حاسوب الاستقبال',
-    publicKey: keys.devicePublicKey ?? '',
-    status: 'active',
-    wipedAt: null,
-  };
-  identity.devices.push(device);
-  const enrolled = enroll(identity, device, membership, keys.userPublicKey);
-  await bridge.installation.calls.completeRegistration({
+  const facilityId = options.facilityId ?? clinic.branches[0]?.id ?? null;
+  const { view } = await bridge.installation.calls.register({
     pendingId: keys.pendingId,
-    deviceId: device.id,
-    tenantId,
+    ticket: signedInTicket(identity, account),
+    facilityId,
+    deviceName: 'حاسوب الاستقبال',
     clinicName: clinic.nameAr,
     clinicNameLatin: clinic.nameLatin,
-    facilityName: clinic.branches.find((item) => item.id === device.facilityId)?.name ?? null,
-    member: {
-      enrollmentId: enrolled.enrollment.id,
-      membershipId: membership.id,
-      name: account.name ?? account.invitedName,
-      roles: membership.roles,
-    },
-    lastConfirmedAt: enrolled.enrollment.lastConfirmedAt,
-    session: enrolled.session,
+    facilityName: clinic.branches.find((item) => item.id === facilityId)?.name ?? null,
+    memberName: account.name ?? account.invitedName,
+    roles: membership.roles,
   });
+  const device = identity.devices.find((item) => item.id === view.currentDeviceId);
+  if (!device) throw new Error('The computer was not registered');
   // What the app learns from the server once the session opened: the clinic's idle minutes.
-  await bridge.installation.calls.updateDevice({ current: currentDeviceOf(identity, device) });
+  await bridge.installation.calls.refreshDevice({ deviceId: device.id });
   if (options.locked) await bridge.installation.calls.lock(null);
   return device;
 }
@@ -316,24 +312,18 @@ export async function enrollBeforehand(
   account: Account,
   device: Device,
 ): Promise<void> {
-  const membership = account.memberships.find((item) => item.tenantId === device.tenantId);
-  if (!membership) throw new Error('Not a member of this clinic');
+  if (!account.memberships.some((item) => item.tenantId === device.tenantId)) {
+    throw new Error('Not a member of this clinic');
+  }
   const keys = await bridge.installation.calls.prepareKeys({
     deviceId: device.id,
     phone: account.phone,
     pin: seededPin,
   });
-  const enrolled = enroll(identity, device, membership, keys.userPublicKey);
-  await bridge.installation.calls.completeEnrollment({
+  await bridge.installation.calls.enroll({
     pendingId: keys.pendingId,
-    member: {
-      enrollmentId: enrolled.enrollment.id,
-      membershipId: membership.id,
-      name: account.name ?? account.invitedName,
-      roles: membership.roles,
-    },
-    lastConfirmedAt: enrolled.enrollment.lastConfirmedAt,
-    session: enrolled.session,
+    ticket: signedInTicket(identity, account),
+    memberName: account.name ?? account.invitedName,
   });
   await bridge.installation.calls.lock(null);
 }
@@ -713,4 +703,31 @@ export function identityRoutes(identity: MockIdentity) {
   }
 
   return { handle, staff, refuse };
+}
+
+/**
+ * The main process's own requests (`Transport`), answered by the identity routes in this process,
+ * as the API answers the desktop app's main process.
+ */
+export function identityTransport(routes: ReturnType<typeof identityRoutes>): Transport {
+  return async ({ method, path, headers = {}, body }) => {
+    const lower = Object.fromEntries(
+      Object.entries(headers).map(([name, value]) => [name.toLowerCase(), value]),
+    );
+    const request = {
+      headers: () => lower,
+      postDataJSON: () => body ?? null,
+      url: () => `http://localhost${path}`,
+      method: () => method,
+    } as unknown as Request;
+    const answer = routes.handle(request, path, method);
+    if (!answer) return { status: 404, body: { code: 'NOT_FOUND', message: 'NOT_FOUND' } };
+    let result: { status: number; body: unknown } = { status: 500, body: null };
+    await answer({
+      fulfill: async ({ status = 200, json }: { status?: number; json?: unknown }) => {
+        result = { status, body: json };
+      },
+    } as unknown as Route);
+    return result;
+  };
 }

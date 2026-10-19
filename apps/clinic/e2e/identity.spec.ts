@@ -206,7 +206,10 @@ test.describe('lock screen', () => {
   test('unlocks with the PIN, disables it after five wrong ones, re-enables it with the password', async ({
     page,
   }, testInfo) => {
-    await mockApi(page, { tenant: tenant({ status: 'active' }), facilities: [facility()] });
+    const api = await mockApi(page, {
+      tenant: tenant({ status: 'active' }),
+      facilities: [facility()],
+    });
     await page.goto('/');
     await page.getByRole('button', { name: 'قفل' }).click();
     await expect(page).toHaveURL('/lock');
@@ -223,9 +226,26 @@ test.describe('lock screen', () => {
     await expect(page.getByText('الرمز السري موقوف')).toBeVisible();
     await screenshot(page, testInfo, 'lock-pin-disabled');
 
+    // A renderer that only claims the sign-in happened re-enables nothing (F02).
+    const [registration] = (await api.device.installation.calls.view(null)).registrations;
+    const forged = await page.evaluate(
+      `window.vertexShifaDevice.call('reenablePin', ${JSON.stringify({
+        deviceId: registration?.deviceId,
+        enrollmentId: registration?.members[0]?.enrollmentId,
+      })})`,
+    );
+    expect(forged).toEqual({ ok: false, code: 'INVALID_INPUT' });
+
     await page.getByRole('button', { name: 'الدخول بكلمة المرور' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('إعادة تفعيل الرمز السري');
     await expect(page.getByLabel('رقم الهاتف')).toHaveValue('+963900000101');
+    // A wrong password leaves the PIN disabled.
+    await page.getByLabel('كلمة المرور', { exact: true }).fill('synthetic-wrong-pass');
+    await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
+    await expect(page.getByRole('alert')).toBeVisible();
+    expect(
+      (await api.device.installation.calls.view(null)).registrations[0]?.members[0]?.pinDisabled,
+    ).toBe(true);
     await page.getByLabel('كلمة المرور', { exact: true }).fill(ownerPassword);
     await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
     await expect(page).toHaveURL(/\/lock/);
@@ -278,6 +298,29 @@ test.describe('lock screen', () => {
     await context.setOffline(false);
     await typeCode(page, 'الرمز السري لـ مالك تجريبي', seededPin);
     await expect(page).toHaveURL('/');
+  });
+
+  test('locks a session whose 7-day window passes while it is open (rule 24)', async ({
+    page,
+    context,
+  }) => {
+    const api = await mockApi(page, {
+      tenant: tenant({ status: 'active' }),
+      facilities: [facility()],
+    });
+    await page.goto('/');
+    await expect(page.getByRole('button', { name: 'قفل' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    // 8 days pass with the app open: the main process locks the member and says so.
+    api.device.setClockOffset(8 * DAY);
+    await api.device.installation.checkWindow();
+    await expect(page).toHaveURL(/\/lock/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('عيادة الاختبار');
+    // Offline, the PIN no longer opens the app.
+    await context.setOffline(true);
+    await expect(page.getByText('اتصل بالإنترنت للمتابعة')).toBeVisible();
+    await expect(codeField(page, 'الرمز السري لـ مالك تجريبي').first()).toBeDisabled();
+    await context.setOffline(false);
   });
 
   test('warns when the clock is set back, without extending the window (rule 24)', async ({

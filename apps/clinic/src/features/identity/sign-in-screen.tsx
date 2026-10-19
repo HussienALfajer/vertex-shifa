@@ -100,18 +100,8 @@ function SignInSteps({
   const first = search.first === true;
   const [step, setStep] = useState<Step>({ kind: 'credentials' });
 
-  /** The person proved who they are: on to the registration, the PIN, or back to the lock. */
-  async function signedIn(ticket: string, phone: string, name: string, enrolled: boolean) {
-    if (search.purpose === 'reenable' && enrolled && registration && member) {
-      remember(
-        await device('reenablePin', {
-          deviceId: registration.deviceId,
-          enrollmentId: member.enrollmentId,
-        }),
-      );
-      await navigate({ to: '/lock', search: { member: member.enrollmentId } });
-      return;
-    }
+  /** The person proved who they are: on to the registration or the new PIN. */
+  async function signedIn(ticket: string, phone: string, name: string) {
     if (search.purpose === 'register') {
       const options = await registrationOptions(ticket);
       // Rule 19: never a second registration to a clinic this computer holds.
@@ -184,7 +174,10 @@ function SignInSteps({
           onOtp={(challengeId, phone) =>
             setStep({ kind: 'otp', challengeId, phone, sentAt: Date.now() })
           }
-          onDone={(ticket, phone) => signedIn(ticket, phone, member?.name ?? '', true)}
+          onDone={(ticket, phone) => signedIn(ticket, phone, member?.name ?? '')}
+          onReenabled={async (enrollmentId) => {
+            await navigate({ to: '/lock', search: { member: enrollmentId } });
+          }}
         />
       )}
       {step.kind === 'otp' && (
@@ -198,14 +191,14 @@ function SignInSteps({
               setStep({ kind: 'password', ticket: verified.ticket, phone: step.phone, name });
               return;
             }
-            await signedIn(verified.ticket, step.phone, name, false);
+            await signedIn(verified.ticket, step.phone, name);
           }}
         />
       )}
       {step.kind === 'password' && (
         <FirstPasswordStep
           step={step}
-          onDone={(ticket, name) => signedIn(ticket, step.phone, name, false)}
+          onDone={(ticket, name) => signedIn(ticket, step.phone, name)}
         />
       )}
       {step.kind === 'noClinic' && (
@@ -242,6 +235,7 @@ function CredentialsStep({
   member,
   onOtp,
   onDone,
+  onReenabled,
 }: {
   first: boolean;
   purpose: SignInPurpose;
@@ -249,6 +243,7 @@ function CredentialsStep({
   member: MemberView | undefined;
   onOtp: (challengeId: string, phone: string) => void;
   onDone: (ticket: string, phone: string) => Promise<void>;
+  onReenabled: (enrollmentId: string) => Promise<void>;
 }) {
   const { t } = useTranslation(['clinic', 'common']);
   const errorText = useErrorText();
@@ -267,6 +262,21 @@ function CredentialsStep({
       if (first) {
         const { challengeId } = await requestFirstSignIn(e164);
         onOtp(challengeId, e164);
+        return;
+      }
+      if (purpose === 'reenable' && registration && member) {
+        // Rule 22: the main process signs in itself and re-enables the PIN on the server's `done`.
+        const result = await device('reenablePin', {
+          deviceId: registration.deviceId,
+          enrollmentId: member.enrollmentId,
+          password,
+        });
+        if (result.result === 'otp') {
+          onOtp(result.challengeId, member.phone);
+          return;
+        }
+        remember(result.view);
+        await onReenabled(member.enrollmentId);
         return;
       }
       const result = await signIn(e164, password, registration);
