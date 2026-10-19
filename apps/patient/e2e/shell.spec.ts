@@ -59,8 +59,13 @@ test.describe('patient shell', () => {
       // Until hydration the button shows the light theme's label and ignores presses: press only
       // while the banner is not in the theme yet, and again if a press came too early.
       await expect(async () => {
-        const drawn = await banner.evaluate((element) => getComputedStyle(element).backgroundColor);
-        if (drawn !== surface) await button.click({ timeout: 1000 });
+        const drawn = await expect(banner)
+          .toHaveCSS('background-color', surface, { timeout: 100 })
+          .then(
+            () => true,
+            () => false,
+          );
+        if (!drawn) await button.click({ timeout: 1000 });
         await expect(banner).toHaveCSS('background-color', surface, { timeout: 1000 });
       }).toPass();
       // Kept on the device (AsyncStorage) and applied again on the next start.
