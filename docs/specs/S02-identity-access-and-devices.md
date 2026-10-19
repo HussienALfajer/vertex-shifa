@@ -198,6 +198,9 @@ Index `(tenant_id, membership_id, ended_at)`. App role: `SELECT, INSERT, UPDATE`
 
 Index `(account_id, created_at)` (hourly limit). App role: `SELECT, INSERT, UPDATE`. Rows are kept until the retention rules (Q2).
 
+### `used_tokens` (scope `platform`, kind `append-only`, module `identity`)
+The single-use tokens that were used: sign-in tickets (`ticket`), console step tickets (`console_step`) and proof-of-work challenges (`proof_of_work`), by `kind`, `token_id` (the ticket's `jti` or the challenge id; unique per kind) and `expires_at`. A ticket is used by inserting its row in the transaction of the step it authorizes, so a failed step keeps it usable, a restart forgets no use, and of two concurrent uses one wins; a proof of work is used at once, whatever its request then decides. Random ids only, nothing personal. App role: `SELECT, INSERT`. Rows are kept until the retention rules (Q2); server nonces stay in the API's memory, since a restart refuses every nonce it issued.
+
 ### `practitioners` (scope `tenant`, kind `business`, module `practitioners`)
 The doctor profile of a member with the doctor role. Archived when the doctor role is removed; restored if it is given back.
 
@@ -318,7 +321,7 @@ Rules:
 38. Sensitive actions need a TOTP entered in the last 5 minutes (`REAUTH_REQUIRED`): tenant status and directory changes, owner recovery, phone changes, platform user management.
 39. Sessions last 12 hours at most and end after 30 minutes without a request. The session is an `HttpOnly`, `Secure`, `SameSite=Strict` cookie scoped to `/api/console/`; console write routes also check the `Origin` header.
 40. An admin cannot disable, demote or reset themselves; the last active admin cannot be disabled or demoted (`LAST_ADMIN`). A lost TOTP is reset by another admin (or, for the last admin, with the CLI).
-41. Every console request, read or write, writes a `platform_audit_entries` row with the route id, the ids involved and the subject tenant; console actions on a tenant also write the tenant's `audit_entries` (S01).
+41. Every console request, read or write, that carries a known session token writes a `platform_audit_entries` row with the route id, the ids involved, the subject tenant and the session's user, also when the session is ended, expired, idle or its user disabled (the row commits with the end this request makes), and when the origin, the role or re-authentication refuses it. Every failed console sign-in, setup or TOTP step for the phone of an existing platform user, disabled or locked included, writes `platform_user.sign_in_failed` or `platform_user.totp_failed`; a step refused before any user or code is looked at (an invalid or used ticket, the per-user code rate limit) is not an attempt and writes none. A request with no or an unknown session token, and a sign-in for an unknown phone, writes no audit row: it stays under the rate limits, and at most a server security log line with the route and a reason code, never a phone, token, address or body (owner, 2026-10-19). Console actions on a tenant also write the tenant's `audit_entries` (S01).
 
 ## Offline behavior and conflicts
 - **Works offline:** unlocking with the PIN within the offline window, idle lock and member switching, clinic switching on a multi-clinic installation. The device enforces branch scope and permissions locally from the membership and catalog it last received (S04 replicates memberships; until then the clinic app is online-only for everything but these screens).
@@ -427,7 +430,7 @@ Console (web, Arabic RTL):
 
 ## Audit
 In the tenant's `audit_entries`, same transaction, ids only: `staff.invited`, `staff.invitation_resent`, `staff.invitation_cancelled`, `staff.invitation_accepted`, `staff.access_changed`, `staff.deactivated` (reason), `staff.reactivated`, `staff.password_reset_authorized`, `device.registered`, `device.renamed`, `device.revoked` (reason), `device.wiped`, `device_enrollment.created`, `device_enrollment.revoked`, `staff_session.started`, `practitioner.updated`, `practitioner_photo.replaced`, `practitioner_photo.archived`, `tenant.security_updated`, and console recovery actions on the tenant's owners.
-In `platform_audit_entries`: every console request (rule 41), `account.created`, `account.password_set`, `account.phone_changed`, `account.sign_in_locked`, `platform_user.*`, console sign-ins and failed TOTP attempts.
+In `platform_audit_entries`: every console request with a known session token, refused or over included (rule 41), `account.created`, `account.password_set`, `account.phone_changed`, `account.sign_in_locked`, `platform_user.*`, console sign-ins, and failed sign-in, setup and TOTP attempts for existing platform users (rule 41).
 Wrong PINs and PIN lockouts happen offline; from S04 the device uploads them as audit commands.
 
 ## Abuse and failure cases

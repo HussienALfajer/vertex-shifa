@@ -43,7 +43,7 @@ export interface SessionVerifier {
    * A sign-in ticket for `purpose`, not yet used. The service that acts on it uses it up, once its
    * input is valid, so a refused password does not cost the person their ticket.
    */
-  ticket(ticket: string, purpose: TicketPurpose): Ticket;
+  ticket(ticket: string, purpose: TicketPurpose): Promise<Ticket>;
 }
 
 export const SESSION_VERIFIER = Symbol('SessionVerifier');

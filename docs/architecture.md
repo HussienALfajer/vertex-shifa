@@ -61,7 +61,7 @@ docs/                 product, decisions, specs, roadmap, workflow
 
 | Layer | Module | Owns (main tables) | Notes |
 |---|---|---|---|
-| platform | identity | accounts, otp_challenges, devices, device_enrollments, staff_sessions, platform_users, platform_user_recovery_codes, platform_sessions | ADR 0005, 0024, S02 |
+| platform | identity | accounts, otp_challenges, used_tokens, devices, device_enrollments, staff_sessions, platform_users, platform_user_recovery_codes, platform_sessions | ADR 0005, 0024, S02 |
 | platform | tenancy | tenants (the tenant catalog, with `data_location`), tenant_logos, facilities, areas; units later | ADR 0004, S01 |
 | platform | access | staff_memberships, staff_membership_facilities, account_tenant_links; the permission catalog and role presets are code in `packages/contracts` | ADR 0005, 0024, S02 |
 | platform | commercial | catalog_items, packages, quotes, contracts, contract_items, platform_invoices, platform_payments | ADR 0013, 0014 |

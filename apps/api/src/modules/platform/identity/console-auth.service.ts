@@ -49,7 +49,7 @@ import {
   safeEqual,
   verifyPassword,
 } from './secrets.js';
-import { SingleUse } from './single-use.js';
+import { isTokenUsed, useToken } from './single-use.js';
 import { TokenSigner } from './tokens.js';
 import { matchTotp, newTotpSecret, newTypedCode, totpUri } from './totp.js';
 
@@ -64,10 +64,11 @@ const ticketInvalid = () => new DomainError('TICKET_INVALID', 'Invalid or used c
 const totpInvalid = () => new DomainError('TOTP_INVALID', 'Wrong or used code');
 
 /** A locked user's codes are refused like their password (rule 12). */
-function assertUnlocked(user: PlatformUserRow, now: Date) {
+function lockedRefusal(user: PlatformUserRow, now: Date): DomainError | undefined {
   if (user.signInLockedUntil && user.signInLockedUntil > now) {
-    throw signInLocked(user.signInLockedUntil);
+    return signInLocked(user.signInLockedUntil);
   }
+  return undefined;
 }
 
 /** The AES-GCM context of a user's TOTP secret: the sealed value opens on that row only. */
@@ -86,7 +87,6 @@ export class ConsoleAuthService {
   /** TOTP and recovery codes, at the sign-in step and in re-authentication: per user. */
   private readonly codesPerUser = new RateLimiter(10, 10 * MINUTE_MS);
   private readonly decoys = new DecoyLocks();
-  private readonly usedTickets = new SingleUse();
   /** Wrong re-authentication codes in a row, by console session. */
   private readonly reauthFailures = new Map<string, number>();
 
@@ -107,7 +107,7 @@ export class ConsoleAuthService {
    */
   async signIn(input: ConsoleSignIn, address: string): Promise<ConsoleSignInResult> {
     this.perAddress.take(this.hashes.hash('address', address));
-    this.pow.verify(input.proofOfWork);
+    await this.pow.verify(input.proofOfWork);
     const now = new Date();
     const secret = input.password ?? input.setupCode ?? '';
     const [user] = await this.db
@@ -115,6 +115,11 @@ export class ConsoleAuthService {
       .from(platformUsers)
       .where(eq(platformUsers.phone, input.phone));
     if (!user || user.status === 'disabled') {
+      // A known phone's failure is audited, a disabled user's too; an unknown phone's is not
+      // (rule 41). The answer is the same.
+      if (user) {
+        await this.db.transaction((tx) => this.audit(tx, user.id, 'platform_user.sign_in_failed'));
+      }
       await this.decoys.fail(this.hashes.hash('console-phone', input.phone), secret, now);
       throw invalidCredentials();
     }
@@ -151,7 +156,7 @@ export class ConsoleAuthService {
    * new recovery codes (shown this once) and a session.
    */
   async setUp(input: ConsoleSetup): Promise<WithConsoleCookie<ConsoleSetUp>> {
-    const claims = this.verifyTicket(input.ticket, 'setup');
+    const claims = await this.verifyTicket(input.ticket, 'setup');
     this.codesPerUser.take(claims.uid);
     const now = new Date();
     const recoveryCodes = Array.from({ length: consolePolicy.recoveryCodes }, () =>
@@ -164,14 +169,17 @@ export class ConsoleAuthService {
         user?.status === 'pending_setup' &&
         user.totpSecret !== null &&
         (user.setupCodeExpiresAt ?? new Date(0)) > now;
-      if (!user || !pending) throw ticketInvalid();
-      assertUnlocked(user, now);
+      if (!user) throw ticketInvalid();
+      // A step of a user disabled, reset or set up meanwhile: refused and audited (rule 41).
+      if (!pending) return this.refusedStep(tx, user.id, ticketInvalid());
+      const locked = lockedRefusal(user, now);
+      if (locked) return this.refusedStep(tx, user.id, locked);
       assertPasswordStrong(input.password, user.phone);
       if (!(await this.acceptTotp(tx, user, input.code, now))) {
         await this.codeFailed(tx, user, now);
         return totpInvalid();
       }
-      this.consumeTicket(claims);
+      await this.consumeTicket(tx, claims);
       await tx
         .update(platformUsers)
         .set({
@@ -206,14 +214,16 @@ export class ConsoleAuthService {
    * A wrong code is audited and counts toward the sign-in lock; the ticket stays usable.
    */
   async verifyTotp(input: ConsoleTotp): Promise<WithConsoleCookie<ConsoleMe>> {
-    const claims = this.verifyTicket(input.ticket, 'totp');
+    const claims = await this.verifyTicket(input.ticket, 'totp');
     this.codesPerUser.take(claims.uid);
     const now = new Date();
     const isTotp = totpCodeSchema.safeParse(input.code).success;
     const outcome = await this.db.transaction(async (tx) => {
       const user = await this.lockUser(tx, claims.uid);
-      if (user?.status !== 'active') throw ticketInvalid();
-      assertUnlocked(user, now);
+      if (!user) throw ticketInvalid();
+      if (user.status !== 'active') return this.refusedStep(tx, user.id, ticketInvalid());
+      const locked = lockedRefusal(user, now);
+      if (locked) return this.refusedStep(tx, user.id, locked);
       const accepted = isTotp
         ? await this.acceptTotp(tx, user, input.code, now)
         : await this.useRecoveryCode(tx, user.id, input.code, now);
@@ -221,7 +231,7 @@ export class ConsoleAuthService {
         await this.codeFailed(tx, user, now);
         return totpInvalid();
       }
-      this.consumeTicket(claims);
+      await this.consumeTicket(tx, claims);
       await this.attemptSucceeded(tx, user.id, now);
       if (!isTotp) await this.audit(tx, user.id, 'platform_user.recovery_code_used');
       const session = await this.sessions.open(tx, user.id, now, isTotp);
@@ -370,16 +380,17 @@ export class ConsoleAuthService {
     ).token;
   }
 
-  private verifyTicket(ticket: string, step: Step) {
+  private async verifyTicket(ticket: string, step: Step) {
     const claims = this.tokens.verify(ticket, 'console_step');
-    if (!claims || claims.step !== step || this.usedTickets.isUsed(claims.jti)) {
-      throw ticketInvalid();
-    }
+    if (!claims || claims.step !== step) throw ticketInvalid();
+    if (await isTokenUsed(this.db, 'console_step', claims.jti)) throw ticketInvalid();
     return claims;
   }
 
-  private consumeTicket(claims: { jti: string; exp: number }) {
-    if (!this.usedTickets.use(claims.jti, claims.exp * 1000)) throw ticketInvalid();
+  /** Uses the ticket up in the step's transaction (`used_tokens`): a failed step keeps it. */
+  private async consumeTicket(tx: Transaction, claims: { jti: string; exp: number }) {
+    const used = await useToken(tx, 'console_step', claims.jti, new Date(claims.exp * 1000));
+    if (!used) throw ticketInvalid();
   }
 
   private async lockUser(tx: Transaction, id: string): Promise<PlatformUserRow | undefined> {
@@ -457,7 +468,10 @@ export class ConsoleAuthService {
     const lockedUntil = await this.db.transaction(async (tx) => {
       const user = await this.lockUser(tx, userId);
       if (!user) return undefined;
-      if (user.signInLockedUntil && user.signInLockedUntil > now) return user.signInLockedUntil;
+      if (user.signInLockedUntil && user.signInLockedUntil > now) {
+        await this.audit(tx, userId, 'platform_user.sign_in_failed');
+        return user.signInLockedUntil;
+      }
       if (user.failedSignIns >= signInPolicy.maxFailures) return this.lock(tx, userId, now);
       await tx
         .update(platformUsers)
@@ -515,6 +529,15 @@ export class ConsoleAuthService {
   }
 
   /** The user's own console actions, in the platform audit. */
+  /**
+   * A step of an existing user refused before its code is checked (locked, disabled): still a
+   * failed attempt, audited (rule 41); the caller returns the refusal so the row commits.
+   */
+  private async refusedStep(tx: Transaction, userId: string, refusal: DomainError) {
+    await this.audit(tx, userId, 'platform_user.sign_in_failed');
+    return refusal;
+  }
+
   private audit(tx: Transaction, userId: string, action: AuditAction) {
     return recordPlatformAudit(tx, {
       actor: { kind: 'platform', userId },

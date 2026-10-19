@@ -101,7 +101,7 @@ export class AccessGuard implements CanActivate {
         const device = await this.sessions.device(token, { allowRevoked: access.allowRevoked });
         request.device = device;
         if (access.ticket) {
-          const ticket = this.ticketOf(request, access.ticket);
+          const ticket = await this.ticketOf(request, access.ticket);
           if (ticket.deviceId !== null && ticket.deviceId !== device.deviceId) {
             throw new DomainError('TICKET_INVALID', 'The ticket belongs to another device');
           }
@@ -110,7 +110,7 @@ export class AccessGuard implements CanActivate {
         return;
       }
       case 'ticket': {
-        const ticket = this.ticketOf(request, access.purpose);
+        const ticket = await this.ticketOf(request, access.purpose);
         // A ticket from a sign-in on a registered computer acts on that computer only: registering
         // a computer to a clinic always takes an OTP (rule 18).
         if (ticket.deviceId !== null) {

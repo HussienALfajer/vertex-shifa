@@ -4,8 +4,9 @@ import {
   type ProofOfWorkChallenge,
   type ProofOfWorkSolution,
 } from '@vertex-shifa/contracts';
+import type { Database } from '@vertex-shifa/db';
 import { type KeyedHash, randomToken, safeEqual } from './secrets.js';
-import { SingleUse } from './single-use.js';
+import { useToken } from './single-use.js';
 
 /** A challenge is valid for 2 minutes. */
 const TTL_MS = 120_000;
@@ -31,12 +32,12 @@ export function solves(challenge: string, nonce: string, difficulty: number): bo
 
 /**
  * The proof of work on sign-in and OTP requests (ADR 0016, spec S02 rule 14). A challenge is
- * stateless (`<id>.<expires>.<difficulty>.<mac>`, the mac a keyed hash) and used once.
+ * stateless (`<id>.<expires>.<difficulty>.<mac>`, the mac a keyed hash) and used once, recorded in
+ * PostgreSQL (`used_tokens`) so a restart forgets no use.
  */
 export class ProofOfWork {
-  private readonly used = new SingleUse();
-
   constructor(
+    private readonly db: Database,
     private readonly hashes: KeyedHash,
     private readonly difficulty: number,
     private readonly now: () => number = Date.now,
@@ -52,8 +53,11 @@ export class ProofOfWork {
     };
   }
 
-  /** Accepts a solution once, or refuses with `POW_INVALID`. */
-  verify(solution: ProofOfWorkSolution): void {
+  /**
+   * Accepts a solution once, or refuses with `POW_INVALID`. The use commits at once, whatever the
+   * request it guards then decides: a wrong password costs the solution too.
+   */
+  async verify(solution: ProofOfWorkSolution): Promise<void> {
     const parts = solution.challenge.split('.');
     const [id, expires, difficulty, mac] = parts;
     const body = `${id}.${expires}.${difficulty}`;
@@ -62,7 +66,7 @@ export class ProofOfWork {
       safeEqual(this.hashes.hash('pow', body), mac ?? '') &&
       Number(expires) > this.now() &&
       solves(solution.challenge, solution.nonce, Number(difficulty)) &&
-      this.used.use(id as string, Number(expires));
+      (await useToken(this.db, 'proof_of_work', id as string, new Date(Number(expires))));
     if (!valid) throw new DomainError('POW_INVALID', 'Invalid proof of work');
   }
 }
