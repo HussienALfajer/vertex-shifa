@@ -149,9 +149,12 @@ describe('invitations', () => {
     expect(
       await refused({ roles: ['nurse'], adjustments: adjustments(['practitioner.edit_own']) }),
     ).toBe('PERMISSION_NOT_GRANTABLE');
-    expect(
-      await refused({ roles: ['owner'], adjustments: adjustments([], ['staff.manage']) }),
-    ).toBe('PERMISSION_NOT_GRANTABLE');
+    for (const locked of ['staff.manage', 'tenant.read', 'staff.read', 'practitioners.read']) {
+      expect(
+        await refused({ roles: ['owner'], adjustments: adjustments([], [locked]) }),
+        locked,
+      ).toBe('PERMISSION_NOT_GRANTABLE');
+    }
     const scope = (facilityIds: string[]) => ({ allFacilities: false, facilityIds });
     expect(await refused({ roles: ['owner'], branchScope: scope([a.branchId]) })).toBe(
       'VALIDATION_FAILED',
@@ -263,6 +266,14 @@ describe('access changes', () => {
         expectedUpdatedAt: (await read(id)).updatedAt,
       });
     expect((await change(self, ['reception'])).body.code).toBe('LAST_OWNER');
+    // Rule 6: an owner never loses the locked permissions, their own included.
+    const revokeOwn = await as(a.owner).patch(`/api/staff/${self}/access`, {
+      roles: ['owner'],
+      branchScope: { allFacilities: true },
+      adjustments: { granted: [], revoked: ['staff.read'] },
+      expectedUpdatedAt: (await read(self)).updatedAt,
+    });
+    expect(revokeOwn.body.code).toBe('PERMISSION_NOT_GRANTABLE');
     const deactivate = (id: string) =>
       as(a.owner).post(`/api/staff/${id}/deactivate`, { reason: 'سبب تجريبي' });
     expect((await deactivate(self)).body.code).toBe('LAST_OWNER');
@@ -357,7 +368,7 @@ describe('access changes', () => {
     await client.enroll(a.owner.device, await client.signIn(invited.body.phone));
   });
 
-  it('archive the doctor profile with the role and restore it when the role comes back', async () => {
+  it('archive the doctor profile with the role and restore it, reviewed, when the role comes back', async () => {
     const a = await activeClinic();
     const invited = await as(a.owner).post('/api/staff/invitations', invitation()).expect(201);
     const id = invited.body.id as string;
@@ -368,23 +379,84 @@ describe('access changes', () => {
         expectedUpdatedAt: (await as(a.owner).get(`/api/staff/${id}`)).body.updatedAt,
         ...extra,
       });
+    const previous = async () =>
+      (await as(a.owner).get(`/api/staff/${id}/previous-practitioner`).expect(200)).body;
+    // Never a doctor: nothing to restore.
+    expect(await previous()).toEqual({ practitioner: null, photo: null });
     expect((await change(['reception', 'doctor'])).body.code).toBe('VALIDATION_FAILED');
-    const doctor = await change(['reception', 'doctor'], { practitioner: profile() });
+    const doctor = await change(['reception', 'doctor'], {
+      practitioner: { ...profile(specialtyIds.slice(0, 2)), syndicateNumber: 'SY-123' },
+    });
     expect(doctor.status).toBe(200);
     const practitionerId = doctor.body.practitionerId as string;
     expect(practitionerId).toEqual(expect.any(String));
+    const jpeg = await sharp({
+      create: { width: 300, height: 300, channels: 3, background: '#0b6b4f' },
+    })
+      .jpeg()
+      .toBuffer();
+    const photo = await as(a.owner)
+      .put(`/api/practitioners/${practitionerId}/photo`, jpeg)
+      .expect(200);
+    // A current profile is edited on its own screen, not restored.
+    expect(await previous()).toEqual({ practitioner: null, photo: null });
 
     const removed = await change(['reception']);
     expect(removed.body.practitionerId).toBeNull();
     expect((await as(a.owner).get(`/api/practitioners/${practitionerId}`)).body.code).toBe(
       'NOT_FOUND',
     );
-    const back = await change(['doctor']);
+    // Rule 9, edge case 11: the archived profile, its specialties, syndicate number and photo.
+    const shown = await previous();
+    expect(shown.practitioner).toMatchObject({
+      id: practitionerId,
+      displayNameAr: 'د. طبيب تجريبي',
+      gender: 'female',
+      specialtyIds: specialtyIds.slice(0, 2),
+      syndicateNumber: 'SY-123',
+      hasPhoto: true,
+    });
+    expect(shown.photo).toMatchObject({ sha256: photo.body.sha256 });
+
+    // A staff reader without `staff.manage` does not see it.
+    const reader = await client.member(a.tenantId, a.owner.device, {
+      roles: ['nurse'],
+      granted: ['staff.read'],
+    });
+    expect((await as(reader).get(`/api/staff/${id}/previous-practitioner`)).body.code).toBe(
+      'FORBIDDEN',
+    );
+    const other = await activeClinic();
+    expect((await as(other.owner).get(`/api/staff/${id}/previous-practitioner`)).body.code).toBe(
+      'NOT_FOUND',
+    );
+
+    // Sent back reviewed, the same profile returns with the owner's edits.
+    const back = await change(['doctor'], {
+      practitioner: { ...profile([specialtyIds[2] as string]), syndicateNumber: 'SY-124' },
+    });
     expect(back.body.practitionerId).toBe(practitionerId);
     const restored = await as(a.owner).get(`/api/practitioners/${practitionerId}`).expect(200);
-    expect(restored.body).toMatchObject({ displayNameAr: 'د. طبيب تجريبي', gender: 'female' });
-    const actions = ['practitioner.created', 'practitioner.archived', 'practitioner.restored'];
-    for (const action of actions) expect(await audit(a.tenantId, action), action).toHaveLength(1);
+    expect(restored.body).toMatchObject({
+      displayNameAr: 'د. طبيب تجريبي',
+      gender: 'female',
+      specialtyIds: [specialtyIds[2]],
+      syndicateNumber: 'SY-124',
+      hasPhoto: true,
+    });
+    expect(await previous()).toEqual({ practitioner: null, photo: null });
+
+    // Without a profile in the change, it returns untouched.
+    expect((await change(['reception'])).status).toBe(200);
+    expect((await change(['doctor'])).body.practitionerId).toBe(practitionerId);
+    const untouched = await as(a.owner).get(`/api/practitioners/${practitionerId}`).expect(200);
+    expect(untouched.body).toMatchObject({
+      specialtyIds: [specialtyIds[2]],
+      syndicateNumber: 'SY-124',
+    });
+    expect(await audit(a.tenantId, 'practitioner.created')).toHaveLength(1);
+    expect(await audit(a.tenantId, 'practitioner.archived')).toHaveLength(2);
+    expect(await audit(a.tenantId, 'practitioner.restored')).toHaveLength(2);
   });
 
   it('authorize a password reset for 72 hours, for active members only', async () => {

@@ -120,15 +120,27 @@ describe('effectivePermissions', () => {
     expect(effectivePermissions(['nurse'], ['tenant.manage'], [])).not.toContain('tenant.manage');
   });
 
-  it('never takes tenant.manage or staff.manage from an owner', () => {
+  it('never takes the locked permissions from an owner', () => {
     expect(
-      effectivePermissions(['owner'], [], ['tenant.manage', 'staff.manage', 'staff.read']),
+      effectivePermissions(
+        ['owner'],
+        [],
+        ['tenant.read', 'tenant.manage', 'staff.read', 'staff.manage', 'practitioners.read'],
+      ),
     ).toEqual([
       'tenant.read',
       'tenant.manage',
       'facility.manage',
+      'staff.read',
       'staff.manage',
       'devices.manage',
+      'practitioners.read',
+    ]);
+    expect(effectivePermissions(['owner'], [], ['facility.manage', 'devices.manage'])).toEqual([
+      'tenant.read',
+      'tenant.manage',
+      'staff.read',
+      'staff.manage',
       'practitioners.read',
     ]);
   });
@@ -166,12 +178,19 @@ describe('assertAdjustmentsAllowed', () => {
   });
 
   it('refuses revoking an owner’s locked permissions', () => {
-    for (const permission of ['tenant.manage', 'staff.manage'] as const) {
+    for (const permission of [
+      'tenant.read',
+      'tenant.manage',
+      'staff.read',
+      'staff.manage',
+      'practitioners.read',
+    ] as const) {
       expect(refusal(() => assertAdjustmentsAllowed(['owner'], [], [permission]))).toBe(
         'PERMISSION_NOT_GRANTABLE',
       );
     }
-    expect(() => assertAdjustmentsAllowed(['owner'], [], ['staff.read'])).not.toThrow();
+    expect(() => assertAdjustmentsAllowed(['owner'], [], ['devices.manage'])).not.toThrow();
+    expect(() => assertAdjustmentsAllowed(['reception'], [], ['staff.read'])).not.toThrow();
   });
 });
 

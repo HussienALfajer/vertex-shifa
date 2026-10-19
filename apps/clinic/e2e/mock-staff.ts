@@ -284,18 +284,31 @@ export function staffRoutes(state: MockApi) {
     }
 
     const memberPath =
-      /^\/api\/staff\/([^/]+)(?:\/(access|deactivate|reactivate|password-reset|invitation\/resend|invitation\/cancel))?$/.exec(
+      /^\/api\/staff\/([^/]+)(?:\/(access|deactivate|reactivate|password-reset|previous-practitioner|invitation\/resend|invitation\/cancel))?$/.exec(
         path,
       );
     if (memberPath) {
       const [, id, action] = memberPath;
-      const forbidden = guard(permissions, method === 'GET' ? 'staff.read' : 'staff.manage');
+      const reads = method === 'GET' && action !== 'previous-practitioner';
+      const forbidden = guard(permissions, reads ? 'staff.read' : 'staff.manage');
       if (forbidden) return refuse(forbidden);
       const found = find(id as string);
       if (!found) return refuse('NOT_FOUND');
       const { account, membership } = found;
       const answer = () => ok(toMember(account, membership), method === 'POST' ? 201 : 200);
       if (method === 'GET' && !action) return answer();
+      if (method === 'GET' && action === 'previous-practitioner') {
+        // Rule 9: the latest archived profile and its photo, while there is no current one.
+        const archived = practitionerOf(identity, membership.id)
+          ? undefined
+          : identity.practitioners
+              .filter((item) => item.membershipId === membership.id && item.archivedAt)
+              .at(-1);
+        if (!archived) return ok({ practitioner: null, photo: null });
+        const { archivedAt: _, ...practitioner } = archived;
+        const data = photos.get(archived.id);
+        return ok({ practitioner, photo: data ? storedPhoto(data) : null });
+      }
       const touch = (changes: Partial<Membership>) =>
         Object.assign(membership, changes, { updatedAt: now() });
       const invalid = () => refuse('INVALID_STATUS_TRANSITION');

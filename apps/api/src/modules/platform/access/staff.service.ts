@@ -14,6 +14,7 @@ import {
   type MembershipAction,
   type MembershipStatus,
   type PermissionKey,
+  type PreviousPractitioner,
   passwordResetWindowHours,
   type Role,
   type StaffMember,
@@ -129,6 +130,17 @@ export class StaffService {
     return withTenant(this.db, actor.tenantId, async (tx) =>
       this.toMember(tx, await this.memberRow(tx, id)),
     );
+  }
+
+  /**
+   * Rule 9, edge case 11: the doctor profile the member had, shown prefilled when the owner gives
+   * the doctor role back.
+   */
+  previousPractitioner(actor: StaffActor, id: string): Promise<PreviousPractitioner> {
+    return withTenant(this.db, actor.tenantId, async (tx) => {
+      const row = await this.memberRow(tx, id);
+      return this.practitioners.previous(tx, row.id);
+    });
   }
 
   /**

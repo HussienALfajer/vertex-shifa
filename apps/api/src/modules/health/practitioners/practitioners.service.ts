@@ -5,6 +5,7 @@ import {
   type Practitioner,
   type PractitionerPhoto,
   type PractitionerProfileInput,
+  type PreviousPractitioner,
   type Specialty,
   type UpdatePractitioner,
 } from '@vertex-shifa/contracts';
@@ -182,12 +183,7 @@ export class PractitionersService implements PractitionerProfiles {
     if (current) return;
     const now = new Date();
     if (profile) await this.assertSpecialties(tx, profile.specialtyIds);
-    const [archived] = await tx
-      .select()
-      .from(practitioners)
-      .where(and(eq(practitioners.membershipId, membershipId), isNotNull(practitioners.archivedAt)))
-      .orderBy(desc(practitioners.archivedAt), desc(practitioners.id))
-      .limit(1);
+    const archived = await this.latestArchivedRow(tx, membershipId);
     if (archived) {
       const [restored] = await tx
         .update(practitioners)
@@ -241,7 +237,37 @@ export class PractitionersService implements PractitionerProfiles {
     return row ? this.one(tx, row) : null;
   }
 
+  async previous(tx: Transaction, membershipId: string): Promise<PreviousPractitioner> {
+    const [current] = await tx
+      .select({ id: practitioners.id })
+      .from(practitioners)
+      .where(and(eq(practitioners.membershipId, membershipId), isNull(practitioners.archivedAt)));
+    const archived = current ? undefined : await this.latestArchivedRow(tx, membershipId);
+    if (!archived) return { practitioner: null, photo: null };
+    const [photo] = await tx
+      .select()
+      .from(practitionerPhotos)
+      .where(
+        and(
+          eq(practitionerPhotos.practitionerId, archived.id),
+          isNull(practitionerPhotos.archivedAt),
+        ),
+      );
+    return { practitioner: await this.one(tx, archived), photo: photo ? toPhoto(photo) : null };
+  }
+
   // Shared steps.
+
+  /** The member's latest archived profile: the one the doctor role brings back (rule 9). */
+  private async latestArchivedRow(tx: Transaction, membershipId: string) {
+    const [row] = await tx
+      .select()
+      .from(practitioners)
+      .where(and(eq(practitioners.membershipId, membershipId), isNotNull(practitioners.archivedAt)))
+      .orderBy(desc(practitioners.archivedAt), desc(practitioners.id))
+      .limit(1);
+    return row;
+  }
 
   /** A current profile; another tenant's or an archived one is `NOT_FOUND`. */
   private async currentRow(tx: Transaction, id: string, options: { lock?: boolean } = {}) {

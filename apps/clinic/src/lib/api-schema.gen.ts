@@ -944,6 +944,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/staff/{id}/previous-practitioner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StaffController.previousPractitioner"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/staff/{id}/reactivate": {
         parameters: {
             query?: never;
@@ -1641,6 +1657,10 @@ export interface components {
             specialtyIds: string[];
             /** @default null */
             syndicateNumber: string | null;
+        };
+        PreviousPractitioner: {
+            practitioner: components["schemas"]["Practitioner"] | null;
+            photo: components["schemas"]["PractitionerPhoto"] | null;
         };
         ProofOfWorkChallenge: {
             challenge: string;
@@ -4061,6 +4081,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PasswordResetAuthorized"];
+                };
+            };
+            /** @description Error */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    "StaffController.previousPractitioner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviousPractitioner"];
                 };
             };
             /** @description Error */

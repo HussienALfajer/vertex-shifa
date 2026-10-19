@@ -2675,6 +2675,45 @@
         }
       }
     },
+    "/api/staff/{id}/previous-practitioner": {
+      "get": {
+        "operationId": "StaffController.previousPractitioner",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PreviousPractitioner"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/staff/{id}/reactivate": {
       "post": {
         "operationId": "StaffController.reactivate",
@@ -5536,6 +5575,36 @@
           "gender",
           "specialtyIds",
           "syndicateNumber"
+        ],
+        "additionalProperties": false
+      },
+      "PreviousPractitioner": {
+        "type": "object",
+        "properties": {
+          "practitioner": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Practitioner"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "photo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PractitionerPhoto"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "practitioner",
+          "photo"
         ],
         "additionalProperties": false
       },

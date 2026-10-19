@@ -121,4 +121,18 @@ export const practitionerPhotoSchema = z
 
 export type PractitionerPhoto = z.infer<typeof practitionerPhotoSchema>;
 
+/**
+ * A member's latest archived doctor profile with its photo (rule 9, edge case 11), shown for the
+ * owner to review when the doctor role comes back. Both null while the member has a current
+ * profile, or when they never had one.
+ */
+export const previousPractitionerSchema = z
+  .object({
+    practitioner: practitionerSchema.nullable(),
+    photo: practitionerPhotoSchema.nullable(),
+  })
+  .meta({ id: 'PreviousPractitioner' });
+
+export type PreviousPractitioner = z.infer<typeof previousPractitionerSchema>;
+
 export const specialtyListSchema = z.array(specialtySchema).meta({ id: 'SpecialtyList' });

@@ -364,6 +364,9 @@ export const clinic = {
       accessTitle: 'الأدوار والفروع والصلاحيات',
       save: 'حفظ',
       doctorProfileNeeded: 'أكمل الملف المهني للطبيب ليُحفظ دور الطبيب.',
+      doctorProfileRestored:
+        'هذا ملفه المهني السابق: راجعه وعدّل ما يلزم، ويعود مع دور الطبيب عند الحفظ.',
+      previousPhoto: 'تعود صورته السابقة مع الملف، ويمكن تغييرها من ملفه المهني بعد الحفظ.',
       cancelledNotice: 'أُلغيت هذه الدعوة. لدعوته من جديد استخدم «دعوة موظف».',
       deactivatedSince: 'موقوف منذ {{date}}.',
       acceptedSince: 'يعمل في العيادة منذ {{date}}.',

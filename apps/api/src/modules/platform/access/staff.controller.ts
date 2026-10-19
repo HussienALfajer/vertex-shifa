@@ -15,6 +15,7 @@ import {
   deactivateStaffSchema,
   listStaffQuerySchema,
   passwordResetAuthorizedSchema,
+  previousPractitionerSchema,
   staffMemberSchema,
   staffPageSchema,
 } from '@vertex-shifa/contracts';
@@ -49,6 +50,14 @@ export class StaffController {
   @SerializeOptions({ schema: staffMemberSchema })
   get(@CurrentStaff() actor: StaffActor, @Param('id', idParam) id: string) {
     return this.staff.get(actor, id);
+  }
+
+  /** The archived doctor profile the doctor role restores, for the owner to review (rule 9). */
+  @Get(':id/previous-practitioner')
+  @StaffRoute('staff.manage')
+  @SerializeOptions({ schema: previousPractitionerSchema })
+  previousPractitioner(@CurrentStaff() actor: StaffActor, @Param('id', idParam) id: string) {
+    return this.staff.previousPractitioner(actor, id);
   }
 
   @Post('invitations')

@@ -3,6 +3,7 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import {
   type AccessCatalog,
   deactivateStaffSchema,
+  type PreviousPractitioner,
   type StaffMember,
 } from '@vertex-shifa/contracts';
 import {
@@ -58,7 +59,7 @@ import {
 } from './access-draft';
 import { AccessFields } from './access-fields';
 import {
-  emptyPractitionerDraft,
+  doctorRoleDraft,
   type PractitionerDraft,
   practitionerErrors,
   practitionerInput,
@@ -71,6 +72,7 @@ import {
   changeAccess,
   deactivateMember,
   memberQuery,
+  previousPractitionerQuery,
   reactivateMember,
   resendInvitation,
   useStaffCache,
@@ -90,11 +92,20 @@ export function MemberScreen({ id }: { id: string }) {
   const me = useQuery(meQuery);
   const member = useQuery({ ...memberQuery(id), enabled: access.readStaff });
   const catalog = useQuery(catalogQuery);
+  // The owner reviews the member's previous doctor profile when giving the role back (rule 9).
+  const previous = useQuery({ ...previousPractitionerQuery(id), enabled: access.manageStaff });
   const branches = useBranches();
   if (me.data && !access.readStaff) return <NoAccessState />;
+  const queries = [
+    me,
+    member,
+    catalog,
+    ...branches.queries,
+    ...(access.manageStaff ? [previous] : []),
+  ];
   return (
     <section className="flex max-w-3xl flex-col gap-6">
-      <QueryStates queries={[me, member, catalog, ...branches.queries]}>
+      <QueryStates queries={queries}>
         {() => {
           const shown = member.data as StaffMember;
           return (
@@ -110,7 +121,12 @@ export function MemberScreen({ id }: { id: string }) {
                   </span>
                 }
               />
-              <MemberDetail key={shown.id} member={shown} catalog={catalog.data as AccessCatalog} />
+              <MemberDetail
+                key={shown.id}
+                member={shown}
+                catalog={catalog.data as AccessCatalog}
+                previous={previous.data ?? noPrevious}
+              />
             </>
           );
         }}
@@ -121,14 +137,25 @@ export function MemberScreen({ id }: { id: string }) {
 
 type MemberDraft = { access: AccessDraft; practitioner: PractitionerDraft };
 
-function memberDraft(member: StaffMember): MemberDraft {
+/** A member who has a current doctor profile, or never had one, or a reader without `staff.manage`. */
+const noPrevious: PreviousPractitioner = { practitioner: null, photo: null };
+
+function memberDraft(member: StaffMember, previous: PreviousPractitioner): MemberDraft {
   return {
     access: accessDraftFromMember(member),
-    practitioner: emptyPractitionerDraft(member.name),
+    practitioner: doctorRoleDraft(member.name, previous.practitioner),
   };
 }
 
-function MemberDetail({ member, catalog }: { member: StaffMember; catalog: AccessCatalog }) {
+function MemberDetail({
+  member,
+  catalog,
+  previous,
+}: {
+  member: StaffMember;
+  catalog: AccessCatalog;
+  previous: PreviousPractitioner;
+}) {
   const { t } = useTranslation(['clinic', 'common']);
   const access = useStaffAccess();
   const me = useQuery(meQuery);
@@ -136,14 +163,16 @@ function MemberDetail({ member, catalog }: { member: StaffMember; catalog: Acces
   const errorText = useErrorText();
   const cache = useStaffCache();
   const branches = useBranches();
-  const { draft, setDraft, dirty, discard, reset } = useDraft(() => memberDraft(member));
+  const { draft, setDraft, dirty, discard, reset } = useDraft(() => memberDraft(member, previous));
   const guard = useUnsavedChangesGuard(dirty);
   // The version the owner started editing: a newer one on the server is a conflict (rule 10).
   const [base, setBase] = useState(member.updatedAt);
   const [checking, setChecking] = useState(false);
   const [notice, setNotice] = useState<Notice>();
-  // The doctor role is being given: its profile comes in the same change (edge case 11).
+  // The doctor role is being given: its profile comes in the same change, the previous one shown
+  // for review when the member had one (rule 9, edge case 11).
   const addsDoctor = draft.access.roles.includes('doctor') && member.practitionerId === null;
+  const restores = addsDoctor && previous.practitioner !== null;
   const problems = checking ? errorsOf(draft, addsDoctor) : undefined;
   const editable = access.manageStaff && member.archivedAt === null;
 
@@ -152,7 +181,18 @@ function MemberDetail({ member, catalog }: { member: StaffMember; catalog: Acces
     void cache.memberSaved(saved);
     if (!dirty) {
       setBase(saved.updatedAt);
-      reset(memberDraft(saved));
+      reset(memberDraft(saved, previous));
+    }
+  }
+
+  /** The profile the doctor role would bring back after `saved`, read now. */
+  async function previousAfter(saved: StaffMember): Promise<PreviousPractitioner> {
+    if (saved.practitionerId !== null) return noPrevious;
+    try {
+      return await cache.reloadPreviousPractitioner(saved.id);
+    } catch {
+      // Offline or refused: the owner fills the profile in, and it is restored with what they typed.
+      return noPrevious;
     }
   }
 
@@ -169,8 +209,9 @@ function MemberDetail({ member, catalog }: { member: StaffMember; catalog: Acces
       }),
     onSuccess: async (saved) => {
       await cache.memberSaved(saved);
+      const next = await previousAfter(saved);
       setBase(saved.updatedAt);
-      reset(memberDraft(saved));
+      reset(memberDraft(saved, next));
       setChecking(false);
       toast.add({ title: t('states.saved'), type: 'success' });
     },
@@ -178,7 +219,7 @@ function MemberDetail({ member, catalog }: { member: StaffMember; catalog: Acces
       if (error instanceof ApiError && error.code === 'CONFLICT') {
         try {
           const fresh = await cache.reloadMember(member.id);
-          reset(memberDraft(fresh));
+          reset(memberDraft(fresh, await previousAfter(fresh)));
           setBase(fresh.updatedAt);
           setNotice({ tone: 'warning', text: t('states.conflictReloaded') });
           return;
@@ -228,8 +269,22 @@ function MemberDetail({ member, catalog }: { member: StaffMember; catalog: Acces
             <Card className="flex flex-col gap-6 p-6">
               <div className="flex flex-col gap-1">
                 <CardTitle>{t('practitioner.fields.title')}</CardTitle>
-                <CardDescription>{t('staff.member.doctorProfileNeeded')}</CardDescription>
+                <CardDescription>
+                  {restores
+                    ? t('staff.member.doctorProfileRestored')
+                    : t('staff.member.doctorProfileNeeded')}
+                </CardDescription>
               </div>
+              {restores && previous.photo && (
+                <div className="flex flex-wrap items-center gap-4">
+                  <img
+                    src={`data:image/jpeg;base64,${previous.photo.data}`}
+                    alt={t('practitioner.fields.photo.alt')}
+                    className="size-20 rounded-full border border-border object-cover"
+                  />
+                  <p className="text-sm text-muted-foreground">{t('staff.member.previousPhoto')}</p>
+                </div>
+              )}
               <NewPractitionerFields
                 draft={draft.practitioner}
                 onChange={(practitioner) => setDraft((current) => ({ ...current, practitioner }))}

@@ -1,4 +1,8 @@
-import type { Practitioner, PractitionerProfileInput } from '@vertex-shifa/contracts';
+import type {
+  Practitioner,
+  PractitionerProfileInput,
+  PreviousPractitioner,
+} from '@vertex-shifa/contracts';
 import type { Transaction } from '@vertex-shifa/db';
 import type { StaffActor } from '../../../core/access/actor.js';
 import type { Membership } from './memberships.js';
@@ -56,6 +60,11 @@ export interface PractitionerProfiles {
   currentIds(tx: Transaction, membershipIds: string[]): Promise<Map<string, string>>;
   /** The member's current profile, or null. */
   current(tx: Transaction, membershipId: string): Promise<Practitioner | null>;
+  /**
+   * Rule 9, edge case 11: the member's latest archived profile with its photo, the one `assign`
+   * restores; both null while the member has a current profile or never had one.
+   */
+  previous(tx: Transaction, membershipId: string): Promise<PreviousPractitioner>;
 }
 
 export const PRACTITIONER_PROFILES = Symbol('PractitionerProfiles');

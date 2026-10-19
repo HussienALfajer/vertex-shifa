@@ -275,10 +275,10 @@ Rules:
 3. Invitations are created only while the tenant is `active`, except the owner's, which Vertex creates with the tenant (S01 CLI `--owner-phone`).
 4. The invitation message goes out once per invitation and per resend, from a platform number (S03), and says only the clinic's name, the role and that the person can sign in on the clinic's computer with this number. Resend has a 10-minute cooldown.
 5. A tenant always has at least one active owner: removing the owner role from, or deactivating, the last active owner is refused with `LAST_OWNER`. Only owners grant or remove the owner role. Owners have all branches.
-6. Effective permissions are computed by `effectivePermissions` (Access); a grant or revocation outside the limits is refused with `PERMISSION_NOT_GRANTABLE`. `tenant.manage` and `staff.manage` cannot be revoked from an owner.
+6. Effective permissions are computed by `effectivePermissions` (Access); a grant or revocation outside the limits is refused with `PERMISSION_NOT_GRANTABLE`. `tenant.read`, `tenant.manage`, `staff.read`, `staff.manage` and `practitioners.read` cannot be revoked from an owner (`ownerLockedPermissions`; owner, 2026-10-19), their own record included, and `effectivePermissions` keeps them whatever is stored.
 7. A branch-scoped permission applies only in the member's branches. A member signs in only on devices of a branch in their scope.
 8. Deactivation, and removal of a branch from a member's scope, end the member's sessions in this tenant and revoke their enrollments on the affected devices at once online; an offline device learns it on its next connection.
-9. Removing the doctor role archives the practitioner profile; S07 and S09 define what happens to that doctor's schedules and bookings.
+9. Removing the doctor role archives the practitioner profile; S07 and S09 define what happens to that doctor's schedules and bookings. Giving the role back restores the member's latest archived profile, with its photo, specialties and syndicate number (owner, 2026-10-19): the owner sees it prefilled (`GET /api/staff/:id/previous-practitioner`) and the change sends it back with any edits; a change without a profile restores it untouched.
 10. Access changes carry the `updated_at` the client read; a stale value returns `CONFLICT` (S01 rule 16).
 
 ### Sign-in, passwords and OTP
@@ -366,6 +366,7 @@ Tokens: access tokens and device tokens are EdDSA JWTs signed by the API (keys f
 | `GET /api/access/catalog` | Staff, `tenant.read` | — | permissions, presets, limits | — |
 | `GET /api/staff` | Staff, `staff.read` | status filter, list params | `{ items, total, page, pageSize }` | — |
 | `GET /api/staff/:id` | Staff, `staff.read` | — | membership | `NOT_FOUND` |
+| `GET /api/staff/:id/previous-practitioner` | Staff, `staff.manage` | — | `{ practitioner, photo }`, the latest archived profile (both null with a current profile or none) | `NOT_FOUND` |
 | `POST /api/staff/invitations` | Staff, `staff.manage` | phone, name, roles, branch scope, adjustments, practitioner | membership | `ALREADY_MEMBER`, `PERMISSION_NOT_GRANTABLE`, `TENANT_SUSPENDED`, `TENANT_CLOSED`, `VALIDATION_FAILED` (S05: `NOT_ENTITLED`) |
 | `POST /api/staff/:id/invitation/resend` | Staff, `staff.manage` | — | membership | `INVALID_STATUS_TRANSITION`, `RATE_LIMITED` |
 | `POST /api/staff/:id/invitation/cancel` | Staff, `staff.manage` | — | membership | `INVALID_STATUS_TRANSITION` |
@@ -412,7 +413,7 @@ Clinic app, Arabic RTL, design-system components. Online-only screens use TanSta
 4. **Choose a PIN** (`/pin/new`): six digits twice, with the trivial-PIN rule explained.
 5. **Member picker and lock screen** (`/lock`): the clinic's name and logo, enrolled members (name and roles), PIN pad, "Another user" (sign-in on this device), "Forgot PIN", the clinic switcher with "Add a clinic to this computer". States: offline (PIN works, sign-in disabled), window expired for a member, PIN disabled after 5 attempts, clock warning, revoked-and-wiped notice.
 6. **Staff** (`/settings/staff`), `staff.read`: list with name, roles, branches, status (invited with expiry and message status, active, deactivated); filters; "Invite" for owners.
-7. **Invite and member detail** (`/settings/staff/new`, `/settings/staff/:id`), owner: phone, name, roles (owner role shown to owners only), branch scope, permissions grouped as in the catalog, each showing "from role", "added" or "removed", with items outside the limits disabled and explained; doctor profile fields when the doctor role is chosen; actions resend, cancel, deactivate, reactivate, authorize password reset. Read-only for `staff.read` without `staff.manage`.
+7. **Invite and member detail** (`/settings/staff/new`, `/settings/staff/:id`), owner: phone, name, roles (owner role shown to owners only), branch scope, permissions grouped as in the catalog, each showing "from role", "added" or "removed", with items outside the limits disabled and explained; doctor profile fields when the doctor role is chosen, prefilled from the member's previous profile when they had one (rule 9); actions resend, cancel, deactivate, reactivate, authorize password reset. Read-only for `staff.read` without `staff.manage`.
 8. **Doctor profile** (`/settings/staff/:id/profile`, and `/me/profile` for the doctor): professional names, gender, specialties (1–3, the first is main), syndicate number, photo with preview and remove.
 9. **Devices** (`/settings/devices`), `devices.manage`: computers of the branches in scope with name, branch, status, last seen, app version and enrolled members; rename, revoke (reason category and text, with a warning about pending work), remove a member from a device.
 10. **Security** (in clinic settings), owner: idle-lock minutes; clinical read scope (all patients of the doctor's branches, or the doctor's own patients with break-glass for others).
@@ -455,7 +456,7 @@ Wrong PINs and PIN lockouts happen offline; from S04 the device uploads them as 
 8. A tenant is suspended during a session: the session continues read-only (S05 enforces writes); invitations are refused.
 9. A tenant is closed: non-owners' sessions are refused on their next refresh; owners keep signing in for export.
 10. The only owner forgets their PIN while offline: they wait until the device is online and use "Forgot PIN"; another enrolled member can keep working. What happens to local data whose key is only in the forgotten PIN's slot is decided in S04 (Open questions).
-11. A member is given the doctor role later: the practitioner profile is required in the same change.
+11. A member is given the doctor role later: the practitioner profile is required in the same change. A member who had one sees their previous profile prefilled for review, its photo shown, and saving restores it with the owner's edits (rule 9); a member who never had one gets an empty profile with the professional name prefilled (rule 34).
 12. Two owners change the same member's access at once: the second gets `CONFLICT` (rule 10).
 13. The account's phone is changed by support while the person is enrolled on devices: enrollments and PINs keep working; the next OTP goes to the new phone.
 14. The same installation is registered to a clinic twice: the app refuses locally; the server refuses a second registration that reuses a public key.
