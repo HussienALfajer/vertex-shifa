@@ -22,7 +22,12 @@ const identityEnv = {
  * modules, which the global guard, filter and serializer cover too). Close it after the test.
  */
 export async function createTestApp(
-  options: { databaseUrl?: string; imports?: ModuleMetadata['imports'] } = {},
+  options: {
+    databaseUrl?: string;
+    imports?: ModuleMetadata['imports'];
+    /** Production's settings of `configureApp` (CORS). */
+    production?: boolean;
+  } = {},
 ): Promise<INestApplication> {
   const config = loadConfig({
     DATABASE_APP_URL: options.databaseUrl ?? inject('databaseUrl'),
@@ -31,7 +36,9 @@ export async function createTestApp(
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule.forRoot(config), ...(options.imports ?? [])],
   }).compile();
-  const app = configureApp(moduleRef.createNestApplication({ logger: false }));
+  const app = configureApp(moduleRef.createNestApplication({ logger: false }), {
+    production: options.production ?? false,
+  });
   await app.init();
   return app;
 }

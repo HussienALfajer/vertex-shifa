@@ -12,14 +12,35 @@ import {
   updateFacilitySchema,
   updateTenantProfileSchema,
 } from '@vertex-shifa/contracts';
+import { type DeviceBridge, installDeviceBridge } from './device-bridge.js';
+import {
+  type Account,
+  addMember,
+  type Clinic,
+  createIdentity,
+  identityRoutes,
+  type MockIdentity,
+  ownerPassword,
+  ownerPhone,
+  signInBeforehand,
+} from './mock-identity.js';
 
 /**
- * An in-memory stand-in for the S01 API, until sessions (S02) let the E2E reach the real one. It
- * answers the routes of `apps/api/openapi.json` the clinic calls, validates bodies with the same
- * contracts, and applies the rules the screens react to (suspended or closed writes, `CONFLICT` on
- * a stale `updatedAt`, `LAST_ACTIVE_FACILITY`, `ONBOARDING_INCOMPLETE`). Synthetic data only.
+ * An in-memory stand-in for the API. It answers the routes of `apps/api/openapi.json` the clinic
+ * calls, validates bodies with the same contracts, and applies the rules the screens react to
+ * (suspended or closed writes, `CONFLICT` on a stale `updatedAt`, `LAST_ACTIVE_FACILITY`,
+ * `ONBOARDING_INCOMPLETE`); every staff route needs the session of a member signed in on the
+ * device bridge (S02, `mock-identity.ts`). Synthetic data only.
  */
 export type MockApi = {
+  /** Sign-in, devices and sessions (S02). */
+  identity: MockIdentity;
+  /** The desktop app's device bridge, in the test's process. */
+  device: DeviceBridge;
+  /** The clinic's owner, signed in on the device before the page opens unless `signedIn: false`. */
+  owner: Account;
+  /** The clinic's tenant id in the identity routes. */
+  clinic: Clinic;
   tenant: Tenant;
   logo: TenantLogo | null;
   facilities: Facility[];
@@ -174,9 +195,50 @@ export const shortLink = 'https://maps.app.goo.gl/SyntheticTestLink';
 
 export async function mockApi(
   page: Page,
-  seed: { tenant: Tenant; facilities?: Facility[]; logo?: boolean },
+  seed: {
+    tenant: Tenant;
+    facilities?: Facility[];
+    logo?: boolean;
+    /** The owner is signed in on the device before the page opens (default), or not. */
+    signedIn?: boolean;
+    /** Invited by `tenant:create --owner-phone`, before their first sign-in. */
+    ownerInvited?: boolean;
+  },
 ): Promise<MockApi> {
+  const device = await installDeviceBridge(page);
+  const clinic: Clinic = {
+    tenantId: seed.tenant.id,
+    get nameAr() {
+      return state.tenant.nameAr;
+    },
+    get nameLatin() {
+      return state.tenant.nameLatin;
+    },
+    get status() {
+      return state.tenant.status;
+    },
+    get idleLockMinutes() {
+      return state.tenant.idleLockMinutes;
+    },
+    get branches() {
+      return state.facilities
+        .filter((branch) => branch.archivedAt === null)
+        .map((branch) => ({ id: branch.id, name: branch.name }));
+    },
+  };
+  const identity = createIdentity([clinic]);
+  const owner = addMember(identity, {
+    tenantId: seed.tenant.id,
+    phone: ownerPhone,
+    name: 'مالك تجريبي',
+    roles: ['owner'],
+    password: seed.ownerInvited ? null : ownerPassword,
+  });
   const state: MockApi = {
+    identity,
+    device,
+    owner,
+    clinic,
     tenant: seed.tenant,
     logo: seed.logo ? logo() : null,
     facilities: seed.facilities ?? [],
@@ -188,6 +250,9 @@ export async function mockApi(
     writeDelayMs: 0,
     editBehind: (change) => change(state),
   };
+  if (seed.signedIn !== false && !seed.ownerInvited)
+    await signInBeforehand(identity, device, owner, seed.tenant.id);
+  const sessions = identityRoutes(identity);
 
   const refuse = (route: Route, code: ErrorCode) =>
     route.fulfill({ status: errorStatus[code], json: { code, message: code } });
@@ -209,6 +274,10 @@ export async function mockApi(
     const path = url.pathname;
     const method = request.method();
     const body = () => request.postDataJSON() as unknown;
+    const signIn = sessions.handle(request, path, method);
+    if (signIn) return signIn(route);
+    const session = sessions.staff(request);
+    if (typeof session === 'string') return refuse(route, session);
     if (method !== 'GET') {
       state.writes.push(`${method} ${path}`);
       if (state.writeDelayMs) await new Promise((done) => setTimeout(done, state.writeDelayMs));
@@ -293,6 +362,10 @@ export async function mockApi(
           archivedAt: null,
         };
         state.facilities.push(created);
+        // Rule 28: the onboarding wizard's first branch places the clinic's computers.
+        for (const registered of identity.devices) {
+          if (registered.tenantId === state.tenant.id) registered.facilityId ??= created.id;
+        }
         if (state.loseNextCreateAnswer) {
           state.loseNextCreateAnswer = false;
           return route.abort('connectionreset');
