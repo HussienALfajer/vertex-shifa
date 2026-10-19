@@ -10,11 +10,13 @@ import {
   isWeakPassword,
   type Me,
   openSessionSchema,
+  otpRequestSchema,
   type PermissionKey,
   type Practitioner,
   type Role,
   registerDeviceSchema,
   type SessionTokens,
+  setPasswordSchema,
   signInSchema,
   staffSessionMessage,
   type TenantStatus,
@@ -74,6 +76,8 @@ export type Account = {
   password: string | null;
   failures: number;
   memberships: Membership[];
+  /** Until when an owner authorized a password reset (rule 16), in epoch milliseconds. */
+  resetUntil?: number;
 };
 
 export type Device = {
@@ -113,7 +117,7 @@ export type MockIdentity = {
   /** OTP challenges by id: the account (none for an unknown phone) and its purpose. */
   challenges: Map<
     string,
-    { accountId: string | null; purpose: 'device_sign_in' | 'first_sign_in' }
+    { accountId: string | null; purpose: 'device_sign_in' | 'first_sign_in' | 'password_reset' }
   >;
   tickets: Map<string, { accountId: string; purpose: 'set_password' | 'signed_in' }>;
   deviceTokens: Map<string, string>;
@@ -470,20 +474,23 @@ export function identityRoutes(identity: MockIdentity) {
     }
 
     if (path === '/api/auth/otp/request' && method === 'POST') {
-      const { phone } = body() as { phone: string };
+      const parsed = otpRequestSchema.safeParse(body());
+      if (!parsed.success) return refuse('VALIDATION_FAILED');
+      const { phone, purpose } = parsed.data;
+      // A code only for a pending invitation, or within an authorized reset (rule 16); any other
+      // phone gets a challenge no code verifies, and the same answer.
       const account = identity.accounts.find(
         (item) =>
           item.phone === phone &&
-          item.password === null &&
-          item.memberships.some(
-            (membership) => membership.status === 'invited' && !membership.archivedAt,
-          ),
+          (purpose === 'password_reset'
+            ? (item.resetUntil ?? 0) > Date.now()
+            : item.password === null &&
+              item.memberships.some(
+                (membership) => membership.status === 'invited' && !membership.archivedAt,
+              )),
       );
       const challengeId = randomUUID();
-      identity.challenges.set(challengeId, {
-        accountId: account?.id ?? null,
-        purpose: 'first_sign_in',
-      });
+      identity.challenges.set(challengeId, { accountId: account?.id ?? null, purpose });
       return ok({ challengeId });
     }
 
@@ -510,6 +517,9 @@ export function identityRoutes(identity: MockIdentity) {
           suggestedName: account.name,
         });
       }
+      if (challenge.purpose === 'password_reset' && (account.resetUntil ?? 0) <= Date.now()) {
+        return refuse('OTP_EXPIRED');
+      }
       return ok({
         ticket: issueTicket(account.id, 'set_password'),
         needsPassword: true,
@@ -522,11 +532,24 @@ export function identityRoutes(identity: MockIdentity) {
       const ticket = ticketOf(request, 'set_password');
       const account = identity.accounts.find((item) => item.id === ticket?.accountId);
       if (!account) return refuse('TICKET_INVALID');
-      const { name, password } = body() as { name: string; password: string };
+      const parsed = setPasswordSchema.safeParse(body());
+      if (!parsed.success) return refuse('VALIDATION_FAILED');
+      const { name, password } = parsed.data;
       if (password.length < 10 || isWeakPassword(password, account.phone)) {
         return refuse('PASSWORD_TOO_WEAK');
       }
-      account.name = name;
+      const reset = account.password !== null;
+      if (reset && (account.resetUntil ?? 0) <= Date.now()) return refuse('TICKET_INVALID');
+      if (reset) {
+        // Rule 16: the account's staff sessions end in every clinic; enrollments stay.
+        for (const session of identity.sessions) {
+          if (account.memberships.some((membership) => membership.id === session.membershipId)) {
+            session.ended = true;
+          }
+        }
+        delete account.resetUntil;
+      }
+      account.name = name ?? account.name;
       account.password = password;
       for (const membership of account.memberships) {
         if (membership.status === 'invited' && !membership.archivedAt) accept(membership);
