@@ -9,14 +9,15 @@ import type { SessionOwner } from '../../../electron/identity/bridge';
 import {
   ApiError,
   type ApiErrorCode,
-  api,
   authorizeRequests,
   DEVICE_TOKEN_HEADER,
+  identityApi,
   unwrap,
 } from '../../lib/api';
 import { device, type InstallationView, type RegistrationView } from '../../lib/device';
 import { logErrorLabel } from '../../lib/error-logging';
-import { installationQuery } from './installation';
+import { enterIdentity, memberKey } from '../../lib/identity-scope';
+import { installationQuery, unlockedIdentity } from './installation';
 
 // The staff session of the unlocked member (spec S02 rules 23, 25 and 29): device tokens signed by
 // the registration's device key, the session opened with the member's user key, refreshed before
@@ -43,26 +44,15 @@ const deviceTokens = new Map<string, { token: string; expiresAt: number }>();
 /** When each session's access token expires by this window's clock; unknown after a reload. */
 const accessTokenExpiry = new Map<string, number>();
 
-const ownerKey = (owner: Pick<SessionOwner, 'deviceId' | 'enrollmentId'>) =>
-  `${owner.deviceId}:${owner.enrollmentId}`;
-
 /**
- * The installation's view for the screens. When another member is unlocked, or none, the server
- * state of the previous one is forgotten: one member's data never shows to the next.
+ * The installation's view for the screens. When another member is unlocked, or none, the identity
+ * scope ends before the view is shown: the previous member's work stops and their server state is
+ * forgotten (`identity-scope.ts`, `query-client.ts`), so one member's data never shows to the next.
  */
 export function remember(view: InstallationView): InstallationView {
-  const before = queryClient?.getQueryData(installationQuery.queryKey)?.unlocked;
-  const after = view.unlocked;
-  if ((before && ownerKey(before)) !== (after && ownerKey(after))) forgetServerState();
+  enterIdentity(unlockedIdentity(view));
   queryClient?.setQueryData(installationQuery.queryKey, view);
   return view;
-}
-
-/** Server state of one member must never show to the next: everything but the installation. */
-function forgetServerState(): void {
-  queryClient?.removeQueries({
-    predicate: (query) => query.queryKey[0] !== installationQuery.queryKey[0],
-  });
 }
 
 let appInfo: Promise<{ os: string; appVersion: string }> | undefined;
@@ -77,12 +67,12 @@ export async function deviceToken(registration: Registration): Promise<string> {
   const cached = deviceTokens.get(registration.deviceId);
   if (cached && cached.expiresAt - Date.now() > DEVICE_TOKEN_MARGIN_MS) return cached.token;
   const ids = { tenantId: registration.tenantId, deviceId: registration.deviceId };
-  const { nonce } = await unwrap(api.POST('/api/devices/token/challenge', { body: ids }));
+  const { nonce } = await unwrap(identityApi.POST('/api/devices/token/challenge', { body: ids }));
   const signature = await device('signDeviceToken', { deviceId: registration.deviceId, nonce });
   const { appVersion } = await deviceInfo();
   const received = Date.now();
   const issued = await unwrap(
-    api.POST('/api/devices/token', { body: { ...ids, nonce, signature, appVersion } }),
+    identityApi.POST('/api/devices/token', { body: { ...ids, nonce, signature, appVersion } }),
   );
   deviceTokens.set(registration.deviceId, {
     token: issued.deviceToken,
@@ -134,7 +124,7 @@ export async function asDevice<T>(
 /** The lock screen's data from the server: clinic, branch, members, last confirmations. */
 export async function refreshDevice(registration: Registration): Promise<InstallationView> {
   const current = await asDevice(registration, (headers) =>
-    api.GET('/api/devices/current', { headers }),
+    identityApi.GET('/api/devices/current', { headers }),
   );
   return remember(await device('updateDevice', { current }));
 }
@@ -156,18 +146,18 @@ async function storeSession(owner: SessionOwner, session: SessionTokens): Promis
 export async function openSession(owner: SessionOwner): Promise<SessionTokens> {
   try {
     const { nonce } = await asDevice(owner, (headers) =>
-      api.POST('/api/sessions/challenge', { headers }),
+      identityApi.POST('/api/sessions/challenge', { headers }),
     );
     const proof = await device('signSession', { nonce });
-    if (ownerKey(proof) !== ownerKey(owner)) throw new ApiError('UNAUTHENTICATED');
+    if (memberKey(proof) !== memberKey(owner)) throw new ApiError('UNAUTHENTICATED');
     const session = await asDevice(owner, (headers) =>
-      api.POST('/api/sessions', {
+      identityApi.POST('/api/sessions', {
         headers,
         body: { enrollmentId: proof.enrollmentId, nonce, signature: proof.signature },
       }),
     );
     await storeSession(owner, session);
-    void sessionStarted(owner);
+    void sessionStarted(owner, session.accessToken);
     return session;
   } catch (error) {
     if (error instanceof ApiError) await sessionRefused(error.code, owner);
@@ -175,11 +165,20 @@ export async function openSession(owner: SessionOwner): Promise<SessionTokens> {
   }
 }
 
-/** After a session opens: the lock screen's data and the clinic's logo, kept for the lock screen. */
-export async function sessionStarted(registration: Registration): Promise<void> {
+/**
+ * After a session opens: the lock screen's data and the clinic's logo, kept for the lock screen.
+ * The logo is read with that session's own access token, never with whoever is unlocked by the
+ * time it is sent: it is stored on `registration`, so it must be that clinic's.
+ */
+export async function sessionStarted(
+  registration: Registration,
+  accessToken: string,
+): Promise<void> {
   try {
     await refreshDevice(registration);
-    const logo = await unwrap(api.GET('/api/tenant/logo')).catch((error: unknown) => {
+    const logo = await unwrap(
+      identityApi.GET('/api/tenant/logo', { headers: { authorization: `Bearer ${accessToken}` } }),
+    ).catch((error: unknown) => {
       if (error instanceof ApiError && error.code === 'NOT_FOUND') return null;
       throw error;
     });
@@ -196,7 +195,10 @@ export async function sessionStarted(registration: Registration): Promise<void> 
 async function refreshSession(owner: SessionOwner, session: SessionTokens): Promise<SessionTokens> {
   try {
     const next = await asDevice(owner, (headers) =>
-      api.POST('/api/sessions/refresh', { headers, body: { refreshToken: session.refreshToken } }),
+      identityApi.POST('/api/sessions/refresh', {
+        headers,
+        body: { refreshToken: session.refreshToken },
+      }),
     );
     await storeSession(owner, next);
     return next;
@@ -218,7 +220,7 @@ export async function accessToken(): Promise<Authorization> {
   const current = await device('session', null).catch(() => null);
   if (!current) throw new ApiError('UNAUTHENTICATED');
   const { session, ...owner } = current;
-  const key = ownerKey(owner);
+  const key = memberKey(owner);
   if (obtaining?.key === key) return obtaining.promise;
   const promise = (async (): Promise<Authorization> => {
     if (!session) return { token: (await openSession(owner)).accessToken, owner };
@@ -253,7 +255,7 @@ async function sessionRefused(code: ApiErrorCode, owner: SessionOwner): Promise<
       return;
     }
     const current = await device('session', null);
-    const theirs = current !== null && ownerKey(current) === ownerKey(owner);
+    const theirs = current !== null && memberKey(current) === memberKey(owner);
     if (code === 'ENROLLMENT_REVOKED') {
       remember(await device('removeMember', owner));
     }
@@ -272,7 +274,6 @@ export async function lockApp(reason?: ErrorCode): Promise<void> {
   lockReason = reason;
   for (const listener of lockReasonListeners) listener();
   remember(await device('lock', null));
-  forgetServerState();
 }
 
 /**
@@ -284,7 +285,7 @@ export async function lockSession(): Promise<void> {
   const session = current?.session;
   if (session && (accessTokenExpiry.get(session.sessionId) ?? 0) > Date.now()) {
     // Best effort, and never waiting long: the lock must not depend on the connection.
-    const ended = api
+    const ended = identityApi
       .POST('/api/sessions/current/end', {
         headers: { authorization: `Bearer ${session.accessToken}` },
         body: { reason: 'locked' },
@@ -314,11 +315,12 @@ export async function wipeRegistration(
     }
   }
   remember(await device('wipe', { deviceId: registration.deviceId }));
-  forgetServerState();
   if (token) {
     try {
       const { wipedAt } = await unwrap(
-        api.POST('/api/devices/current/wiped', { headers: { [DEVICE_TOKEN_HEADER]: token } }),
+        identityApi.POST('/api/devices/current/wiped', {
+          headers: { [DEVICE_TOKEN_HEADER]: token },
+        }),
       );
       // The server records a wipe of a revoked device only.
       confirmed = wipedAt !== null;

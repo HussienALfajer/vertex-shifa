@@ -1,9 +1,10 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Page, type Route, test } from '@playwright/test';
 import { facility, mockApi, syntheticId, tenant } from './mock-api.js';
 import {
   addMember,
   otpCode,
   ownerPassword,
+  receptionistPassword,
   receptionistPhone,
   seededPin,
   signInBeforehand,
@@ -378,6 +379,99 @@ test.describe('lock screen', () => {
     await expect(page.getByText('رمز سري خاطئ.', { exact: false })).toBeVisible();
     await typeCode(page, 'الرمز السري لـ مالك تجريبي', '741852');
     await expect(page).toHaveURL('/');
+  });
+});
+
+test.describe('several clinics on one computer', () => {
+  test('an answer for one clinic’s owner never reaches a member of another clinic unlocked after them', async ({
+    page,
+  }) => {
+    const api = await mockApi(page, {
+      tenant: tenant({ status: 'active' }),
+      facilities: [facility()],
+    });
+    const north = {
+      tenantId: syntheticId(),
+      nameAr: 'عيادة الشمال',
+      nameLatin: null,
+      status: 'active' as const,
+      idleLockMinutes: 15,
+      branches: [{ id: syntheticId(), name: 'فرع الشمال' }],
+    };
+    api.identity.clinics.push(north);
+    const northMember = addMember(api.identity, {
+      tenantId: north.tenantId,
+      phone: receptionistPhone,
+      name: 'موظفة الشمال',
+      roles: ['reception'],
+      password: receptionistPassword,
+    });
+    await signInBeforehand(api.identity, api.device, northMember, north.tenantId, {
+      locked: true,
+    });
+    // The first clinic's invitation reaches the server, and its answer is held.
+    const held: Route[] = [];
+    await page.route('**/api/staff/invitations', (route) => {
+      held.push(route);
+    });
+    const visited: string[] = [];
+    page.on('framenavigated', (frame) => visited.push(frame.url()));
+
+    // The owner of the first clinic unlocks and invites someone.
+    await page.goto('/lock');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('عيادة الشمال');
+    await page.getByRole('combobox', { name: 'العيادة' }).click();
+    await page.getByRole('option', { name: 'عيادة الاختبار' }).click();
+    await typeCode(page, 'الرمز السري لـ مالك تجريبي', seededPin);
+    await expect(page).toHaveURL('/');
+    await page.goto('/settings/staff/new');
+    await page.getByLabel('رقم الجوال').fill('0900 000 104');
+    await page.getByLabel('الاسم', { exact: true }).fill('مدعوة العيادة الأولى');
+    await page.getByRole('checkbox', { name: 'استقبال', exact: true }).click();
+    await page.getByRole('button', { name: 'إرسال الدعوة' }).click();
+    await expect.poll(() => held.length).toBe(1);
+
+    // The owner locks, and the member of the other clinic unlocks before the answer comes.
+    await page.getByRole('button', { name: 'قفل' }).click();
+    await expect(page).toHaveURL('/lock');
+    await page.getByRole('combobox', { name: 'العيادة' }).click();
+    await page.getByRole('option', { name: 'عيادة الشمال' }).click();
+    await typeCode(page, 'الرمز السري لـ موظفة الشمال', seededPin);
+    await expect(page).toHaveURL('/');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('مرحبًا بك في فيرتكس شفا');
+
+    // The first clinic's answer arrives now.
+    const invited = {
+      id: syntheticId(),
+      name: 'مدعوة العيادة الأولى',
+      phone: '+963900000104',
+      status: 'invited',
+      roles: ['reception'],
+      branchScope: { allFacilities: true },
+      adjustments: { granted: [], revoked: [] },
+      permissions: [],
+      practitionerId: null,
+      invitationExpiresAt: '2026-10-25T09:00:00.000Z',
+      invitationMessageStatus: 'pending',
+      acceptedAt: null,
+      deactivatedAt: null,
+      createdAt: '2026-10-18T09:00:00.000Z',
+      updatedAt: '2026-10-18T09:00:00.000Z',
+      archivedAt: null,
+    };
+    await (held[0] as Route).fulfill({ status: 201, json: invited }).catch(() => {
+      // The app cancelled the request when the owner locked: no answer reaches it.
+    });
+
+    // The member of the other clinic works on: nothing of the first clinic follows them.
+    await openUserMenu(page);
+    await page.getByRole('menuitem', { name: 'حسابي' }).click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('حسابي');
+    await expect(page.getByText('+963900000102')).toBeVisible();
+    await expect(page.getByText('أُرسلت الدعوة.')).toHaveCount(0);
+    await expect(page.getByText('مدعوة العيادة الأولى')).toHaveCount(0);
+    expect(visited.filter((url) => url.includes(invited.id))).toEqual([]);
+    await expect(page).toHaveURL('/me');
   });
 });
 

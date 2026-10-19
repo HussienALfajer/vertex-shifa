@@ -202,7 +202,10 @@ async function register(
         session: registered.session,
       }),
     );
-    void sessionStarted({ deviceId: registered.device.id, tenantId: registered.device.tenantId });
+    void sessionStarted(
+      { deviceId: registered.device.id, tenantId: registered.device.tenantId },
+      registered.session.accessToken,
+    );
   } catch (error) {
     await device('discardKeys', { pendingId: keys.pendingId }).catch(() => undefined);
     throw error;
@@ -240,7 +243,7 @@ async function enroll(
         session: enrolled.session,
       }),
     );
-    void sessionStarted(registration);
+    void sessionStarted(registration, enrolled.session.accessToken);
   } catch (error) {
     await device('discardKeys', { pendingId: keys.pendingId }).catch(() => undefined);
     throw error;
