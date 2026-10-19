@@ -12,6 +12,7 @@ import {
   Button,
   Callout,
   Card,
+  CodeField,
   Field,
   FieldDescription,
   FieldError,
@@ -36,7 +37,6 @@ import {
 } from '../../lib/device';
 import { useErrorText } from '../../lib/error-text';
 import { useOnline } from '../../lib/online';
-import { CodeField } from './code-fields';
 import { type SignInPurpose, setSignInFlow } from './flow';
 import { currentRegistration, useInstallation } from './installation';
 import { remember } from './session';
@@ -391,6 +391,7 @@ function OtpStep({
       <Card className="flex flex-col gap-6 p-6">
         <FormFields>
           <CodeField
+            slotLabel={(position) => t('identity.code.digit', { position })}
             label={t('identity.otp.label')}
             // The number is isolated left to right inside the Arabic sentence.
             description={t('identity.otp.sentTo', { phone: `\u2066${step.phone}\u2069` })}

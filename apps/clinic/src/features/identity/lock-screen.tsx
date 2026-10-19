@@ -10,6 +10,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CodeField,
   Field,
   FieldLabel,
   Select,
@@ -32,7 +33,6 @@ import {
 import { logErrorLabel } from '../../lib/error-logging';
 import { useErrorText } from '../../lib/error-text';
 import { useOnline } from '../../lib/online';
-import { CodeField } from './code-fields';
 import { currentRegistration, logoSource, useInstallation } from './installation';
 import {
   clearLockReason,
@@ -370,6 +370,7 @@ function PinPanel({
         />
       )}
       <CodeField
+        slotLabel={(position) => t('identity.code.digit', { position })}
         mask
         autoFocus
         label={t('identity.lock.pin', { name: member.name || t('identity.lock.unnamed') })}

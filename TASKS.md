@@ -56,6 +56,6 @@ Spec: `docs/specs/S02-identity-access-and-devices.md` (Approved 2026-10-18). ADR
 - [x] Checks, reviewer, owner acceptance, PR with auto-merge
 
 ## PR 7 — Console: sign-in, TOTP and platform users (`feat/s02-console-sign-in`)
-- [ ] Screens: sign-in with setup and TOTP step, re-authentication dialog, platform users, my account
-- [ ] i18n; E2E with a mocked API; RTL screenshots light and dark
+- [x] Screens: sign-in with setup and TOTP step, re-authentication dialog, platform users, my account; the six-digit `CodeField` moved to `packages/ui` (the clinic switched to it), `QrCode` added there
+- [x] i18n; E2E with a mocked API; RTL screenshots light and dark
 - [ ] Checks, reviewer, owner acceptance (step 10 of the spec), PR with auto-merge; `docs/ROADMAP.md` S02 done

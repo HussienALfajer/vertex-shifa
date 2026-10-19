@@ -1,13 +1,13 @@
-import { expect, type Page, type TestInfo, test } from '@playwright/test';
-
-/** An RTL screenshot per color scheme, kept in test-results/ (uploaded by CI) and in the report. */
-async function screenshot(page: Page, testInfo: TestInfo, name: string): Promise<void> {
-  const path = testInfo.outputPath(`${name}-${testInfo.project.name}.png`);
-  await page.screenshot({ path, fullPage: true });
-  await testInfo.attach(name, { path, contentType: 'image/png' });
-}
+import { expect, test } from '@playwright/test';
+import { mockConsoleApi } from './mock-api.js';
+import { screenshot } from './screenshot.js';
 
 test.describe('console shell', () => {
+  // Every screen but the sign-in needs a session (spec S02 rule 37).
+  test.beforeEach(async ({ page }) => {
+    await mockConsoleApi(page, { signedIn: 'admin' });
+  });
+
   test('renders in Arabic, right to left, with Vertex Shifa always visible', async ({
     page,
   }, testInfo) => {
