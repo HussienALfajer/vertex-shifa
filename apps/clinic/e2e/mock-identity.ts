@@ -10,6 +10,8 @@ import {
   isWeakPassword,
   type Me,
   openSessionSchema,
+  type PermissionKey,
+  type Practitioner,
   type Role,
   registerDeviceSchema,
   type SessionTokens,
@@ -44,11 +46,23 @@ export type Clinic = {
   branches: { id: string; name: string }[];
 };
 
-type Membership = {
+/** A membership with what the staff screens read and change (`mock-staff.ts`). */
+export type Membership = {
   id: string;
   tenantId: string;
   roles: Role[];
   status: 'invited' | 'active' | 'deactivated';
+  allFacilities: boolean;
+  facilityIds: string[];
+  granted: PermissionKey[];
+  revoked: PermissionKey[];
+  invitationExpiresAt: string | null;
+  invitationMessageStatus: 'pending' | 'sent' | 'failed' | null;
+  acceptedAt: string | null;
+  deactivatedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt: string | null;
 };
 
 export type Account = {
@@ -69,6 +83,7 @@ export type Device = {
   publicKey: string;
   status: 'active' | 'revoked';
   wipedAt: string | null;
+  revokedAt?: string | null;
 };
 
 type Enrollment = {
@@ -80,7 +95,7 @@ type Enrollment = {
   revokedAt: string | null;
 };
 
-type Session = {
+export type Session = {
   tokens: SessionTokens;
   membershipId: string;
   deviceId: string;
@@ -101,6 +116,8 @@ export type MockIdentity = {
   >;
   tickets: Map<string, { accountId: string; purpose: 'set_password' | 'signed_in' }>;
   deviceTokens: Map<string, string>;
+  /** Doctor profiles (`mock-staff.ts`), archived when the doctor role goes. */
+  practitioners: (Practitioner & { archivedAt: string | null })[];
   /** Revokes a device as an owner would from another computer (rule 29). */
   revoke: (deviceId: string) => void;
   /** Ends a session on the server, as a password reset or a deactivation would. */
@@ -120,9 +137,13 @@ export function createIdentity(clinics: Clinic[]): MockIdentity {
     challenges: new Map(),
     tickets: new Map(),
     deviceTokens: new Map(),
+    practitioners: [],
     revoke: (deviceId) => {
       const device = identity.devices.find((item) => item.id === deviceId);
-      if (device) device.status = 'revoked';
+      if (device) {
+        device.status = 'revoked';
+        device.revokedAt ??= now();
+      }
       for (const enrollment of identity.enrollments) {
         if (enrollment.deviceId === deviceId) enrollment.revokedAt ??= now();
       }
@@ -158,13 +179,38 @@ export function addMember(
     };
     identity.accounts.push(account);
   }
+  const at = now();
+  const invited = !input.password;
   account.memberships.push({
     id: randomUUID(),
     tenantId: input.tenantId,
     roles: input.roles,
-    status: input.password ? 'active' : 'invited',
+    status: invited ? 'invited' : 'active',
+    allFacilities: true,
+    facilityIds: [],
+    granted: [],
+    revoked: [],
+    invitationExpiresAt: invited ? new Date(Date.now() + 7 * 86_400_000).toISOString() : null,
+    invitationMessageStatus: invited ? 'pending' : null,
+    acceptedAt: invited ? null : at,
+    deactivatedAt: null,
+    createdAt: at,
+    updatedAt: at,
+    archivedAt: null,
   });
   return account;
+}
+
+/** First sign-in: every pending invitation of the account becomes active (rule 15). */
+function accept(membership: Membership) {
+  const at = now();
+  Object.assign(membership, {
+    status: 'active',
+    acceptedAt: at,
+    invitationExpiresAt: null,
+    invitationMessageStatus: null,
+    updatedAt: at,
+  });
 }
 
 function issueSession(
@@ -290,6 +336,16 @@ export async function enrollBeforehand(
     session: enrolled.session,
   });
   await bridge.installation.calls.lock(null);
+}
+
+/** The member's doctor profile, while they have the doctor role. */
+export function practitionerOf(identity: MockIdentity, membershipId: string): Practitioner | null {
+  const found = identity.practitioners.find(
+    (item) => item.membershipId === membershipId && item.archivedAt === null,
+  );
+  if (!found) return null;
+  const { archivedAt: _, ...practitioner } = found;
+  return practitioner;
 }
 
 const accountOfMembership = (identity: MockIdentity, membershipId: string) =>
@@ -429,7 +485,9 @@ export function identityRoutes(identity: MockIdentity) {
         (item) =>
           item.phone === phone &&
           item.password === null &&
-          item.memberships.some((membership) => membership.status === 'invited'),
+          item.memberships.some(
+            (membership) => membership.status === 'invited' && !membership.archivedAt,
+          ),
       );
       const challengeId = randomUUID();
       identity.challenges.set(challengeId, {
@@ -453,7 +511,7 @@ export function identityRoutes(identity: MockIdentity) {
       identity.challenges.delete(challengeId);
       if (challenge.purpose === 'device_sign_in') {
         for (const membership of account.memberships) {
-          if (membership.status === 'invited') membership.status = 'active';
+          if (membership.status === 'invited' && !membership.archivedAt) accept(membership);
         }
         return ok({
           ticket: issueTicket(account.id, 'signed_in'),
@@ -481,7 +539,7 @@ export function identityRoutes(identity: MockIdentity) {
       account.name = name;
       account.password = password;
       for (const membership of account.memberships) {
-        if (membership.status === 'invited') membership.status = 'active';
+        if (membership.status === 'invited' && !membership.archivedAt) accept(membership);
       }
       identity.tickets.delete(request.headers()['x-sign-in-ticket'] ?? '');
       return ok({ ticket: issueTicket(account.id, 'signed_in') });
@@ -641,12 +699,12 @@ export function identityRoutes(identity: MockIdentity) {
         tenantId: membership.tenantId,
         membershipId: membership.id,
         roles: membership.roles,
-        allFacilities: true,
-        facilityIds: [],
-        permissions: effectivePermissions(membership.roles, [], []),
+        allFacilities: membership.allFacilities,
+        facilityIds: membership.facilityIds,
+        permissions: effectivePermissions(membership.roles, membership.granted, membership.revoked),
         deviceId: device.id,
         facilityId: device.facilityId,
-        practitioner: null,
+        practitioner: practitionerOf(identity, membership.id),
       };
       return ok(me);
     }

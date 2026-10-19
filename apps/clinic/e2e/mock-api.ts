@@ -24,13 +24,15 @@ import {
   ownerPhone,
   signInBeforehand,
 } from './mock-identity.js';
+import { staffRoutes } from './mock-staff.js';
 
 /**
  * An in-memory stand-in for the API. It answers the routes of `apps/api/openapi.json` the clinic
  * calls, validates bodies with the same contracts, and applies the rules the screens react to
  * (suspended or closed writes, `CONFLICT` on a stale `updatedAt`, `LAST_ACTIVE_FACILITY`,
- * `ONBOARDING_INCOMPLETE`); every staff route needs the session of a member signed in on the
- * device bridge (S02, `mock-identity.ts`). Synthetic data only.
+ * `FACILITY_HAS_DEVICES`, `ONBOARDING_INCOMPLETE`); every staff route needs the session of a member
+ * signed in on the device bridge (S02, `mock-identity.ts`); staff, doctor profiles, devices and
+ * security are in `mock-staff.ts`. Synthetic data only.
  */
 export type MockApi = {
   /** Sign-in, devices and sessions (S02). */
@@ -253,6 +255,7 @@ export async function mockApi(
   if (seed.signedIn !== false && !seed.ownerInvited)
     await signInBeforehand(identity, device, owner, seed.tenant.id);
   const sessions = identityRoutes(identity);
+  const staff = staffRoutes(state);
 
   const refuse = (route: Route, code: ErrorCode) =>
     route.fulfill({ status: errorStatus[code], json: { code, message: code } });
@@ -282,6 +285,8 @@ export async function mockApi(
       state.writes.push(`${method} ${path}`);
       if (state.writeDelayMs) await new Promise((done) => setTimeout(done, state.writeDelayMs));
     }
+    const staffAnswer = staff(request, path, method, session);
+    if (staffAnswer) return staffAnswer(route);
 
     if (path === '/api/tenant' && method === 'GET') return route.fulfill({ json: state.tenant });
 
@@ -393,6 +398,13 @@ export async function mockApi(
       } else if (method === 'POST' && action === 'archive') {
         const inUse = state.facilities.filter((branch) => !branch.archivedAt);
         if (!current.archivedAt && inUse.length === 1) return refuse(route, 'LAST_ACTIVE_FACILITY');
+        // Rule 32: a branch with active computers stays.
+        const computers = identity.devices.filter(
+          (registered) => registered.facilityId === current.id && registered.status === 'active',
+        );
+        if (!current.archivedAt && computers.length > 0) {
+          return refuse(route, 'FACILITY_HAS_DEVICES');
+        }
         next = { ...current, archivedAt: current.archivedAt ?? now(), updatedAt: now() };
       } else if (method === 'POST' && action === 'restore') {
         next = { ...current, archivedAt: null, updatedAt: now() };

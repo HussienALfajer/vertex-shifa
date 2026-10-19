@@ -11,17 +11,24 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LockRouteImport } from './routes/lock'
-import { Route as MeRouteImport } from './routes/me'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as MeIndexRouteImport } from './routes/me/index'
+import { Route as MeProfileRouteImport } from './routes/me/profile'
 import { Route as PinNewRouteImport } from './routes/pin/new'
 import { Route as SettingsClinicRouteImport } from './routes/settings/clinic'
+import { Route as SettingsDevicesRouteImport } from './routes/settings/devices'
 import { Route as SettingsLocationRouteImport } from './routes/settings/location'
+import { Route as SettingsSecurityRouteImport } from './routes/settings/security'
 import { Route as SettingsBranchesIndexRouteImport } from './routes/settings/branches/index'
 import { Route as SettingsBranchesIdRouteImport } from './routes/settings/branches/$id'
 import { Route as SettingsBranchesNewRouteImport } from './routes/settings/branches/new'
+import { Route as SettingsStaffIndexRouteImport } from './routes/settings/staff/index'
+import { Route as SettingsStaffNewRouteImport } from './routes/settings/staff/new'
+import { Route as SettingsStaffIdIndexRouteImport } from './routes/settings/staff/$id/index'
+import { Route as SettingsStaffIdProfileRouteImport } from './routes/settings/staff/$id/profile'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -31,11 +38,6 @@ const IndexRoute = IndexRouteImport.update({
 const LockRoute = LockRouteImport.update({
   id: '/lock',
   path: '/lock',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MeRoute = MeRouteImport.update({
-  id: '/me',
-  path: '/me',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegisterRoute = RegisterRouteImport.update({
@@ -58,6 +60,16 @@ const WelcomeRoute = WelcomeRouteImport.update({
   path: '/welcome',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MeIndexRoute = MeIndexRouteImport.update({
+  id: '/me/',
+  path: '/me/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeProfileRoute = MeProfileRouteImport.update({
+  id: '/me/profile',
+  path: '/me/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PinNewRoute = PinNewRouteImport.update({
   id: '/pin/new',
   path: '/pin/new',
@@ -68,9 +80,19 @@ const SettingsClinicRoute = SettingsClinicRouteImport.update({
   path: '/settings/clinic',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsDevicesRoute = SettingsDevicesRouteImport.update({
+  id: '/settings/devices',
+  path: '/settings/devices',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsLocationRoute = SettingsLocationRouteImport.update({
   id: '/settings/location',
   path: '/settings/location',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsSecurityRoute = SettingsSecurityRouteImport.update({
+  id: '/settings/security',
+  path: '/settings/security',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsBranchesIndexRoute = SettingsBranchesIndexRouteImport.update({
@@ -88,115 +110,184 @@ const SettingsBranchesNewRoute = SettingsBranchesNewRouteImport.update({
   path: '/settings/branches/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsStaffIndexRoute = SettingsStaffIndexRouteImport.update({
+  id: '/settings/staff/',
+  path: '/settings/staff/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsStaffNewRoute = SettingsStaffNewRouteImport.update({
+  id: '/settings/staff/new',
+  path: '/settings/staff/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsStaffIdIndexRoute = SettingsStaffIdIndexRouteImport.update({
+  id: '/settings/staff/$id/',
+  path: '/settings/staff/$id/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsStaffIdProfileRoute = SettingsStaffIdProfileRouteImport.update({
+  id: '/settings/staff/$id/profile',
+  path: '/settings/staff/$id/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/lock': typeof LockRoute
-  '/me': typeof MeRoute
   '/register': typeof RegisterRoute
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
   '/welcome': typeof WelcomeRoute
+  '/me/profile': typeof MeProfileRoute
   '/pin/new': typeof PinNewRoute
   '/settings/clinic': typeof SettingsClinicRoute
+  '/settings/devices': typeof SettingsDevicesRoute
   '/settings/location': typeof SettingsLocationRoute
+  '/settings/security': typeof SettingsSecurityRoute
+  '/me/': typeof MeIndexRoute
   '/settings/branches/$id': typeof SettingsBranchesIdRoute
   '/settings/branches/new': typeof SettingsBranchesNewRoute
+  '/settings/staff/new': typeof SettingsStaffNewRoute
   '/settings/branches/': typeof SettingsBranchesIndexRoute
+  '/settings/staff/': typeof SettingsStaffIndexRoute
+  '/settings/staff/$id/profile': typeof SettingsStaffIdProfileRoute
+  '/settings/staff/$id/': typeof SettingsStaffIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/lock': typeof LockRoute
-  '/me': typeof MeRoute
   '/register': typeof RegisterRoute
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
   '/welcome': typeof WelcomeRoute
+  '/me/profile': typeof MeProfileRoute
   '/pin/new': typeof PinNewRoute
   '/settings/clinic': typeof SettingsClinicRoute
+  '/settings/devices': typeof SettingsDevicesRoute
   '/settings/location': typeof SettingsLocationRoute
+  '/settings/security': typeof SettingsSecurityRoute
+  '/me': typeof MeIndexRoute
   '/settings/branches/$id': typeof SettingsBranchesIdRoute
   '/settings/branches/new': typeof SettingsBranchesNewRoute
+  '/settings/staff/new': typeof SettingsStaffNewRoute
   '/settings/branches': typeof SettingsBranchesIndexRoute
+  '/settings/staff': typeof SettingsStaffIndexRoute
+  '/settings/staff/$id/profile': typeof SettingsStaffIdProfileRoute
+  '/settings/staff/$id': typeof SettingsStaffIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/lock': typeof LockRoute
-  '/me': typeof MeRoute
   '/register': typeof RegisterRoute
   '/setup': typeof SetupRoute
   '/sign-in': typeof SignInRoute
   '/welcome': typeof WelcomeRoute
+  '/me/profile': typeof MeProfileRoute
   '/pin/new': typeof PinNewRoute
   '/settings/clinic': typeof SettingsClinicRoute
+  '/settings/devices': typeof SettingsDevicesRoute
   '/settings/location': typeof SettingsLocationRoute
+  '/settings/security': typeof SettingsSecurityRoute
+  '/me/': typeof MeIndexRoute
   '/settings/branches/$id': typeof SettingsBranchesIdRoute
   '/settings/branches/new': typeof SettingsBranchesNewRoute
+  '/settings/staff/new': typeof SettingsStaffNewRoute
   '/settings/branches/': typeof SettingsBranchesIndexRoute
+  '/settings/staff/': typeof SettingsStaffIndexRoute
+  '/settings/staff/$id/profile': typeof SettingsStaffIdProfileRoute
+  '/settings/staff/$id/': typeof SettingsStaffIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/lock'
-    | '/me'
     | '/register'
     | '/setup'
     | '/sign-in'
     | '/welcome'
+    | '/me/profile'
     | '/pin/new'
     | '/settings/clinic'
+    | '/settings/devices'
     | '/settings/location'
+    | '/settings/security'
+    | '/me/'
     | '/settings/branches/$id'
     | '/settings/branches/new'
+    | '/settings/staff/new'
     | '/settings/branches/'
+    | '/settings/staff/'
+    | '/settings/staff/$id/profile'
+    | '/settings/staff/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/lock'
-    | '/me'
     | '/register'
     | '/setup'
     | '/sign-in'
     | '/welcome'
+    | '/me/profile'
     | '/pin/new'
     | '/settings/clinic'
+    | '/settings/devices'
     | '/settings/location'
+    | '/settings/security'
+    | '/me'
     | '/settings/branches/$id'
     | '/settings/branches/new'
+    | '/settings/staff/new'
     | '/settings/branches'
+    | '/settings/staff'
+    | '/settings/staff/$id/profile'
+    | '/settings/staff/$id'
   id:
     | '__root__'
     | '/'
     | '/lock'
-    | '/me'
     | '/register'
     | '/setup'
     | '/sign-in'
     | '/welcome'
+    | '/me/profile'
     | '/pin/new'
     | '/settings/clinic'
+    | '/settings/devices'
     | '/settings/location'
+    | '/settings/security'
+    | '/me/'
     | '/settings/branches/$id'
     | '/settings/branches/new'
+    | '/settings/staff/new'
     | '/settings/branches/'
+    | '/settings/staff/'
+    | '/settings/staff/$id/profile'
+    | '/settings/staff/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   LockRoute: typeof LockRoute
-  MeRoute: typeof MeRoute
   RegisterRoute: typeof RegisterRoute
   SetupRoute: typeof SetupRoute
   SignInRoute: typeof SignInRoute
   WelcomeRoute: typeof WelcomeRoute
+  MeProfileRoute: typeof MeProfileRoute
   PinNewRoute: typeof PinNewRoute
   SettingsClinicRoute: typeof SettingsClinicRoute
+  SettingsDevicesRoute: typeof SettingsDevicesRoute
   SettingsLocationRoute: typeof SettingsLocationRoute
+  SettingsSecurityRoute: typeof SettingsSecurityRoute
+  MeIndexRoute: typeof MeIndexRoute
   SettingsBranchesIdRoute: typeof SettingsBranchesIdRoute
   SettingsBranchesNewRoute: typeof SettingsBranchesNewRoute
+  SettingsStaffNewRoute: typeof SettingsStaffNewRoute
   SettingsBranchesIndexRoute: typeof SettingsBranchesIndexRoute
+  SettingsStaffIndexRoute: typeof SettingsStaffIndexRoute
+  SettingsStaffIdProfileRoute: typeof SettingsStaffIdProfileRoute
+  SettingsStaffIdIndexRoute: typeof SettingsStaffIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -213,13 +304,6 @@ declare module '@tanstack/react-router' {
       path: '/lock'
       fullPath: '/lock'
       preLoaderRoute: typeof LockRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/me': {
-      id: '/me'
-      path: '/me'
-      fullPath: '/me'
-      preLoaderRoute: typeof MeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/register': {
@@ -250,6 +334,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WelcomeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/me/': {
+      id: '/me/'
+      path: '/me'
+      fullPath: '/me/'
+      preLoaderRoute: typeof MeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me/profile': {
+      id: '/me/profile'
+      path: '/me/profile'
+      fullPath: '/me/profile'
+      preLoaderRoute: typeof MeProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pin/new': {
       id: '/pin/new'
       path: '/pin/new'
@@ -264,11 +362,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsClinicRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/devices': {
+      id: '/settings/devices'
+      path: '/settings/devices'
+      fullPath: '/settings/devices'
+      preLoaderRoute: typeof SettingsDevicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/location': {
       id: '/settings/location'
       path: '/settings/location'
       fullPath: '/settings/location'
       preLoaderRoute: typeof SettingsLocationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/security': {
+      id: '/settings/security'
+      path: '/settings/security'
+      fullPath: '/settings/security'
+      preLoaderRoute: typeof SettingsSecurityRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/branches/': {
@@ -292,23 +404,58 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsBranchesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/staff/': {
+      id: '/settings/staff/'
+      path: '/settings/staff'
+      fullPath: '/settings/staff/'
+      preLoaderRoute: typeof SettingsStaffIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/staff/new': {
+      id: '/settings/staff/new'
+      path: '/settings/staff/new'
+      fullPath: '/settings/staff/new'
+      preLoaderRoute: typeof SettingsStaffNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/staff/$id/': {
+      id: '/settings/staff/$id/'
+      path: '/settings/staff/$id'
+      fullPath: '/settings/staff/$id/'
+      preLoaderRoute: typeof SettingsStaffIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/staff/$id/profile': {
+      id: '/settings/staff/$id/profile'
+      path: '/settings/staff/$id/profile'
+      fullPath: '/settings/staff/$id/profile'
+      preLoaderRoute: typeof SettingsStaffIdProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   LockRoute: LockRoute,
-  MeRoute: MeRoute,
   RegisterRoute: RegisterRoute,
   SetupRoute: SetupRoute,
   SignInRoute: SignInRoute,
   WelcomeRoute: WelcomeRoute,
+  MeProfileRoute: MeProfileRoute,
   PinNewRoute: PinNewRoute,
   SettingsClinicRoute: SettingsClinicRoute,
+  SettingsDevicesRoute: SettingsDevicesRoute,
   SettingsLocationRoute: SettingsLocationRoute,
+  SettingsSecurityRoute: SettingsSecurityRoute,
+  MeIndexRoute: MeIndexRoute,
   SettingsBranchesIdRoute: SettingsBranchesIdRoute,
   SettingsBranchesNewRoute: SettingsBranchesNewRoute,
+  SettingsStaffNewRoute: SettingsStaffNewRoute,
   SettingsBranchesIndexRoute: SettingsBranchesIndexRoute,
+  SettingsStaffIndexRoute: SettingsStaffIndexRoute,
+  SettingsStaffIdProfileRoute: SettingsStaffIdProfileRoute,
+  SettingsStaffIdIndexRoute: SettingsStaffIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
