@@ -11,9 +11,13 @@ export const id = () =>
     .primaryKey()
     .$defaultFn(() => uuidv7());
 
-/** The database refuses any id that is not a UUIDv7; every table adds it. */
+/**
+ * The database refuses any id that is not a UUIDv7; every table adds it. `uuid_extract_version`
+ * is null for a UUID outside the RFC 9562 variant (the nil UUID among them), and a check passes
+ * on null, so the comparison must be true, not merely not false.
+ */
 export const idIsUuidV7 = (table: string, column: AnyColumn) =>
-  check(`${table}_id_is_uuidv7`, sql`uuid_extract_version(${column}) = 7`);
+  check(`${table}_id_is_uuidv7`, sql`(uuid_extract_version(${column}) = 7) IS TRUE`);
 
 export const tenantId = () => uuid().notNull();
 

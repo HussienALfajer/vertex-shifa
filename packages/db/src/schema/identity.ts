@@ -144,7 +144,7 @@ export const devices = pgTable(
       foreignColumns: [staffMemberships.tenantId, staffMemberships.id],
     }),
     check('devices_name', sql`char_length(${t.name}) between 2 and 50`),
-    check('devices_public_key', sql`${t.publicKey} ~ '^[A-Za-z0-9+/]{43}=$'`),
+    check('devices_public_key', sql`${t.publicKey} ~ '^[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=$'`),
     check('devices_status', sql`${t.status} in ('active', 'revoked')`),
     check('devices_revoked', sql`(${t.status} = 'revoked') = (${t.revokedAt} is not null)`),
     check('devices_wiped', sql`${t.wipedAt} is null or ${t.status} = 'revoked'`),
@@ -191,7 +191,10 @@ export const deviceEnrollments = pgTable(
       columns: [t.tenantId, t.membershipId],
       foreignColumns: [staffMemberships.tenantId, staffMemberships.id],
     }),
-    check('device_enrollments_public_key', sql`${t.publicKey} ~ '^[A-Za-z0-9+/]{43}=$'`),
+    check(
+      'device_enrollments_public_key',
+      sql`${t.publicKey} ~ '^[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=$'`,
+    ),
     check(
       'device_enrollments_revoked',
       sql`(${t.revokedAt} is null) = (${t.revokeReason} is null)`,
