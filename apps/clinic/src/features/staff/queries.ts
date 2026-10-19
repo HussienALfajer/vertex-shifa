@@ -8,6 +8,7 @@ import {
   type Practitioner,
   type PractitionerPhoto,
   type PractitionerProfileInput,
+  type PreviousPractitioner,
   type Specialty,
   type StaffMember,
   type StaffPage,
@@ -43,6 +44,18 @@ function readMember(id: string): Promise<StaffMember> {
 
 export function memberQuery(id: string) {
   return queryOptions({ queryKey: ['staff', 'one', id], queryFn: () => readMember(id) });
+}
+
+function readPreviousPractitioner(id: string): Promise<PreviousPractitioner> {
+  return unwrap(api.GET('/api/staff/{id}/previous-practitioner', { params: { path: { id } } }));
+}
+
+/** The doctor profile the doctor role brings back, for the owner (`staff.manage`, rule 9). */
+export function previousPractitionerQuery(id: string) {
+  return queryOptions({
+    queryKey: ['staff', 'one', id, 'previous-practitioner'],
+    queryFn: () => readPreviousPractitioner(id),
+  });
 }
 
 /** The permission catalog, presets and limits the API applies (screen 7). */
@@ -152,6 +165,10 @@ export function useStaffCache() {
   return {
     memberSaved: (saved: StaffMember) => {
       queryClient.setQueryData(memberQuery(saved.id).queryKey, saved);
+      // The doctor role may have archived or restored a profile.
+      void queryClient.invalidateQueries({
+        queryKey: previousPractitionerQuery(saved.id).queryKey,
+      });
       // The member's doctor profile may have come or gone with the doctor role.
       void queryClient.invalidateQueries({ queryKey: ['practitioners'] });
       // The owner may have changed their own access.
@@ -174,6 +191,11 @@ export function useStaffCache() {
     /** The current record after a `CONFLICT` (rule 10), read from the server now. */
     reloadMember: (id: string) =>
       fetchNow(queryClient, memberQuery(id).queryKey, () => readMember(id)),
+    /** After a save, the profile the doctor role would now bring back. */
+    reloadPreviousPractitioner: (id: string) =>
+      fetchNow(queryClient, previousPractitionerQuery(id).queryKey, () =>
+        readPreviousPractitioner(id),
+      ),
     reloadPractitioner: (id: string) =>
       fetchNow(queryClient, practitionerQuery(id).queryKey, () => readPractitioner(id)),
     /** Every member, to find the one an `ALREADY_MEMBER` refusal means. */

@@ -50,6 +50,11 @@ Spec: `docs/specs/S02-identity-access-and-devices.md` (Approved 2026-10-18). ADR
 - [x] i18n; E2E with a mocked API; RTL screenshots light and dark
 - [x] Checks, reviewer, owner acceptance (steps 3, 9, 11 of the spec), PR with auto-merge
 
+## PR 6b — Owner decisions of 2026-10-19 (`feat/s02-owner-locks-and-profile-restore`)
+- [x] Owners keep `tenant.read`, `staff.read` and `practitioners.read` too (rule 6): contracts, API refusal, tests
+- [x] The doctor role given back shows the previous profile prefilled for review and restores it with the owner's edits (rule 9, edge case 11): `GET /api/staff/:id/previous-practitioner`, clinic member screen, API and E2E tests
+- [x] Checks, reviewer, owner acceptance, PR with auto-merge
+
 ## PR 7 — Console: sign-in, TOTP and platform users (`feat/s02-console-sign-in`)
 - [ ] Screens: sign-in with setup and TOTP step, re-authentication dialog, platform users, my account
 - [ ] i18n; E2E with a mocked API; RTL screenshots light and dark

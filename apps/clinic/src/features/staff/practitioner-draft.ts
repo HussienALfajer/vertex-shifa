@@ -30,6 +30,14 @@ export function emptyPractitionerDraft(name: string): PractitionerDraft {
   };
 }
 
+/**
+ * The profile asked for with the doctor role (edge case 11): the member's previous one when they had
+ * one, for the owner to review, else a new one.
+ */
+export function doctorRoleDraft(name: string, previous: Practitioner | null): PractitionerDraft {
+  return previous ? practitionerDraft(previous) : emptyPractitionerDraft(name);
+}
+
 export function practitionerDraft(practitioner: Practitioner): PractitionerDraft {
   return {
     displayNameAr: practitioner.displayNameAr,

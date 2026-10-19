@@ -42,18 +42,23 @@ describe('permission rows', () => {
   });
 
   it('keeps the owner-only permissions with owners', () => {
-    const owner = draft({ roles: ['owner'], revoked: ['staff.manage'] });
-    expect(row(owner, 'staff.manage')).toMatchObject({ held: true, blocked: 'ownerLocked' });
-    expect(row(owner, 'staff.read')).toMatchObject({ held: true, blocked: null });
+    const owner = draft({ roles: ['owner'], revoked: ['staff.manage', 'staff.read'] });
+    for (const key of ['tenant.read', 'staff.read', 'staff.manage', 'practitioners.read']) {
+      expect(row(owner, key), key).toMatchObject({ held: true, blocked: 'ownerLocked' });
+    }
+    expect(row(owner, 'devices.manage')).toMatchObject({ held: true, blocked: null });
   });
 
   it('keeps what the roles give on the owner’s own record, removals there undoable', () => {
     const own = (state: AccessDraft, key: string) =>
       permissionRows(catalog, state, { self: true }).find((item) => item.permission.key === key);
-    const owner = draft({ roles: ['owner'], revoked: ['practitioners.read'] });
-    expect(own(owner, 'tenant.read')).toMatchObject({ held: true, blocked: 'self' });
-    expect(own(owner, 'staff.read')).toMatchObject({ held: true, blocked: 'self' });
-    expect(own(owner, 'practitioners.read')).toMatchObject({ held: false, blocked: null });
+    const owner = draft({ roles: ['owner'], revoked: ['facility.manage'] });
+    expect(own(owner, 'devices.manage')).toMatchObject({ held: true, blocked: 'self' });
+    expect(own(owner, 'facility.manage')).toMatchObject({ held: false, blocked: null });
+    // The rule does not depend on the role.
+    const doctor = draft({ roles: ['doctor'], revoked: ['practitioners.read'] });
+    expect(own(doctor, 'tenant.read')).toMatchObject({ held: true, blocked: 'self' });
+    expect(own(doctor, 'practitioners.read')).toMatchObject({ held: false, blocked: null });
   });
 
   it('marks what the owner added and removed', () => {
@@ -95,7 +100,7 @@ describe('adjustments sent', () => {
     });
     expect(accessAdjustments(catalog, state)).toEqual({
       granted: [],
-      revoked: ['devices.manage', 'staff.read'],
+      revoked: ['devices.manage'],
     });
   });
 });

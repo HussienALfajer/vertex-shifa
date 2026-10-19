@@ -181,10 +181,15 @@ test.describe('staff', () => {
 
     // The last owner stays (rule 5).
     await page.goto(`/settings/staff/${membershipOf(api.owner).id}`);
-    // The owner never takes away what their own screens need.
+    // An owner always keeps the read permissions (rule 6), and never takes away on their own
+    // record what their roles give.
     await expect(checkbox(page, 'الاطلاع على بيانات العيادة')).toBeDisabled();
     await expect(
       page.getByRole('listitem').filter({ hasText: 'الاطلاع على الموظفين' }),
+    ).toContainText('تبقى مع المالك دائمًا');
+    await expect(checkbox(page, 'إدارة حواسيب العيادة')).toBeDisabled();
+    await expect(
+      page.getByRole('listitem').filter({ hasText: 'إدارة حواسيب العيادة' }),
     ).toContainText('لا يمكنك إزالتها من نفسك');
     await page.getByRole('button', { name: 'إيقاف الموظف' }).click();
     // Toasts are dialogs too: the form's dialog by its title.
@@ -268,6 +273,73 @@ test.describe('staff', () => {
     await page.goto('/settings/security');
     await expect(page.getByLabel('القفل التلقائي بعد (دقيقة)')).toBeDisabled();
     await expect(page.getByRole('button', { name: 'حفظ' })).toHaveCount(0);
+  });
+
+  test('gives the doctor role back with the previous profile for review (edge case 11)', async ({
+    page,
+  }, testInfo) => {
+    const api = await mockApi(page, {
+      tenant: tenant({ status: 'active' }),
+      facilities: [facility()],
+    });
+    const doctor = addDoctor(api);
+    const receptionist = addReceptionist(api);
+    const [stored] = api.identity.practitioners;
+    Object.assign(stored ?? {}, {
+      specialtyIds: [specialties[2]?.id, specialties[0]?.id],
+      syndicateNumber: 'SY-1020',
+    });
+
+    // The photo goes with the profile.
+    await page.goto(`/settings/staff/${membershipOf(doctor).id}`);
+    await page.getByRole('link', { name: 'فتح الملف المهني' }).click();
+    await page.getByLabel('رفع صورة').setInputFiles({
+      name: 'photo.png',
+      mimeType: 'image/png',
+      buffer: logoPng,
+    });
+    await expect(page.getByRole('img', { name: 'صورة الطبيب' })).toBeVisible();
+    await page.getByRole('link', { name: 'سامر حداد' }).click();
+
+    // The role goes: its profile is archived.
+    await checkbox(page, 'طبيب').click();
+    await checkbox(page, 'استقبال').click();
+    await page.getByRole('button', { name: 'حفظ' }).click();
+    await expect(page.getByText('حُفظت التغييرات.')).toBeVisible();
+    expect(stored?.archivedAt).not.toBeNull();
+    await expect(page.getByRole('link', { name: 'فتح الملف المهني' })).toHaveCount(0);
+
+    // It comes back: the previous profile, prefilled, with its photo.
+    await checkbox(page, 'طبيب').click();
+    await expect(
+      page.getByText('هذا ملفه المهني السابق: راجعه وعدّل ما يلزم، ويعود مع دور الطبيب عند الحفظ.'),
+    ).toBeVisible();
+    await expect(page.getByLabel('الاسم المهني بالعربية')).toHaveValue('د. سامر حداد');
+    await expect(page.getByRole('button', { name: 'ذكر' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByText('التخصص الرئيسي: طب الأطفال')).toBeVisible();
+    await expect(page.getByLabel('رقم النقابة (اختياري)')).toHaveValue('SY-1020');
+    await expect(page.getByRole('img', { name: 'صورة الطبيب' })).toBeVisible();
+    await screenshot(page, testInfo, 'staff-doctor-restore');
+    await page.getByLabel('رقم النقابة (اختياري)').fill('SY-1021');
+    await page.getByRole('button', { name: 'حفظ' }).click();
+    // The first save's toast may still show.
+    await expect(page.getByText('حُفظت التغييرات.').last()).toBeVisible();
+    expect(api.identity.practitioners).toHaveLength(1);
+    expect(stored).toMatchObject({
+      archivedAt: null,
+      syndicateNumber: 'SY-1021',
+      specialtyIds: [specialties[2]?.id, specialties[0]?.id],
+      hasPhoto: true,
+    });
+    await expect(page.getByRole('link', { name: 'فتح الملف المهني' })).toBeVisible();
+
+    // A member who never had a profile gets a new one, the name prefilled.
+    await page.goto(`/settings/staff/${membershipOf(receptionist).id}`);
+    await checkbox(page, 'طبيب').click();
+    await expect(page.getByText('أكمل الملف المهني للطبيب ليُحفظ دور الطبيب.')).toBeVisible();
+    await expect(page.getByLabel('الاسم المهني بالعربية')).toHaveValue('د. موظف استقبال');
+    await expect(page.getByLabel('رقم النقابة (اختياري)')).toHaveValue('');
+    await expect(page.getByRole('img', { name: 'صورة الطبيب' })).toHaveCount(0);
   });
 
   test('a doctor edits their own profile', async ({ page }, testInfo) => {

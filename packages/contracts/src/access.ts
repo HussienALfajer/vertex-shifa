@@ -68,10 +68,16 @@ export const rolePresets = {
   accountant: ['tenant.read', 'practitioners.read'],
 } as const satisfies Record<Role, readonly PermissionKey[]>;
 
-/** Owners never lose these (spec S02 rule 6): a tenant is always manageable by its owners. */
+/**
+ * Owners never lose these (spec S02 rule 6): a tenant is always manageable by its owners, and an
+ * owner always sees the tenant, its staff and its practitioners.
+ */
 export const ownerLockedPermissions = [
+  'tenant.read',
   'tenant.manage',
+  'staff.read',
   'staff.manage',
+  'practitioners.read',
 ] as const satisfies readonly PermissionKey[];
 
 /** Whether a member with `memberRoles` may hold `permission` at all. */

@@ -265,6 +265,7 @@ describe('staff routes', () => {
     await as('GET', '/api/staff').expect(200);
     currentId = withoutRead.membershipId;
     await as('GET', '/api/staff/:id').expect(200);
+    await as('GET', '/api/staff/:id/previous-practitioner').expect(200);
     await as('POST', '/api/staff/:id/password-reset').expect(201);
     await as('POST', '/api/staff/:id/deactivate').send({ reason: 'سبب تجريبي' }).expect(201);
     await as('POST', '/api/staff/:id/reactivate').expect(201);
