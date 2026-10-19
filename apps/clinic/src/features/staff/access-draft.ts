@@ -59,14 +59,23 @@ export type PermissionRow = {
   held: boolean;
   origin: PermissionOrigin;
   /**
-   * Why the owner cannot change it: outside the limits of the member's roles (`limit`), or one an
-   * owner always keeps (`ownerLocked`).
+   * Why the owner cannot change it: outside the limits of the member's roles (`limit`), one an
+   * owner always keeps (`ownerLocked`), or one the signed-in owner holds on their own record
+   * (`self`): taking it away could lock them out of the very screen that gives it back.
    */
-  blocked: 'limit' | 'ownerLocked' | null;
+  blocked: 'limit' | 'ownerLocked' | 'self' | null;
 };
 
-/** Every permission of the catalog, in its order, as the member's draft gives it. */
-export function permissionRows(catalog: AccessCatalog, draft: AccessDraft): PermissionRow[] {
+/**
+ * Every permission of the catalog, in its order, as the member's draft gives it. On the signed-in
+ * member's own record (`self`) what the roles give cannot be removed; a removal already stored can
+ * still be undone.
+ */
+export function permissionRows(
+  catalog: AccessCatalog,
+  draft: AccessDraft,
+  options: { self: boolean },
+): PermissionRow[] {
   const preset = presetOf(catalog, draft.roles);
   return catalog.permissions.map((permission): PermissionRow => {
     const { key } = permission;
@@ -80,7 +89,7 @@ export function permissionRows(catalog: AccessCatalog, draft: AccessDraft): Perm
     if (inPreset) {
       return draft.revoked.includes(key)
         ? { permission, held: false, origin: 'removed', blocked: null }
-        : { permission, held: true, origin: 'role', blocked: null };
+        : { permission, held: true, origin: 'role', blocked: options.self ? 'self' : null };
     }
     return draft.granted.includes(key)
       ? { permission, held: true, origin: 'added', blocked: null }

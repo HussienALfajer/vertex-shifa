@@ -28,6 +28,8 @@ type AccessFieldsProps = {
   offerOwner: boolean;
   /** The branches in use; the scope shows with two or more, or when the member has a list. */
   branches: Facility[];
+  /** The signed-in member's own record: what their roles give stays (`permissionRows`). */
+  self: boolean;
 };
 
 /** Roles, branch scope and the permission editor of a member (screen 7). */
@@ -39,6 +41,7 @@ export function AccessFields({
   disabled,
   offerOwner,
   branches,
+  self,
 }: AccessFieldsProps) {
   const { t } = useTranslation('clinic');
   const owner = draft.roles.includes('owner');
@@ -108,7 +111,13 @@ export function AccessFields({
           )}
         </FieldGroup>
       )}
-      <PermissionEditor draft={draft} onChange={onChange} catalog={catalog} disabled={disabled} />
+      <PermissionEditor
+        draft={draft}
+        onChange={onChange}
+        catalog={catalog}
+        disabled={disabled}
+        self={self}
+      />
     </>
   );
 }
@@ -142,14 +151,16 @@ function PermissionEditor({
   onChange,
   catalog,
   disabled,
+  self,
 }: {
   draft: AccessDraft;
   onChange: (draft: AccessDraft) => void;
   catalog: AccessCatalog;
   disabled: boolean;
+  self: boolean;
 }) {
   const { t } = useTranslation('clinic');
-  const rows = permissionRows(catalog, draft);
+  const rows = permissionRows(catalog, draft, { self });
   const groups = [...new Set(rows.map((row) => row.permission.group))];
   return (
     <FieldGroup
@@ -207,6 +218,7 @@ function PermissionItem({
       ? t('staff.permissions.limitedTo', { roles: roleNames(permission.limit) })
       : undefined,
     blocked === 'ownerLocked' ? t('staff.permissions.ownerLocked') : undefined,
+    blocked === 'self' ? t('staff.permissions.self') : undefined,
     permission.branchScoped && blocked !== 'limit'
       ? t('staff.permissions.branchScoped')
       : undefined,

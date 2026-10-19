@@ -328,6 +328,7 @@ export const clinic = {
       },
       limitedTo: 'لا تُمنح إلا لدور: {{roles}}',
       ownerLocked: 'تبقى مع المالك دائمًا',
+      self: 'لا يمكنك إزالتها من نفسك',
       branchScoped: 'في فروع الموظف فقط',
     },
     permissionGroups: {

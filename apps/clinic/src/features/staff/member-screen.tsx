@@ -3,7 +3,6 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import {
   type AccessCatalog,
   deactivateStaffSchema,
-  type Specialty,
   type StaffMember,
 } from '@vertex-shifa/contracts';
 import {
@@ -64,7 +63,7 @@ import {
   practitionerErrors,
   practitionerInput,
 } from './practitioner-draft';
-import { PractitionerFields } from './practitioner-fields';
+import { NewPractitionerFields } from './practitioner-fields';
 import {
   authorizePasswordReset,
   cancelInvitation,
@@ -74,7 +73,6 @@ import {
   memberQuery,
   reactivateMember,
   resendInvitation,
-  specialtiesQuery,
   useStaffCache,
 } from './queries';
 import { MemberStatus, NoAccessState, useBranches } from './staff-labels';
@@ -92,12 +90,11 @@ export function MemberScreen({ id }: { id: string }) {
   const me = useQuery(meQuery);
   const member = useQuery({ ...memberQuery(id), enabled: access.readStaff });
   const catalog = useQuery(catalogQuery);
-  const specialties = useQuery(specialtiesQuery);
   const branches = useBranches();
   if (me.data && !access.readStaff) return <NoAccessState />;
   return (
     <section className="flex max-w-3xl flex-col gap-6">
-      <QueryStates queries={[me, member, catalog, specialties, ...branches.queries]}>
+      <QueryStates queries={[me, member, catalog, ...branches.queries]}>
         {() => {
           const shown = member.data as StaffMember;
           return (
@@ -113,12 +110,7 @@ export function MemberScreen({ id }: { id: string }) {
                   </span>
                 }
               />
-              <MemberDetail
-                key={shown.id}
-                member={shown}
-                catalog={catalog.data as AccessCatalog}
-                specialties={specialties.data as Specialty[]}
-              />
+              <MemberDetail key={shown.id} member={shown} catalog={catalog.data as AccessCatalog} />
             </>
           );
         }}
@@ -136,17 +128,10 @@ function memberDraft(member: StaffMember): MemberDraft {
   };
 }
 
-function MemberDetail({
-  member,
-  catalog,
-  specialties,
-}: {
-  member: StaffMember;
-  catalog: AccessCatalog;
-  specialties: Specialty[];
-}) {
+function MemberDetail({ member, catalog }: { member: StaffMember; catalog: AccessCatalog }) {
   const { t } = useTranslation(['clinic', 'common']);
   const access = useStaffAccess();
+  const me = useQuery(meQuery);
   const online = useOnline();
   const errorText = useErrorText();
   const cache = useStaffCache();
@@ -236,6 +221,7 @@ function MemberDetail({
               disabled={!editable}
               offerOwner={access.manageStaff}
               branches={branches.inUse}
+              self={member.id === me.data?.membershipId}
             />
           </Card>
           {addsDoctor && (
@@ -244,12 +230,11 @@ function MemberDetail({
                 <CardTitle>{t('practitioner.fields.title')}</CardTitle>
                 <CardDescription>{t('staff.member.doctorProfileNeeded')}</CardDescription>
               </div>
-              <PractitionerFields
+              <NewPractitionerFields
                 draft={draft.practitioner}
                 onChange={(practitioner) => setDraft((current) => ({ ...current, practitioner }))}
                 errors={problems?.practitioner ?? {}}
                 disabled={!editable}
-                specialties={specialties}
               />
             </Card>
           )}

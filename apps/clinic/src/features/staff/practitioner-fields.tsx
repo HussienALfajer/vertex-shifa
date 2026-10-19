@@ -17,9 +17,16 @@ import { ImageUp, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldGroup } from '../../components/field-group';
+import { QueryStates } from '../../components/query-states';
 import { useErrorText } from '../../lib/error-text';
 import type { PractitionerDraft, PractitionerErrors } from './practitioner-draft';
-import { practitionerPhotoQuery, removePhoto, replacePhoto, useStaffCache } from './queries';
+import {
+  practitionerPhotoQuery,
+  removePhoto,
+  replacePhoto,
+  specialtiesQuery,
+  useStaffCache,
+} from './queries';
 
 const genders: Gender[] = ['male', 'female'];
 
@@ -122,6 +129,21 @@ export function PractitionerFields({
         </FieldError>
       </Field>
     </>
+  );
+}
+
+/**
+ * The profile given with the doctor role (screen 7): the specialties are read only then, so a
+ * member without `practitioners.read` still opens the invite and member screens.
+ */
+export function NewPractitionerFields(
+  props: Omit<Parameters<typeof PractitionerFields>[0], 'specialties'>,
+) {
+  const specialties = useQuery(specialtiesQuery);
+  return (
+    <QueryStates queries={[specialties]}>
+      {() => <PractitionerFields {...props} specialties={specialties.data as Specialty[]} />}
+    </QueryStates>
   );
 }
 

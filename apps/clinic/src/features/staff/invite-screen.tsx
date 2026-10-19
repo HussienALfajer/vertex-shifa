@@ -5,7 +5,6 @@ import {
   defaultPractitionerNameAr,
   invitedNameSchema,
   parsePhoneNumber,
-  type Specialty,
   type StaffMember,
 } from '@vertex-shifa/contracts';
 import {
@@ -51,8 +50,8 @@ import {
   practitionerErrors,
   practitionerInput,
 } from './practitioner-draft';
-import { PractitionerFields } from './practitioner-fields';
-import { catalogQuery, invite, specialtiesQuery, useStaffCache } from './queries';
+import { NewPractitionerFields } from './practitioner-fields';
+import { catalogQuery, invite, useStaffCache } from './queries';
 import { NoAccessState, useBranches } from './staff-labels';
 
 type InviteDraft = {
@@ -77,7 +76,6 @@ export function InviteScreen() {
   const access = useStaffAccess();
   const me = useQuery(meQuery);
   const catalog = useQuery(catalogQuery);
-  const specialties = useQuery(specialtiesQuery);
   const branches = useBranches();
   if (me.data && !access.manageStaff) return <NoAccessState />;
   return (
@@ -87,25 +85,14 @@ export function InviteScreen() {
         title={t('staff.invitePage.title')}
         description={t('staff.invitePage.description')}
       />
-      <QueryStates queries={[me, catalog, specialties, ...branches.queries]}>
-        {() => (
-          <InviteForm
-            catalog={catalog.data as AccessCatalog}
-            specialties={specialties.data as Specialty[]}
-          />
-        )}
+      <QueryStates queries={[me, catalog, ...branches.queries]}>
+        {() => <InviteForm catalog={catalog.data as AccessCatalog} />}
       </QueryStates>
     </section>
   );
 }
 
-function InviteForm({
-  catalog,
-  specialties,
-}: {
-  catalog: AccessCatalog;
-  specialties: Specialty[];
-}) {
+function InviteForm({ catalog }: { catalog: AccessCatalog }) {
   const { t } = useTranslation(['clinic', 'common']);
   const navigate = useNavigate();
   const tenant = useTenant();
@@ -244,17 +231,17 @@ function InviteForm({
             disabled={false}
             offerOwner
             branches={branches.inUse}
+            self={false}
           />
         </Card>
         {doctor && (
           <Card className="flex flex-col gap-6 p-6">
             <CardTitle>{t('practitioner.fields.title')}</CardTitle>
-            <PractitionerFields
+            <NewPractitionerFields
               draft={draft.practitioner}
               onChange={(practitioner) => setDraft((current) => ({ ...current, practitioner }))}
               errors={problems?.practitioner ?? {}}
               disabled={false}
-              specialties={specialties}
             />
           </Card>
         )}

@@ -181,6 +181,11 @@ test.describe('staff', () => {
 
     // The last owner stays (rule 5).
     await page.goto(`/settings/staff/${membershipOf(api.owner).id}`);
+    // The owner never takes away what their own screens need.
+    await expect(checkbox(page, 'الاطلاع على بيانات العيادة')).toBeDisabled();
+    await expect(
+      page.getByRole('listitem').filter({ hasText: 'الاطلاع على الموظفين' }),
+    ).toContainText('لا يمكنك إزالتها من نفسك');
     await page.getByRole('button', { name: 'إيقاف الموظف' }).click();
     // Toasts are dialogs too: the form's dialog by its title.
     const dialog = page.getByRole('dialog', { name: /^إيقاف / });

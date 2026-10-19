@@ -19,7 +19,9 @@ function draft(overrides: Partial<AccessDraft>): AccessDraft {
 }
 
 function row(state: AccessDraft, key: string) {
-  return permissionRows(catalog, state).find((item) => item.permission.key === key);
+  return permissionRows(catalog, state, { self: false }).find(
+    (item) => item.permission.key === key,
+  );
 }
 
 describe('permission rows', () => {
@@ -45,6 +47,15 @@ describe('permission rows', () => {
     expect(row(owner, 'staff.read')).toMatchObject({ held: true, blocked: null });
   });
 
+  it('keeps what the roles give on the owner’s own record, removals there undoable', () => {
+    const own = (state: AccessDraft, key: string) =>
+      permissionRows(catalog, state, { self: true }).find((item) => item.permission.key === key);
+    const owner = draft({ roles: ['owner'], revoked: ['practitioners.read'] });
+    expect(own(owner, 'tenant.read')).toMatchObject({ held: true, blocked: 'self' });
+    expect(own(owner, 'staff.read')).toMatchObject({ held: true, blocked: 'self' });
+    expect(own(owner, 'practitioners.read')).toMatchObject({ held: false, blocked: null });
+  });
+
   it('marks what the owner added and removed', () => {
     let state = draft({ roles: ['reception'] });
     state = setPermission(catalog, state, 'devices.manage', true);
@@ -67,7 +78,7 @@ describe('permission rows', () => {
       granted: ['staff.read', 'devices.manage'],
       revoked: ['tenant.read'],
     });
-    const held = permissionRows(catalog, state)
+    const held = permissionRows(catalog, state, { self: false })
       .filter((item) => item.held)
       .map((item) => item.permission.key);
     expect(held).toEqual(effectivePermissions(state.roles, state.granted, state.revoked));

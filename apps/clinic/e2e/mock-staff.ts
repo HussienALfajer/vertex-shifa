@@ -218,8 +218,12 @@ export function staffRoutes(state: MockApi) {
     if (!actor) return undefined;
     const permissions = permissionsOf(actor);
 
-    if (path === '/api/access/catalog' && method === 'GET') return ok(accessCatalog());
-    if (path === '/api/specialties' && method === 'GET') return ok(specialties);
+    if (path === '/api/access/catalog' && method === 'GET') {
+      return permissions.includes('tenant.read') ? ok(accessCatalog()) : refuse('FORBIDDEN');
+    }
+    if (path === '/api/specialties' && method === 'GET') {
+      return permissions.includes('practitioners.read') ? ok(specialties) : refuse('FORBIDDEN');
+    }
 
     if (path === '/api/staff' && method === 'GET') {
       const forbidden = guard(permissions, 'staff.read');
@@ -386,6 +390,7 @@ export function staffRoutes(state: MockApi) {
       if (!stored) return refuse('NOT_FOUND');
       const { archivedAt: _, ...practitioner } = stored;
       if (method === 'GET') {
+        if (!permissions.includes('practitioners.read')) return refuse('FORBIDDEN');
         if (!photo) return ok(practitioner);
         const data = photos.get(stored.id);
         return data ? ok(storedPhoto(data)) : refuse('NOT_FOUND');
@@ -407,12 +412,12 @@ export function staffRoutes(state: MockApi) {
         // The synthetic image stands in for the upload re-encoded as a JPEG.
         const data = logoPng.toString('base64');
         photos.set(stored.id, data);
-        Object.assign(stored, { hasPhoto: true, updatedAt: now() });
+        stored.hasPhoto = true;
         return ok(storedPhoto(data));
       }
       if (method === 'DELETE' && photo) {
         if (!photos.delete(stored.id)) return refuse('NOT_FOUND');
-        Object.assign(stored, { hasPhoto: false, updatedAt: now() });
+        stored.hasPhoto = false;
         return ok(practitionerOf(identity, stored.membershipId));
       }
       return refuse('NOT_FOUND');
