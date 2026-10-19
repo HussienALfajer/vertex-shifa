@@ -347,6 +347,31 @@ export class AuthService {
     assertPasswordStrong(input.newPassword, account.phone);
     const passwordHash = await hashPassword(input.newPassword);
     await this.db.transaction(async (tx) => {
+      // Locked and rechecked: the password verified above may have changed meanwhile (another
+      // change, a reset), or this session ended; the new password then replaces nothing.
+      const [locked] = await tx
+        .select({
+          passwordHash: accounts.passwordHash,
+          passwordChangedAt: accounts.passwordChangedAt,
+        })
+        .from(accounts)
+        .where(eq(accounts.id, account.id))
+        .for('update');
+      await enterTenant(tx, actor.tenantId);
+      const [session] = await tx
+        .select({ endedAt: staffSessions.endedAt })
+        .from(staffSessions)
+        .where(eq(staffSessions.id, actor.sessionId))
+        .for('update');
+      if (!session || session.endedAt) {
+        throw new DomainError('SESSION_ENDED', 'The session has ended');
+      }
+      if (
+        locked?.passwordHash !== account.passwordHash ||
+        locked.passwordChangedAt?.getTime() !== account.passwordChangedAt?.getTime()
+      ) {
+        throw invalidCredentials();
+      }
       await tx
         .update(accounts)
         .set({ passwordHash, passwordChangedAt: now, failedSignIns: 0, updatedAt: now })

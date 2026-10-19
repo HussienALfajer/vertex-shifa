@@ -1,4 +1,4 @@
-import { Global, Inject, Module, type OnApplicationShutdown } from '@nestjs/common';
+import { Global, Inject, Logger, Module, type OnApplicationShutdown } from '@nestjs/common';
 import { createDatabase, type Database } from '@vertex-shifa/db';
 import type { Config } from '../config/config.js';
 import { CONFIG } from '../config/config.module.js';
@@ -17,7 +17,10 @@ export const DATABASE = Symbol('Database');
     {
       provide: DATABASE,
       inject: [CONFIG],
-      useFactory: (config: Config) => createDatabase(config.databaseUrl),
+      useFactory: (config: Config) => {
+        const logger = new Logger('Database');
+        return createDatabase(config.databaseUrl, (description) => logger.error(description));
+      },
     },
   ],
   exports: [DATABASE],

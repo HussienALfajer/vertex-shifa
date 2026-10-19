@@ -56,8 +56,13 @@ test.describe('site shell', () => {
       [toDark, true],
       [toLight, false],
     ] as const) {
-      if (await button.isVisible()) await button.click();
-      await expect(html).toHaveClass(dark ? /dark/ : /^(?!.*dark)/);
+      // Until hydration the button shows the light theme's label and ignores clicks: click only
+      // while the page is not in the theme yet, and again if a click came too early.
+      await expect(async () => {
+        const isDark = /dark/.test((await html.getAttribute('class')) ?? '');
+        if (isDark !== dark) await button.click({ timeout: 1000 });
+        await expect(html).toHaveClass(dark ? /dark/ : /^(?!.*dark)/, { timeout: 1000 });
+      }).toPass();
       // Applied by theme-init.js before the first paint, and shown by the button.
       await page.reload();
       await expect(html).toHaveClass(dark ? /dark/ : /^(?!.*dark)/);

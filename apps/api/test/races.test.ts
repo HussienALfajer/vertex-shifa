@@ -301,3 +301,42 @@ describe('session races', () => {
     expect(await openSessions(tenantId, eq(staffSessions.deviceId, second.device.id))).toEqual([]);
   });
 });
+
+describe('password change races', () => {
+  const passwords = ['first new synthetic passphrase', 'second new synthetic passphrase'];
+
+  it("let one of two changes from the same current password set the member's password", async () => {
+    const { owner, phone } = await activeClinic();
+    const changed = await Promise.all(
+      passwords.map((newPassword, i) =>
+        (i === 0 ? client : afterRestart).http
+          .put('/api/me/password')
+          .set('authorization', bearer(owner))
+          .send({ currentPassword: PASSWORD, newPassword }),
+      ),
+    );
+    expect(tally(changed)).toEqual({ 200: 1, INVALID_CREDENTIALS: 1 });
+    await client.signIn(phone, passwords[changed.findIndex((response) => response.status === 200)]);
+  });
+
+  it("let one of two console sessions change the user's password from the same current one", async () => {
+    const consoleClient = new ConsoleClient(client);
+    const user = await consoleClient.setUp('support');
+    const other = await consoleClient.signInAgain(user);
+    const changed = await Promise.all(
+      [user, other].map((session, i) =>
+        consoleClient
+          .call('put', '/api/console/me/password', session)
+          .send({ currentPassword: CONSOLE_PASSWORD, newPassword: passwords[i] }),
+      ),
+    );
+    expect(outcomes(changed).filter((outcome) => outcome === 200)).toHaveLength(1);
+    expect(
+      outcomes(changed).every((outcome) =>
+        [200, 'INVALID_CREDENTIALS', 'SESSION_ENDED'].includes(outcome),
+      ),
+    ).toBe(true);
+    const winner = passwords[changed.findIndex((response) => response.status === 200)] ?? '';
+    expect((await consoleClient.signIn(user.phone, { password: winner })).body.step).toBe('totp');
+  });
+});

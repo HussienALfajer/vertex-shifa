@@ -1,4 +1,4 @@
-import { Inject, Module, type OnApplicationShutdown } from '@nestjs/common';
+import { Inject, Logger, Module, type OnApplicationShutdown } from '@nestjs/common';
 import { createDatabase, type Database } from '@vertex-shifa/db';
 import type { Config } from '../config/config.js';
 import { CONFIG } from '../config/config.module.js';
@@ -11,7 +11,10 @@ import { OutboxDispatcher } from './outbox-dispatcher.js';
     {
       provide: JOBS_DATABASE,
       inject: [CONFIG],
-      useFactory: (config: Config) => createDatabase(config.jobsDatabaseUrl),
+      useFactory: (config: Config) => {
+        const logger = new Logger('JobsDatabase');
+        return createDatabase(config.jobsDatabaseUrl, (description) => logger.error(description));
+      },
     },
     OutboxDispatcher,
   ],
