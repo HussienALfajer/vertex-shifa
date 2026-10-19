@@ -10,7 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LockRouteImport } from './routes/lock'
+import { Route as MeRouteImport } from './routes/me'
+import { Route as RegisterRouteImport } from './routes/register'
 import { Route as SetupRouteImport } from './routes/setup'
+import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as WelcomeRouteImport } from './routes/welcome'
+import { Route as PinNewRouteImport } from './routes/pin/new'
 import { Route as SettingsClinicRouteImport } from './routes/settings/clinic'
 import { Route as SettingsLocationRouteImport } from './routes/settings/location'
 import { Route as SettingsBranchesIndexRouteImport } from './routes/settings/branches/index'
@@ -22,9 +28,39 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LockRoute = LockRouteImport.update({
+  id: '/lock',
+  path: '/lock',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeRoute = MeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SetupRoute = SetupRouteImport.update({
   id: '/setup',
   path: '/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WelcomeRoute = WelcomeRouteImport.update({
+  id: '/welcome',
+  path: '/welcome',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PinNewRoute = PinNewRouteImport.update({
+  id: '/pin/new',
+  path: '/pin/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsClinicRoute = SettingsClinicRouteImport.update({
@@ -55,7 +91,13 @@ const SettingsBranchesNewRoute = SettingsBranchesNewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/lock': typeof LockRoute
+  '/me': typeof MeRoute
+  '/register': typeof RegisterRoute
   '/setup': typeof SetupRoute
+  '/sign-in': typeof SignInRoute
+  '/welcome': typeof WelcomeRoute
+  '/pin/new': typeof PinNewRoute
   '/settings/clinic': typeof SettingsClinicRoute
   '/settings/location': typeof SettingsLocationRoute
   '/settings/branches/$id': typeof SettingsBranchesIdRoute
@@ -64,7 +106,13 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/lock': typeof LockRoute
+  '/me': typeof MeRoute
+  '/register': typeof RegisterRoute
   '/setup': typeof SetupRoute
+  '/sign-in': typeof SignInRoute
+  '/welcome': typeof WelcomeRoute
+  '/pin/new': typeof PinNewRoute
   '/settings/clinic': typeof SettingsClinicRoute
   '/settings/location': typeof SettingsLocationRoute
   '/settings/branches/$id': typeof SettingsBranchesIdRoute
@@ -74,7 +122,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/lock': typeof LockRoute
+  '/me': typeof MeRoute
+  '/register': typeof RegisterRoute
   '/setup': typeof SetupRoute
+  '/sign-in': typeof SignInRoute
+  '/welcome': typeof WelcomeRoute
+  '/pin/new': typeof PinNewRoute
   '/settings/clinic': typeof SettingsClinicRoute
   '/settings/location': typeof SettingsLocationRoute
   '/settings/branches/$id': typeof SettingsBranchesIdRoute
@@ -85,7 +139,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/lock'
+    | '/me'
+    | '/register'
     | '/setup'
+    | '/sign-in'
+    | '/welcome'
+    | '/pin/new'
     | '/settings/clinic'
     | '/settings/location'
     | '/settings/branches/$id'
@@ -94,7 +154,13 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/lock'
+    | '/me'
+    | '/register'
     | '/setup'
+    | '/sign-in'
+    | '/welcome'
+    | '/pin/new'
     | '/settings/clinic'
     | '/settings/location'
     | '/settings/branches/$id'
@@ -103,7 +169,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/lock'
+    | '/me'
+    | '/register'
     | '/setup'
+    | '/sign-in'
+    | '/welcome'
+    | '/pin/new'
     | '/settings/clinic'
     | '/settings/location'
     | '/settings/branches/$id'
@@ -113,7 +185,13 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  LockRoute: typeof LockRoute
+  MeRoute: typeof MeRoute
+  RegisterRoute: typeof RegisterRoute
   SetupRoute: typeof SetupRoute
+  SignInRoute: typeof SignInRoute
+  WelcomeRoute: typeof WelcomeRoute
+  PinNewRoute: typeof PinNewRoute
   SettingsClinicRoute: typeof SettingsClinicRoute
   SettingsLocationRoute: typeof SettingsLocationRoute
   SettingsBranchesIdRoute: typeof SettingsBranchesIdRoute
@@ -130,11 +208,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lock': {
+      id: '/lock'
+      path: '/lock'
+      fullPath: '/lock'
+      preLoaderRoute: typeof LockRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me': {
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/setup': {
       id: '/setup'
       path: '/setup'
       fullPath: '/setup'
       preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/welcome': {
+      id: '/welcome'
+      path: '/welcome'
+      fullPath: '/welcome'
+      preLoaderRoute: typeof WelcomeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pin/new': {
+      id: '/pin/new'
+      path: '/pin/new'
+      fullPath: '/pin/new'
+      preLoaderRoute: typeof PinNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings/clinic': {
@@ -177,7 +297,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  LockRoute: LockRoute,
+  MeRoute: MeRoute,
+  RegisterRoute: RegisterRoute,
   SetupRoute: SetupRoute,
+  SignInRoute: SignInRoute,
+  WelcomeRoute: WelcomeRoute,
+  PinNewRoute: PinNewRoute,
   SettingsClinicRoute: SettingsClinicRoute,
   SettingsLocationRoute: SettingsLocationRoute,
   SettingsBranchesIdRoute: SettingsBranchesIdRoute,

@@ -17,8 +17,8 @@ export function useTenant(): Tenant {
 }
 
 /**
- * Every clinic screen needs the tenant first. While it is onboarding, only the setup screen is
- * reachable (rule 4); after, the setup screen leads home. Suspended or closed, the read-only banner
+ * Every clinic screen needs the tenant first. While it is onboarding, only the setup screen (and
+ * the member's account) is reachable (rule 4); after, the setup screen leads home. Suspended or closed, the read-only banner
  * stays above every screen (screen 7).
  */
 export function TenantGate({ children }: { children: ReactNode }) {
@@ -29,7 +29,11 @@ export function TenantGate({ children }: { children: ReactNode }) {
       {() => {
         const { status } = tenant.data as Tenant;
         const onSetup = pathname === '/setup';
-        if (status === 'onboarding' && !onSetup) return <Navigate to="/setup" replace />;
+        // The member's own account is theirs in every status.
+        const onAccount = pathname === '/me';
+        if (status === 'onboarding' && !onSetup && !onAccount) {
+          return <Navigate to="/setup" replace />;
+        }
         if (status !== 'onboarding' && onSetup) return <Navigate to="/" replace />;
         return (
           <div className="flex flex-col gap-6">

@@ -1,6 +1,18 @@
+import { release } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { ar } from '@vertex-shifa/i18n';
-import { app, BrowserWindow, dialog, net, protocol, session } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  net,
+  protocol,
+  safeStorage,
+  session,
+} from 'electron';
 import {
   APP_ORIGIN,
   APP_SCHEME,
@@ -8,11 +20,17 @@ import {
   contentSecurityPolicy,
   resolveAppFile,
 } from './app-protocol.js';
+import { DEVICE_CHANNEL } from './identity/bridge.js';
+import { Installation } from './identity/installation.js';
+import { handleDeviceCall } from './identity/ipc.js';
+import type { Protector } from './identity/keys.js';
+import { stateFile } from './identity/state-file.js';
 import { devServerUrl, isAllowedNavigation } from './navigation.js';
 import { confirmLeaving } from './unsaved-changes.js';
 
-// The main process will own the local database and the sync client (ADR 0021); the renderer
-// reaches them only through IPC. Today it opens one locked-down window on the renderer.
+// The main process owns the installation's identity (S02: keys, PINs, registrations) and will own
+// the local database and the sync client (ADR 0021); the renderer reaches them only through the
+// device bridge (`preload.cts`). It opens one locked-down window on the renderer.
 
 const rendererDir = fileURLToPath(new URL('../renderer/', import.meta.url));
 const devServer = devServerUrl(process.argv, app.isPackaged);
@@ -38,6 +56,40 @@ function serveRenderer(): void {
   });
 }
 
+/**
+ * Electron `safeStorage`: DPAPI on Windows binds what it seals to the Windows account (ADR 0021).
+ * Without a real keystore (Linux's `basic_text`), nothing is stored and the bridge refuses.
+ */
+function deviceProtector(): Protector | undefined {
+  if (!safeStorage.isEncryptionAvailable()) return undefined;
+  if (process.platform === 'linux' && safeStorage.getSelectedStorageBackend() === 'basic_text') {
+    return undefined;
+  }
+  return {
+    encrypt: (plain) => safeStorage.encryptString(plain.toString('base64')),
+    decrypt: (sealed) => Buffer.from(safeStorage.decryptString(sealed), 'base64'),
+  };
+}
+
+/** The device bridge: calls from the app's own renderer only, each checked by `handleDeviceCall`. */
+function serveDeviceBridge(): void {
+  const protector = deviceProtector();
+  const installation = protector
+    ? new Installation(
+        stateFile(join(app.getPath('userData'), 'identity', 'installation.bin'), protector),
+        protector,
+      )
+    : undefined;
+  const appInfo = { os: `${process.platform} ${release()}`, appVersion: app.getVersion() };
+  ipcMain.handle(DEVICE_CHANNEL, (event, method: unknown, input: unknown) => {
+    if (!isAllowedNavigation(event.senderFrame?.url ?? '', rendererOrigin)) {
+      return { ok: false, code: 'INVALID_INPUT' };
+    }
+    if (!installation) return { ok: false, code: 'STORAGE_UNAVAILABLE' };
+    return handleDeviceCall(installation, appInfo, method, input);
+  });
+}
+
 function lockDownSession(): void {
   session.defaultSession.setPermissionRequestHandler((_contents, _permission, callback) => {
     callback(false);
@@ -59,6 +111,10 @@ function createWindow(): BrowserWindow {
       nodeIntegration: false,
       webSecurity: true,
       spellcheck: false,
+      // The renderer's tools only on the dev server: in the built app they would let anyone at the
+      // computer call the device bridge directly (ADR 0021).
+      devTools: devServer !== null,
+      preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)),
     },
   });
 
@@ -97,8 +153,10 @@ if (!app.requestSingleInstanceLock()) {
   app.on('window-all-closed', () => app.quit());
 
   void app.whenReady().then(() => {
+    if (!devServer) Menu.setApplicationMenu(null);
     lockDownSession();
     serveRenderer();
+    serveDeviceBridge();
     mainWindow = createWindow();
     mainWindow.on('closed', () => {
       mainWindow = null;

@@ -5,6 +5,7 @@ import { DirectionProvider, Toaster } from '@vertex-shifa/ui';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
+import { startIdentity } from './features/identity/session';
 import { logErrorLabel, redactConsoleErrors } from './lib/error-logging';
 import { i18n } from './lib/i18n';
 import { createQueryClient } from './lib/query-client';
@@ -17,6 +18,8 @@ redactConsoleErrors(console);
 // A screen's code loads when a link to it is pointed at, before it is opened.
 const router = createRouter({ routeTree, defaultOnCatch: logErrorLabel, defaultPreload: 'intent' });
 const queryClient = createQueryClient();
+// Requests carry the unlocked member's staff session (spec S02).
+startIdentity(queryClient);
 
 declare module '@tanstack/react-router' {
   interface Register {

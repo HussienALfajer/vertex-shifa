@@ -39,11 +39,11 @@ Spec: `docs/specs/S02-identity-access-and-devices.md` (Approved 2026-10-18). ADR
 - [x] Checks, reviewer, acceptance (summary), PR with auto-merge
 
 ## PR 5 — Clinic app: devices, PIN and lock (`feat/s02-clinic-sign-in`)
-- [ ] Electron main: device and user keys (Ed25519), PIN wrapping (Argon2id + `safeStorage`), lockout counter, offline window with highest-seen time, multi-clinic registrations, wipe of one registration; IPC bridge; unit tests
-- [ ] Screens: welcome, sign-in (OTP, first sign-in), register this computer, choose a PIN, member picker and lock screen (all states), idle lock, clinic switcher, my account
-- [ ] Session handling in the API client (access token, refresh, `DEVICE_REVOKED` wipe)
-- [ ] i18n; E2E with a mocked API; RTL screenshots light and dark
-- [ ] Checks, reviewer, owner acceptance (steps 1, 2, 4–8 of the spec), PR with auto-merge
+- [x] Electron main: device and user keys (Ed25519), PIN wrapping (Argon2id + `safeStorage`), lockout counter, offline window with highest-seen time, multi-clinic registrations, wipe of one registration; IPC bridge; unit tests
+- [x] Screens: welcome, sign-in (OTP, first sign-in), register this computer, choose a PIN, member picker and lock screen (all states), idle lock, clinic switcher, my account
+- [x] Session handling in the API client (access token, refresh, `DEVICE_REVOKED` wipe)
+- [x] i18n; E2E with a mocked API; RTL screenshots light and dark
+- [x] Checks, reviewer, owner acceptance (steps 1, 2, 4–8 of the spec), PR with auto-merge
 
 ## PR 6 — Clinic app: staff, doctor profile, devices and security (`feat/s02-clinic-staff`)
 - [ ] Screens: staff list, invite and member detail with the permission editor, doctor profile with photo, devices, security settings
