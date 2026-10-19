@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm';
+import { eq, getTableName, inArray, sql } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { beforeAll, describe, expect, it } from 'vitest';
 import {
@@ -18,6 +18,7 @@ import {
   staffMemberships,
   staffSessions,
   tenants,
+  usedTokens,
   withTenant,
 } from '../src/index.js';
 import { connect, refusal } from './connections.js';
@@ -511,5 +512,142 @@ describe('platform_audit_entries', () => {
     expect(await refusal(owner.execute(sql`truncate platform_audit_entries`))).toBe(
       'platform_audit_entries is append-only: TRUNCATE refused',
     );
+  });
+});
+
+describe('row-level security of the S02 tenant tables, with rows in two tenants', () => {
+  let c: Clinic;
+  let d: Clinic;
+
+  /** A row in every S02 tenant table: a reception member of one branch, a session, a photo. */
+  async function fill(clinic: Clinic) {
+    const account = await createAccount();
+    const [specialty] = await app.select().from(specialties).orderBy(specialties.position);
+    await withTenant(app, clinic.tenantId, async (tx) => {
+      const { tenantId } = clinic;
+      const [member] = await tx
+        .insert(staffMemberships)
+        .values({
+          tenantId,
+          accountId: account.id,
+          status: 'active',
+          roles: ['reception'],
+          allFacilities: false,
+          invitedName: 'موظف تجريبي',
+        })
+        .returning();
+      await tx.insert(staffMembershipFacilities).values({
+        tenantId,
+        membershipId: member?.id ?? '',
+        facilityId: clinic.facilityId,
+      });
+      await tx.insert(staffSessions).values({
+        tenantId,
+        membershipId: clinic.ownerId,
+        deviceId: clinic.deviceId,
+        enrollmentId: clinic.enrollmentId,
+        refreshTokenHash: 'synthetic-hash',
+        expiresAt: new Date(Date.now() + 12 * 3600_000),
+      });
+      await tx.insert(practitionerSpecialties).values({
+        tenantId,
+        practitionerId: clinic.practitionerId,
+        specialtyId: specialty?.id ?? '',
+        position: 1,
+      });
+      const jpeg = Buffer.from('synthetic photo bytes');
+      await tx.insert(practitionerPhotos).values({
+        tenantId,
+        practitionerId: clinic.practitionerId,
+        contentType: 'image/jpeg',
+        bytes: jpeg,
+        byteSize: jpeg.length,
+        width: 256,
+        height: 256,
+        sha256: 'c'.repeat(64),
+      });
+    });
+  }
+
+  beforeAll(async () => {
+    c = await createClinic();
+    d = await createClinic();
+    await fill(c);
+    await fill(d);
+  });
+
+  it('shows each tenant its own rows of every table, never the other’s', async () => {
+    for (const table of tenantTables) {
+      for (const [mine, theirs] of [
+        [c, d],
+        [d, c],
+      ] as const) {
+        const rows = await withTenant(app, mine.tenantId, (tx) =>
+          tx
+            .select({ tenantId: table.tenantId })
+            .from(table)
+            .where(inArray(table.tenantId, [c.tenantId, d.tenantId])),
+        );
+        expect(rows.length, getTableName(table)).toBeGreaterThan(0);
+        expect(rows.map((row) => row.tenantId)).not.toContain(theirs.tenantId);
+      }
+    }
+  });
+
+  it('updates none of the other tenant’s rows, and never moves a row to it', async () => {
+    for (const table of tenantTables) {
+      const name = getTableName(table);
+      const touched = await withTenant(app, c.tenantId, (tx) =>
+        tx
+          .update(table)
+          .set({ updatedAt: new Date() })
+          .where(eq(table.tenantId, d.tenantId))
+          .returning({ tenantId: table.tenantId }),
+      );
+      expect(touched, name).toEqual([]);
+      const moved = withTenant(app, c.tenantId, (tx) =>
+        tx.update(table).set({ tenantId: d.tenantId }).where(eq(table.tenantId, c.tenantId)),
+      );
+      expect(await refusal(moved), name).toMatch(RLS_REFUSAL);
+    }
+  });
+
+  it('inserts no row for the other tenant (WITH CHECK)', async () => {
+    for (const table of tenantTables) {
+      const [theirs] = await withTenant(app, d.tenantId, (tx) =>
+        tx.select().from(table).where(eq(table.tenantId, d.tenantId)).limit(1),
+      );
+      expect(theirs, getTableName(table)).toBeDefined();
+      const copy = withTenant(app, c.tenantId, (tx) =>
+        tx.insert(table).values({ ...theirs, id: uuidv7() } as never),
+      );
+      expect(await refusal(copy), getTableName(table)).toMatch(RLS_REFUSAL);
+    }
+  });
+});
+
+describe('used_tokens', () => {
+  const used = (kind: string, tokenId: string) => ({
+    kind,
+    tokenId,
+    expiresAt: new Date(Date.now() + 600_000),
+  });
+
+  it('records a token once per kind, and only the kinds of the spec', async () => {
+    await app.insert(usedTokens).values(used('ticket', 'synthetic-jti'));
+    expect(await refusal(app.insert(usedTokens).values(used('ticket', 'synthetic-jti')))).toMatch(
+      /used_tokens_kind_token_id_unique/,
+    );
+    await app.insert(usedTokens).values(used('proof_of_work', 'synthetic-jti'));
+    expect(await refusal(app.insert(usedTokens).values(used('otp', 'synthetic-id')))).toMatch(
+      /used_tokens_kind/,
+    );
+  });
+
+  it('is append-only: the app role may not update or delete a use', async () => {
+    expect(await refusal(app.update(usedTokens).set({ expiresAt: new Date() }))).toMatch(
+      /permission denied/,
+    );
+    expect(await refusal(app.delete(usedTokens))).toMatch(/permission denied/);
   });
 });

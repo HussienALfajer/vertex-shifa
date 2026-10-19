@@ -362,3 +362,29 @@ export const platformSessions = pgTable(
     index('platform_sessions_user_ended_idx').on(t.platformUserId, t.endedAt),
   ],
 );
+
+/**
+ * Single-use tokens that were used (spec S02): sign-in tickets (`ticket`), console sign-in step
+ * tickets (`console_step`) and proof-of-work challenges (`proof_of_work`). A token is used by
+ * inserting its id, in the transaction of the step it authorizes, so the use survives a restart,
+ * commits or rolls back with that step, and wins once under concurrent requests (the unique key).
+ * Random ids and an expiry only, nothing personal. Kept, not purged: a few rows per sign-in, and
+ * retention waits for Q2 (`docs/architecture.md`).
+ */
+export const usedTokens = pgTable(
+  'used_tokens',
+  {
+    id: id(),
+    kind: text().notNull(),
+    /** The ticket's `jti` or the challenge's id. */
+    tokenId: text().notNull(),
+    /** When the token expires; past it the row only records a use. */
+    expiresAt: timestamptz().notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    idIsUuidV7('used_tokens', t.id),
+    check('used_tokens_kind', sql`${t.kind} in ('ticket', 'console_step', 'proof_of_work')`),
+    unique('used_tokens_kind_token_id_unique').on(t.kind, t.tokenId),
+  ],
+);

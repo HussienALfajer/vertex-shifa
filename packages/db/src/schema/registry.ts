@@ -31,6 +31,7 @@ export const tableRegistry = {
   platform_users: { module: 'identity', scope: 'platform', kind: 'business' },
   platform_user_recovery_codes: { module: 'identity', scope: 'platform', kind: 'business' },
   platform_sessions: { module: 'identity', scope: 'platform', kind: 'business' },
+  used_tokens: { module: 'identity', scope: 'platform', kind: 'append-only' },
   account_tenant_links: { module: 'access', scope: 'platform', kind: 'business' },
   staff_memberships: { module: 'access', scope: 'tenant', kind: 'business' },
   staff_membership_facilities: { module: 'access', scope: 'tenant', kind: 'business' },

@@ -119,15 +119,15 @@ export function effectivePermissions(
 
 /**
  * Refuses adjustments outside the limits (spec S02 rule 6) with `PERMISSION_NOT_GRANTABLE`: a grant
- * the member's roles may not hold, or the revocation of an owner's locked permission. Run on every
- * write of roles or adjustments.
+ * or a revocation of a permission the member's roles may not hold, or the revocation of an owner's
+ * locked permission. Run on every write of roles or adjustments.
  */
 export function assertAdjustmentsAllowed(
   memberRoles: readonly Role[],
   granted: readonly PermissionKey[],
   revoked: readonly PermissionKey[],
 ): void {
-  for (const permission of granted) {
+  for (const permission of [...granted, ...revoked]) {
     if (!withinLimit(permission, memberRoles)) {
       throw new DomainError('PERMISSION_NOT_GRANTABLE', `${permission} is outside the limits`);
     }

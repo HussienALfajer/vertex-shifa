@@ -177,6 +177,19 @@ describe('assertAdjustmentsAllowed', () => {
     );
   });
 
+  it('refuses a revocation outside the limits', () => {
+    expect(refusal(() => assertAdjustmentsAllowed(['reception'], [], ['staff.manage']))).toBe(
+      'PERMISSION_NOT_GRANTABLE',
+    );
+    expect(refusal(() => assertAdjustmentsAllowed(['nurse'], [], ['tenant.manage']))).toBe(
+      'PERMISSION_NOT_GRANTABLE',
+    );
+    expect(
+      refusal(() => assertAdjustmentsAllowed(['owner', 'nurse'], [], ['practitioner.edit_own'])),
+    ).toBe('PERMISSION_NOT_GRANTABLE');
+    expect(() => assertAdjustmentsAllowed(['doctor'], [], ['practitioner.edit_own'])).not.toThrow();
+  });
+
   it('refuses revoking an owner’s locked permissions', () => {
     for (const permission of [
       'tenant.read',

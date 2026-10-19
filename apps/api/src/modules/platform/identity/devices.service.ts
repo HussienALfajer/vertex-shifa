@@ -120,7 +120,7 @@ export class DevicesService implements FacilityDevices {
           throw new DomainError('TENANT_CLOSED', 'The clinic is closed');
         }
         await this.assertBranchChoice(tx, member, tenant.status as TenantStatus, input.facilityId);
-        this.tickets.consume(ticket);
+        await this.tickets.consume(tx, ticket);
         const [device] = await tx
           .insert(devices)
           .values({
@@ -272,7 +272,7 @@ export class DevicesService implements FacilityDevices {
         if (input.userPublicKey === row.publicKey) {
           throw new DomainError('VALIDATION_FAILED', 'Invalid fields: userPublicKey');
         }
-        this.tickets.consume(ticket);
+        await this.tickets.consume(tx, ticket);
         const [previous] = await tx
           .update(deviceEnrollments)
           .set({ revokedAt: now, revokeReason: 'pin_forgotten', updatedAt: now })

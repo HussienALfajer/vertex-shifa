@@ -105,7 +105,7 @@ export class AuthService {
    */
   async signIn(input: SignIn, address: string, deviceToken?: string): Promise<SignInResult> {
     this.perAddress.take(this.hashes.hash('address', address));
-    this.pow.verify(input.proofOfWork);
+    await this.pow.verify(input.proofOfWork);
     const now = new Date();
     const [account] = await this.db.select().from(accounts).where(eq(accounts.phone, input.phone));
     if (!account?.passwordHash) {
@@ -140,7 +140,7 @@ export class AuthService {
    */
   async requestOtp(input: OtpRequest, address: string): Promise<OtpChallenge> {
     this.perAddress.take(this.hashes.hash('address', address));
-    this.pow.verify(input.proofOfWork);
+    await this.pow.verify(input.proofOfWork);
     const now = new Date();
     const [account] = await this.db.select().from(accounts).where(eq(accounts.phone, input.phone));
     const eligible =
@@ -231,11 +231,23 @@ export class AuthService {
     if (!allowed) throw new DomainError('TICKET_INVALID', 'No password may be set now');
     const nameAr = input.name ?? account.nameAr;
     if (!nameAr) throw new DomainError('VALIDATION_FAILED', 'Invalid fields: name');
-    this.tickets.consume(ticket);
     const passwordHash = await hashPassword(input.password);
-    // One transaction: the password, its audit, the end of the account's sessions in every clinic
-    // after a reset (rule 16) and the acceptance of its invitations commit together.
+    // One transaction: the ticket's use, the password, its audit, the end of the account's sessions
+    // in every clinic after a reset (rule 16) and the acceptance of its invitations commit together.
     await this.db.transaction(async (tx) => {
+      // Locked and rechecked: another ticket used meanwhile (two OTPs of one reset, two first
+      // sign-ins) already set the password and ended the authorization, so this one may not.
+      const [locked] = await tx
+        .select()
+        .from(accounts)
+        .where(eq(accounts.id, account.id))
+        .for('update');
+      const stillAllowed = reset
+        ? locked?.passwordHash !== null &&
+          (locked?.passwordResetAuthorizedUntil ?? new Date(0)) > now
+        : locked?.passwordHash === null;
+      if (!stillAllowed) throw new DomainError('TICKET_INVALID', 'No password may be set now');
+      await this.tickets.consume(tx, ticket);
       await tx
         .update(accounts)
         .set({

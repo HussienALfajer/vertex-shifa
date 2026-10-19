@@ -84,6 +84,18 @@ export class SessionsService implements SessionVerifier {
     this.nonces.take(input.nonce, `session:${device.tenantId}:${device.deviceId}`);
     const now = new Date();
     return withTenant(this.db, device.tenantId, async (tx) => {
+      // Locked in the writers' order, the tenant then the device, so a deactivation, a scope
+      // change, a device revocation or a member's removal meanwhile either waits for this session
+      // and ends it, or commits first and is seen here (rules 8, 29).
+      const tenant = await readTenant(tx, device.tenantId, { lock: 'share' });
+      const [current] = await tx
+        .select({ status: devices.status })
+        .from(devices)
+        .where(eq(devices.id, device.deviceId))
+        .for('share');
+      if (current?.status !== 'active') {
+        throw new DomainError('DEVICE_REVOKED', 'The device was revoked');
+      }
       const [enrollment] = await tx
         .select()
         .from(deviceEnrollments)
@@ -99,7 +111,6 @@ export class SessionsService implements SessionVerifier {
         throw new DomainError('SIGNATURE_INVALID', 'The user signature does not verify');
       }
       if (enrollment.revokedAt) throw new DomainError('ENROLLMENT_REVOKED', 'Enrollment revoked');
-      const tenant = await readTenant(tx, device.tenantId);
       const member = await readMembership(tx, { id: enrollment.membershipId });
       assertMemberMayUse(member, tenant, device.facilityId);
       const session = await this.issuer.open(
@@ -268,7 +279,7 @@ export class SessionsService implements SessionVerifier {
     };
   }
 
-  ticket(ticket: string, purpose: TicketPurpose): Ticket {
+  ticket(ticket: string, purpose: TicketPurpose): Promise<Ticket> {
     return this.tickets.verify(ticket, purpose);
   }
 }

@@ -131,28 +131,38 @@ export class ConsoleSessions {
       .from(platformSessions)
       .innerJoin(platformUsers, eq(platformUsers.id, platformSessions.platformUserId))
       .where(eq(platformSessions.tokenHash, this.hash(token)));
+    // An unknown token names no one: no audit row (owner, 2026-10-19); the rate limits hold it.
     if (!row) throw new DomainError('UNAUTHENTICATED', 'Unknown console session');
     const { session } = row;
-    if (session.endedAt) throw ended();
-    const end = async (reason: ConsoleSessionEndReason) => {
-      await endConsoleSessions(this.db, eq(platformSessions.id, session.id), reason, now);
-      return ended();
-    };
-    if (session.expiresAt <= now) throw await end('expired');
-    if (
-      now.getTime() - session.lastSeenAt.getTime() >=
-      consolePolicy.sessionIdleMinutes * MINUTE_MS
-    ) {
-      throw await end('idle');
-    }
-    // Disabling and resetting end the user's sessions; this holds if one is ever missed.
-    if (row.status !== 'active') throw await end('user_disabled');
     const actor: PlatformActor = {
       kind: 'platform',
       userId: session.platformUserId,
       sessionId: session.id,
       role: row.role as PlatformRole,
     };
+    // A known session that is over is still audited (rule 41), with its end when this request
+    // ends it, in one transaction.
+    const refuse = async (reason: ConsoleSessionEndReason | null) => {
+      await this.db.transaction(async (tx) => {
+        if (reason) await endConsoleSessions(tx, eq(platformSessions.id, session.id), reason, now);
+        await recordPlatformAudit(tx, {
+          actor,
+          action: 'console.request',
+          ...describe(actor, request),
+        });
+      });
+      return ended();
+    };
+    if (session.endedAt) throw await refuse(null);
+    if (session.expiresAt <= now) throw await refuse('expired');
+    if (
+      now.getTime() - session.lastSeenAt.getTime() >=
+      consolePolicy.sessionIdleMinutes * MINUTE_MS
+    ) {
+      throw await refuse('idle');
+    }
+    // Disabling and resetting end the user's sessions; this holds if one is ever missed.
+    if (row.status !== 'active') throw await refuse('user_disabled');
     await this.db.transaction(async (tx) => {
       if (check.fromConsole) {
         await tx

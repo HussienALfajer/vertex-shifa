@@ -10,7 +10,7 @@ import {
   staffMemberships,
   withTenant,
 } from '@vertex-shifa/db';
-import { and, eq, ne } from 'drizzle-orm';
+import { and, eq, gte, ne } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runPlatformUserCommand } from '../src/cli/platform-user-commands.js';
@@ -198,7 +198,8 @@ describe('sign-in (rule 37)', () => {
     expect(locked.body.code).toBe('RATE_LIMITED');
     const actions = (await platformAuditOf(user.id)).map((entry) => entry.action);
     expect(actions).toContain('platform_user.sign_in_locked');
-    expect(actions.filter((action) => action === 'platform_user.sign_in_failed')).toHaveLength(5);
+    // Five wrong passwords, and the attempt refused while locked (rule 41).
+    expect(actions.filter((action) => action === 'platform_user.sign_in_failed')).toHaveLength(6);
   });
 });
 
@@ -434,6 +435,146 @@ describe('the platform audit (rule 41)', () => {
         requestRoute: 'POST /api/console/tenants/:id/status',
       },
     ]);
+  });
+});
+
+describe('the platform audit of refused and failed attempts (rule 41, owner 2026-10-19)', () => {
+  /** Platform audit rows of `action` (and `route`) written since `since`, by anyone. */
+  async function rowsSince(since: Date, action: string, route?: string) {
+    return staff.db
+      .select({ actorId: platformAuditEntries.actorId })
+      .from(platformAuditEntries)
+      .where(
+        and(
+          eq(platformAuditEntries.action, action),
+          gte(platformAuditEntries.createdAt, since),
+          route ? eq(platformAuditEntries.requestRoute, route) : undefined,
+        ),
+      );
+  }
+
+  it('records a request of a known session that is over: signed out, idle, expired, user disabled', async () => {
+    const user = await client.setUp('support');
+    const me = (session: ConsoleUser) => client.call('get', '/api/console/me', session);
+    const signedOut = await client.signInAgain(user);
+    const signedOutId = await sessionIdOf(signedOut);
+    await client.call('post', '/api/console/auth/sign-out', signedOut).expect(201);
+    const idle = await client.signInAgain(user);
+    const idleId = await sessionIdOf(idle);
+    await staff.db
+      .update(platformSessions)
+      .set({ lastSeenAt: new Date(Date.now() - 31 * 60_000) })
+      .where(eq(platformSessions.id, idleId));
+    const expired = await client.signInAgain(user);
+    const expiredId = await sessionIdOf(expired);
+    await staff.db
+      .update(platformSessions)
+      .set({ expiresAt: new Date(Date.now() - 1000) })
+      .where(eq(platformSessions.id, expiredId));
+    // Disabled without its sessions ended (a missed end): the request ends and records it.
+    const disabled = await client.signInAgain(user);
+    const disabledId = await sessionIdOf(disabled);
+    const before = (await platformAuditOf(user.id)).length;
+    for (const session of [signedOut, idle, expired]) {
+      expect((await me(session)).body.code).toBe('SESSION_ENDED');
+    }
+    await staff.db
+      .update(platformUsers)
+      .set({ status: 'disabled' })
+      .where(eq(platformUsers.id, user.id));
+    expect((await me(disabled)).body.code).toBe('SESSION_ENDED');
+    const rows = (await platformAuditOf(user.id)).slice(before);
+    expect(rows).toEqual(
+      [signedOutId, idleId, expiredId, disabledId].map(() => ({
+        action: 'console.request',
+        entityType: 'platform_user',
+        entityId: user.id,
+        subjectTenantId: null,
+        requestRoute: 'GET /api/console/me',
+      })),
+    );
+    const ends = await staff.db
+      .select({ id: platformSessions.id, endReason: platformSessions.endReason })
+      .from(platformSessions)
+      .where(eq(platformSessions.platformUserId, user.id));
+    expect(ends).toEqual(
+      expect.arrayContaining([
+        { id: signedOutId, endReason: 'signed_out' },
+        { id: idleId, endReason: 'idle' },
+        { id: expiredId, endReason: 'expired' },
+        { id: disabledId, endReason: 'user_disabled' },
+      ]),
+    );
+  });
+
+  it('records nothing for a request without a session token or with an unknown one', async () => {
+    const since = new Date();
+    const route = '/api/console/platform-users';
+    expect((await client.call('get', route)).body.code).toBe('UNAUTHENTICATED');
+    const unknown = await client
+      .call('get', route)
+      .set('cookie', '__Secure-vertex-console=unknown-synthetic-token');
+    expect(unknown.body.code).toBe('UNAUTHENTICATED');
+    expect(await rowsSince(since, 'console.request', `GET ${route}`)).toEqual([]);
+  });
+
+  it('records failed sign-ins of existing users, disabled or locked, never of unknown phones', async () => {
+    const since = new Date();
+    expect((await client.signIn(newPhone(), { password: CONSOLE_PASSWORD })).body.code).toBe(
+      'INVALID_CREDENTIALS',
+    );
+    expect(await rowsSince(since, 'platform_user.sign_in_failed')).toEqual([]);
+
+    const disabled = await client.setUp('support');
+    await staff.db
+      .update(platformUsers)
+      .set({ status: 'disabled' })
+      .where(eq(platformUsers.id, disabled.id));
+    expect((await client.signIn(disabled.phone, { password: CONSOLE_PASSWORD })).body.code).toBe(
+      'INVALID_CREDENTIALS',
+    );
+    expect((await platformAuditOf(disabled.id)).at(-1)?.action).toBe(
+      'platform_user.sign_in_failed',
+    );
+
+    // Disabled between the password and the TOTP step.
+    const later = await client.setUp('support');
+    const beforeDisable = await client.signIn(later.phone, { password: CONSOLE_PASSWORD });
+    await staff.db
+      .update(platformUsers)
+      .set({ status: 'disabled' })
+      .where(eq(platformUsers.id, later.id));
+    const afterDisable = await client
+      .call('post', '/api/console/auth/totp')
+      .send({ ticket: beforeDisable.body.ticket, code: later.recoveryCodes[0] });
+    expect(afterDisable.body.code).toBe('TICKET_INVALID');
+    expect((await platformAuditOf(later.id)).at(-1)?.action).toBe('platform_user.sign_in_failed');
+
+    // Locked between the password and the TOTP step, or between the setup code and setup.
+    const lock = (id: string) =>
+      staff.db
+        .update(platformUsers)
+        .set({ signInLockedUntil: new Date(Date.now() + 15 * 60_000) })
+        .where(eq(platformUsers.id, id));
+    const user = await client.setUp('support');
+    const signedIn = await client.signIn(user.phone, { password: CONSOLE_PASSWORD });
+    await lock(user.id);
+    const totp = await client
+      .call('post', '/api/console/auth/totp')
+      .send({ ticket: signedIn.body.ticket, code: await client.code(user) });
+    expect(totp.body.code).toBe('RATE_LIMITED');
+    expect((await platformAuditOf(user.id)).at(-1)?.action).toBe('platform_user.sign_in_failed');
+
+    const created = await client.create('support');
+    const setupStep = await client.signIn(created.phone, { setupCode: created.setupCode });
+    await lock(created.id);
+    const setup = await client.call('post', '/api/console/auth/setup').send({
+      ticket: setupStep.body.ticket,
+      password: CONSOLE_PASSWORD,
+      code: totpCode(setupStep.body.totpSecret, totpStep(Date.now())),
+    });
+    expect(setup.body.code).toBe('RATE_LIMITED');
+    expect((await platformAuditOf(created.id)).at(-1)?.action).toBe('platform_user.sign_in_failed');
   });
 });
 

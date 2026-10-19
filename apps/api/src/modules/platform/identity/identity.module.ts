@@ -78,14 +78,14 @@ import { TokenSigner } from './tokens.js';
     },
     {
       provide: ProofOfWork,
-      inject: [KeyedHash, CONFIG],
-      useFactory: (hashes: KeyedHash, config: Config) =>
-        new ProofOfWork(hashes, config.identity.powDifficulty),
+      inject: [DATABASE, KeyedHash, CONFIG],
+      useFactory: (db: Database, hashes: KeyedHash, config: Config) =>
+        new ProofOfWork(db, hashes, config.identity.powDifficulty),
     },
     {
       provide: Tickets,
-      inject: [TokenSigner],
-      useFactory: (tokens: TokenSigner) => new Tickets(tokens),
+      inject: [DATABASE, TokenSigner],
+      useFactory: (db: Database, tokens: TokenSigner) => new Tickets(db, tokens),
     },
     {
       provide: SessionIssuer,

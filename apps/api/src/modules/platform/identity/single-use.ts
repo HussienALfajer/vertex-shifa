@@ -1,40 +1,44 @@
 import { DomainError } from '@vertex-shifa/contracts';
+import { type Database, type Transaction, usedTokens } from '@vertex-shifa/db';
+import { and, eq } from 'drizzle-orm';
 import { randomToken } from './secrets.js';
 
+export type TokenKind = 'ticket' | 'console_step' | 'proof_of_work';
+
 /**
- * Ids that may be used once until they expire (tickets, proof-of-work challenges), in the memory
- * of this process: enough while the API runs as one process (ADR 0017), like `RateLimiter`.
- * Expired ids are forgotten, since their tokens are refused anyway.
+ * Uses up a single-use token (a ticket, a proof-of-work challenge) in `db`, which is the
+ * transaction of the step the token authorizes, so the use commits or rolls back with that step
+ * and survives a restart. False when it was already used: a concurrent use of the same token waits
+ * here for the other transaction and loses once that one commits (the unique key of `used_tokens`).
  */
-export class SingleUse {
-  private readonly used = new Map<string, number>();
-  private lastSweep = 0;
+export async function useToken(
+  db: Database | Transaction,
+  kind: TokenKind,
+  tokenId: string,
+  expiresAt: Date,
+): Promise<boolean> {
+  const inserted = await db
+    .insert(usedTokens)
+    .values({ kind, tokenId, expiresAt })
+    .onConflictDoNothing({ target: [usedTokens.kind, usedTokens.tokenId] })
+    .returning({ id: usedTokens.id });
+  return inserted.length === 1;
+}
 
-  constructor(private readonly now: () => number = Date.now) {}
-
-  /** Marks `id` used; false when it already was. */
-  use(id: string, expiresAt: number): boolean {
-    this.sweep();
-    if (this.used.has(id)) return false;
-    this.used.set(id, expiresAt);
-    return true;
-  }
-
-  isUsed(id: string): boolean {
-    return this.used.has(id);
-  }
-
-  private sweep() {
-    const now = this.now();
-    if (now - this.lastSweep < 60_000) return;
-    this.lastSweep = now;
-    for (const [id, expiresAt] of this.used) if (expiresAt <= now) this.used.delete(id);
-  }
+/** Whether the token was used, by a committed step: an early refusal; `useToken` decides. */
+export async function isTokenUsed(db: Database, kind: TokenKind, tokenId: string) {
+  const [row] = await db
+    .select({ id: usedTokens.id })
+    .from(usedTokens)
+    .where(and(eq(usedTokens.kind, kind), eq(usedTokens.tokenId, tokenId)));
+  return row !== undefined;
 }
 
 /**
  * Server nonces a device or a member signs (spec S02 rule 23): single use, valid 60 seconds, bound
- * to what they were issued for (`device:<tenant>:<device>`), in this process's memory.
+ * to what they were issued for (`device:<tenant>:<device>`), in this process's memory. Unlike
+ * tokens, nonces fail safe on a restart: the server forgets the ones it issued, so it refuses them
+ * all, and the device asks for a new one.
  */
 export class Nonces {
   private readonly pending = new Map<string, { binding: string; expiresAt: number }>();
