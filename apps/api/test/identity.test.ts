@@ -82,7 +82,8 @@ describe('first sign-in, registration and sessions', () => {
     expect(current.body.device.facilityId).toBe(branchId);
     expect(current.body.facility).toEqual({ id: branchId, name: 'الفرع الرئيسي' });
     expect(current.body.members).toEqual([
-      expect.objectContaining({ membershipId: me.body.membershipId, roles: ['owner'] }),
+      // The account's phone now, which re-enabling a PIN signs in with (edge case 13).
+      expect.objectContaining({ membershipId: me.body.membershipId, phone, roles: ['owner'] }),
     ]);
     expect(current.body.tenant.idleLockMinutes).toBe(15);
 

@@ -96,6 +96,13 @@ export type PreparedKeys = {
   userPublicKey: string;
 };
 
+/**
+ * A registration or an enrollment the API accepted. `access` is null when someone locked,
+ * unlocked or switched clinic while it was on its way: the member is stored, and their PIN
+ * unlocks them (rules 25 and 26).
+ */
+export type EnrolledResult = { view: InstallationView; access: AccessGrant | null };
+
 /** Every call the renderer can make: input and output. */
 export type DeviceCalls = {
   view: { input: null; output: InstallationView };
@@ -124,12 +131,12 @@ export type DeviceCalls = {
       memberName: string;
       roles: Role[];
     };
-    output: { view: InstallationView; access: AccessGrant };
+    output: EnrolledResult;
   };
   /** Rules 20 and 22: the main process enrolls the member on the prepared registration. */
   enroll: {
     input: { pendingId: string; ticket: string; memberName: string };
-    output: { view: InstallationView; access: AccessGrant };
+    output: EnrolledResult;
   };
   discardKeys: { input: { pendingId: string }; output: null };
   /** The device key's signature for a device token (`deviceTokenMessage`). */
@@ -169,10 +176,13 @@ export type DeviceCalls = {
     input: { deviceId: string; enrollmentId: string; currentPin: string; newPin: string };
     output: ChangePinResult;
   };
-  removeMember: { input: { deviceId: string; enrollmentId: string }; output: InstallationView };
-  /** Rule 29: deletes the registration's keys and data; the device key stays until confirmed. */
-  wipe: { input: { deviceId: string }; output: InstallationView };
-  wipeConfirmed: { input: { deviceId: string }; output: InstallationView };
+  /**
+   * Rule 29: the main process tells the server a wiped registration's data is gone and then
+   * forgets its device key. Only the main process wipes, on the API's `DEVICE_REVOKED` to its own
+   * request (`refreshDevice`, a session), and only it deletes a member's key, on the API's
+   * `ENROLLMENT_REVOKED` or a member the API no longer lists.
+   */
+  confirmWipe: { input: { deviceId: string }; output: InstallationView };
   dismissWiped: { input: { deviceId: string }; output: InstallationView };
 };
 

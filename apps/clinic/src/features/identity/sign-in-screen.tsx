@@ -313,6 +313,11 @@ function CredentialsStep({
           deviceId: registration.deviceId,
           enrollmentId: member.enrollmentId,
           password,
+        }).catch(async (error: unknown) => {
+          // The main process read the device's members first: one the server no longer lists
+          // lost their key here, and the lock screen shows that.
+          remember(await device('view', null));
+          throw error;
         });
         if (result.result === 'otp') {
           onOtp(result.challengeId, member.phone);

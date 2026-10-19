@@ -81,6 +81,7 @@ export function testServer(now: () => number) {
     tenantId: string;
     publicKey: string;
     status: 'active' | 'revoked';
+    wipedAt?: string;
   }[] = [];
   const enrollments: TestEnrollment[] = [];
   const sessions: {
@@ -185,6 +186,7 @@ export function testServer(now: () => number) {
       case 'POST /api/devices/token': {
         const found = devices.find((item) => item.id === body.deviceId);
         if (!found) return refuse('DEVICE_UNKNOWN');
+        if (found.wipedAt) return refuse('DEVICE_REVOKED');
         const message = deviceTokenMessage(body.nonce ?? '', found.id);
         if (
           !takeNonce(body.nonce ?? '') ||
@@ -198,6 +200,11 @@ export function testServer(now: () => number) {
       }
     }
     if (!device) return refuse('UNAUTHENTICATED');
+    if (request.method === 'POST' && request.path === '/api/devices/current/wiped') {
+      // A revoked device confirms its wipe once; after that it gets no device token.
+      if (device.status === 'revoked') device.wipedAt ??= at();
+      return ok({ wipedAt: device.wipedAt ?? null });
+    }
     if (device.status !== 'active') return refuse('DEVICE_REVOKED');
     switch (`${request.method} ${request.path}`) {
       case 'GET /api/devices/current':
@@ -255,6 +262,7 @@ export function testServer(now: () => number) {
               enrollmentId: item.id,
               membershipId: item.membershipId,
               name: account.name,
+              phone: account.phone,
               roles: account.roles,
               lastConfirmedAt: item.lastConfirmedAt,
             },

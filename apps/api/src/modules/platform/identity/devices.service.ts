@@ -200,15 +200,15 @@ export class DevicesService implements FacilityDevices {
         enrollments.map((enrollment) => enrollment.membershipId),
       );
       const accountIds = [...members.values()].map((member) => member.accountId);
-      const names = new Map(
+      const accountsById = new Map(
         accountIds.length === 0
           ? []
           : (
               await tx
-                .select({ id: accounts.id, nameAr: accounts.nameAr })
+                .select({ id: accounts.id, nameAr: accounts.nameAr, phone: accounts.phone })
                 .from(accounts)
                 .where(inArray(accounts.id, accountIds))
-            ).map((account) => [account.id, account.nameAr]),
+            ).map((account) => [account.id, account]),
       );
       return {
         device: toDevice(row),
@@ -222,12 +222,14 @@ export class DevicesService implements FacilityDevices {
         facility,
         members: enrollments.flatMap((enrollment) => {
           const member = members.get(enrollment.membershipId);
-          if (!member) return [];
+          const account = member && accountsById.get(member.accountId);
+          if (!member || !account) return [];
           return [
             {
               enrollmentId: enrollment.id,
               membershipId: enrollment.membershipId,
-              name: names.get(member.accountId) ?? member.invitedName,
+              name: account.nameAr ?? member.invitedName,
+              phone: account.phone,
               roles: member.roles,
               lastConfirmedAt: enrollment.lastConfirmedAt.toISOString(),
             },
