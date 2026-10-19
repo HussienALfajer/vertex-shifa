@@ -13,6 +13,9 @@ node_modules/
 *.keystore
 google-services.json
 GoogleService-Info.plist
+.secrets/
+*service-account*.json
+*-firebase-adminsdk-*.json
 
 # Build output and caches
 dist/

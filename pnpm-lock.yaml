@@ -162,6 +162,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  decode-uri-component@0.2.2: 74aa954f9af7661358af3a4ee2384541828f2a8d2199ea89d318de15323ab092
+
 importers:
 
   .:
@@ -9677,7 +9680,7 @@ snapshots:
 
   decimal.js@10.6.0: {}
 
-  decode-uri-component@0.2.2: {}
+  decode-uri-component@0.2.2(patch_hash=74aa954f9af7661358af3a4ee2384541828f2a8d2199ea89d318de15323ab092): {}
 
   deepmerge@4.3.1: {}
 
@@ -11525,7 +11528,7 @@ snapshots:
 
   query-string@7.1.3:
     dependencies:
-      decode-uri-component: 0.2.2
+      decode-uri-component: 0.2.2(patch_hash=74aa954f9af7661358af3a4ee2384541828f2a8d2199ea89d318de15323ab092)
       filter-obj: 1.1.0
       split-on-first: 1.1.0
       strict-uri-encode: 2.0.0

@@ -5,10 +5,11 @@ import { fileURLToPath } from 'node:url';
 
 // Serves the web export (dist/) for the E2E tests only: the app ships to the stores, never to a web
 // host (ADR 0003). `expo serve` answers an unknown path with a bare "Not Found"; this serves the
-// exported +not-found.html with a 404, as the router's not-found route expects.
+// exported +not-found.html with a 404, as the router's not-found route expects. It listens on the
+// port playwright.config.ts chose for this run.
 
 const dist = fileURLToPath(new URL('../dist/', import.meta.url));
-const port = 4176;
+const port = Number(process.argv[2]);
 const types: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',

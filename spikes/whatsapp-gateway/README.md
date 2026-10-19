@@ -48,10 +48,10 @@ node push-send.mjs expo "ExponentPushToken[...]"
 ```
 
 ```bash
-node push-send.mjs fcm <fcm-device-token> <service-account.json>
+node push-send.mjs fcm <fcm-device-token> .secrets/service-account.json
 ```
 
-Firebase and service-account files are git-ignored (`push-app/.gitignore`). Expo sends to Android only after the FCM V1 key is uploaded with `eas credentials -p android`.
+Keep the service-account key in `.secrets/` (git-ignored). The repository's `.gitignore` also ignores `google-services.json`, `.secrets/`, `*service-account*.json` and Firebase's `*-firebase-adminsdk-*.json` anywhere, and `push-app/.gitignore` repeats its own. Expo sends to Android only after the FCM V1 key is uploaded with `eas credentials -p android`.
 
 ## Layout
 

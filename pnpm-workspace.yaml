@@ -16,12 +16,23 @@ allowBuilds:
   # without launching it and skips the download (ELECTRON_SKIP_BINARY_DOWNLOAD).
   electron: true
 
-# Advisories `pnpm audit --prod` (CI) accepts, each with no patched version and reachable only through
-# build tools that Expo and React Native declare as runtime dependencies; none reaches an app bundle
-# or a server. Remove an entry when a patched version ships.
+# Advisories `pnpm audit --prod` (CI) accepts. Either no patched version exists and the package is
+# reachable only through build tools that Expo and React Native declare as runtime dependencies (it
+# reaches no app bundle or server): remove the entry when a patched version ships. Or the fix is
+# applied in place by `patches/` (`patchedDependencies` below): the entry names the patch and the
+# version it covers, and a test fails if another, unpatched version enters the tree.
 auditConfig:
   ignoreGhsas:
     # node-forge signature verification: @expo/cli (developer and EAS machines, code signing of updates).
     - GHSA-86w9-cpqp-85rv
     # braces stack exhaustion on nested patterns: Metro's file map (bundling only; patterns are ours).
     - GHSA-vfj7-8cjw-p6xm
+    # decode-uri-component exponential decoding: expo-router > query-string@7 (the patient app's
+    # links). Its fix (0.5.0) is ESM-only, which query-string@7's `require` cannot load, so
+    # patches/decode-uri-component@0.2.2.patch carries the fix into 0.2.2, the only version allowed
+    # in the tree (apps/patient/test/query-decoding.test.ts).
+    # Remove both when expo-router no longer depends on query-string@7 (Expo SDK 58).
+    - GHSA-vcc3-ghjq-m6fr
+
+patchedDependencies:
+  decode-uri-component@0.2.2: patches/decode-uri-component@0.2.2.patch
