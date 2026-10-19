@@ -27,6 +27,7 @@ import { QueryStates } from '../../components/query-states';
 import { api, unwrap } from '../../lib/api';
 import { device, deviceErrorCode, type MemberView, type RegistrationView } from '../../lib/device';
 import { useErrorText } from '../../lib/error-text';
+import { identityScope, withinScope } from '../../lib/identity-scope';
 import { useOnline } from '../../lib/online';
 import { meQuery } from '../../lib/staff-access';
 import { unlockedMember, useInstallation } from './installation';
@@ -200,7 +201,8 @@ function ChangePin({
         newPin: next,
       }),
     onSuccess: async (result) => {
-      remember(await device('view', null));
+      // A device call is never cut: what follows it stops with the member it was made for.
+      remember(await withinScope(identityScope(), device('view', null)));
       if (result.result === 'changed') {
         setCurrent('');
         setNext('');

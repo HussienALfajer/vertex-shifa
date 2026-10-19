@@ -1,13 +1,43 @@
 import { type ErrorCode, errorResponseSchema, errorStatus } from '@vertex-shifa/contracts';
-import createClient from 'openapi-fetch';
+import createClient, { type Client } from 'openapi-fetch';
 import type { paths } from './api-schema.gen';
+import { identityScope, withinScope } from './identity-scope';
 
 /**
- * The API client of the online-only screens (ADR 0020), typed from `apps/api/openapi.json`. The
- * staff session's access token is added to every request but the sign-in and device ones, which
- * carry their own headers (`authorizeRequests`).
+ * The API client of the identity itself (`features/identity/session.ts`), typed from
+ * `apps/api/openapi.json`: device tokens, sessions, refusals and wipes, which concern the
+ * registration or member they were made for whoever is unlocked when they answer. The staff
+ * session's access token is added to every request but the sign-in and device ones, which carry
+ * their own headers (`authorizeRequests`).
  */
-export const api = createClient<paths>({ baseUrl: import.meta.env.VITE_API_URL ?? '' });
+export const identityApi = createClient<paths>({ baseUrl: import.meta.env.VITE_API_URL ?? '' });
+
+type Method = 'GET' | 'PUT' | 'POST' | 'DELETE' | 'PATCH';
+type Send = (url: string, init?: { signal?: AbortSignal }) => Promise<unknown>;
+
+/** A method whose request belongs to the identity scope it was sent in (`identity-scope.ts`). */
+function scoped<M extends Method>(method: M): Client<paths>[M] {
+  const send = identityApi[method] as unknown as Send;
+  const call: Send = (url, init) => {
+    const scope = identityScope();
+    if (scope.member === null) return send(url, init);
+    return withinScope(scope, send(url, { ...init, signal: scope.signal }));
+  };
+  return call as unknown as Client<paths>[M];
+}
+
+/**
+ * The API client of the screens' server state (ADR 0020): a request sent for one member is
+ * cancelled when the identity changes, and its answer never settles for the next one, so the code
+ * that awaited it stops there (`identity-scope.ts`).
+ */
+export const api: Pick<Client<paths>, Method> = {
+  GET: scoped('GET'),
+  PUT: scoped('PUT'),
+  POST: scoped('POST'),
+  DELETE: scoped('DELETE'),
+  PATCH: scoped('PATCH'),
+};
 
 /** The headers of the device token and the sign-in ticket (spec S02). */
 export const DEVICE_TOKEN_HEADER = 'x-device-token';
@@ -58,10 +88,14 @@ const sessionRefusals = new Set<ErrorCode>([
   'BRANCH_NOT_IN_SCOPE',
 ]);
 
-/** Whether a request goes without the staff session: signing in, and the device's own routes. */
+/**
+ * Whether a request goes without the unlocked member's session: signing in, the device's own
+ * routes, and a request of the identity layer that carries the session it was made for.
+ */
 function withoutSession(request: Request): boolean {
   const { pathname } = new URL(request.url);
   return (
+    request.headers.has('authorization') ||
     pathname.startsWith('/api/auth/') ||
     pathname.startsWith('/api/devices/token') ||
     request.headers.has(DEVICE_TOKEN_HEADER) ||
@@ -88,11 +122,13 @@ export function authorizeRequests<Owner>(session: {
   refused: (code: ErrorCode, owner: Owner) => void;
 }): void {
   const owners = new WeakMap<Request, Owner>();
-  api.use({
+  identityApi.use({
     async onRequest({ request }) {
       if (withoutSession(request)) return request;
       try {
         const { token, owner } = await session.accessToken();
+        // The identity changed while the session was read: the token may be the next member's.
+        if (request.signal.aborted) return refusal('UNAUTHENTICATED');
         request.headers.set('authorization', `Bearer ${token}`);
         owners.set(request, owner);
         return request;
@@ -106,16 +142,17 @@ export function authorizeRequests<Owner>(session: {
       }
     },
     async onResponse({ request, response }) {
-      if (withoutSession(request) || response.headers.has(LOCAL_REFUSAL_HEADER)) return;
-      if (response.status !== 401 && response.status !== 403) return;
+      // Only the requests this middleware authorized: they carry the session it added by now.
       const owner = owners.get(request);
+      if (owner === undefined || response.headers.has(LOCAL_REFUSAL_HEADER)) return;
+      if (response.status !== 401 && response.status !== 403) return;
       const body = errorResponseSchema.safeParse(
         await response
           .clone()
           .json()
           .catch(() => null),
       );
-      if (owner !== undefined && body.success && sessionRefusals.has(body.data.code)) {
+      if (body.success && sessionRefusals.has(body.data.code)) {
         session.refused(body.data.code, owner);
       }
     },

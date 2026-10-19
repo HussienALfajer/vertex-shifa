@@ -22,6 +22,7 @@ import {
   type MockIdentity,
   ownerPassword,
   ownerPhone,
+  type Session,
   signInBeforehand,
 } from './mock-identity.js';
 import { staffRoutes } from './mock-staff.js';
@@ -263,6 +264,22 @@ export async function mockApi(
     if (state.tenant.status === 'suspended') return refuse(route, 'TENANT_SUSPENDED');
     if (state.tenant.status === 'closed') return refuse(route, 'TENANT_CLOSED');
   };
+  /** The session's clinic: another clinic registered on this computer is a tenant of its own. */
+  const tenantOf = (session: Session): Tenant => {
+    const tenantId = identity.accounts
+      .flatMap((account) => account.memberships)
+      .find((membership) => membership.id === session.membershipId)?.tenantId;
+    const other = identity.clinics.find((item) => item.tenantId === tenantId);
+    if (tenantId === state.tenant.id || !other) return state.tenant;
+    return tenant({
+      id: other.tenantId,
+      nameAr: other.nameAr,
+      nameLatin: other.nameLatin,
+      status: other.status,
+      onboardingCompletedAt: other.status === 'onboarding' ? null : '2026-10-17T09:00:00.000Z',
+      idleLockMinutes: other.idleLockMinutes,
+    });
+  };
   const touchTenant = () => {
     state.tenant = {
       ...state.tenant,
@@ -288,7 +305,8 @@ export async function mockApi(
     const staffAnswer = staff(request, path, method, session);
     if (staffAnswer) return staffAnswer(route);
 
-    if (path === '/api/tenant' && method === 'GET') return route.fulfill({ json: state.tenant });
+    if (path === '/api/tenant' && method === 'GET')
+      return route.fulfill({ json: tenantOf(session) });
 
     if (path === '/api/tenant/profile' && method === 'PATCH') {
       const parsed = updateTenantProfileSchema.safeParse(body());
