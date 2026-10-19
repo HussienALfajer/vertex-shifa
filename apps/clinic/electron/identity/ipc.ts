@@ -65,9 +65,7 @@ const inputs: { [M in DeviceMethod]: z.ZodType<DeviceCalls[M]['input']> } = {
     password: z.string().min(1).max(passwordPolicy.maxLength),
   }),
   changePin: z.object({ deviceId: id, enrollmentId: id, currentPin: pin, newPin: pin }),
-  removeMember: z.object({ deviceId: id, enrollmentId: id }),
-  wipe: z.object({ deviceId: id }),
-  wipeConfirmed: z.object({ deviceId: id }),
+  confirmWipe: z.object({ deviceId: id }),
   dismissWiped: z.object({ deviceId: id }),
 };
 

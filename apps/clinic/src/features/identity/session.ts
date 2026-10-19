@@ -1,14 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { deviceTokenTtlSeconds, type ErrorCode, staffSessionPolicy } from '@vertex-shifa/contracts';
 import type { SessionOwner } from '../../../electron/identity/bridge';
-import {
-  ApiError,
-  type ApiErrorCode,
-  authorizeRequests,
-  DEVICE_TOKEN_HEADER,
-  identityApi,
-  unwrap,
-} from '../../lib/api';
+import { ApiError, type ApiErrorCode, authorizeRequests, identityApi, unwrap } from '../../lib/api';
 import {
   type AccessGrant,
   device,
@@ -24,7 +17,7 @@ import { installationQuery, unlockedIdentity } from './installation';
 // it with the member's user key and refreshes it with the refresh token it keeps (ADR 0021), and
 // the renderer holds the access token only; refreshed before the access token expires, ended by
 // the lock; and what the device does when the API refuses it. Device tokens signed by the
-// registration's device key serve the sign-in and the wipe's confirmation here. The session lives
+// registration's device key serve the sign-in here. The session lives
 // in the main process, so a reload of the window keeps it. Every session
 // and every refusal belongs to the member it was made for (`SessionOwner`): an answer that comes
 // back after another member unlocked never lands on them.
@@ -86,17 +79,27 @@ export async function deviceToken(registration: Registration): Promise<string> {
 
 /**
  * The lock screen's data from the server (clinic, branch, members, last confirmations), read by
- * the main process itself; a revoked computer is wiped (rule 29).
+ * the main process itself. On its own `DEVICE_REVOKED` the main process wipes the registration,
+ * and the wipe is confirmed here (rule 29); a member the server no longer lists loses their key.
  */
 export async function refreshDevice(registration: Registration): Promise<InstallationView> {
   try {
     return remember(await device('refreshDevice', { deviceId: registration.deviceId }));
   } catch (error) {
     if (error instanceof ApiError && error.code === 'DEVICE_REVOKED') {
-      await wipeRegistration(registration);
+      await confirmWipe(registration).catch(logErrorLabel);
     }
     throw error;
   }
+}
+
+/**
+ * Rule 29: the main process tells the server the registration's data is gone, if it wiped it, and
+ * then forgets the device key. Until the server hears it, the lock screen asks again on each start.
+ */
+async function confirmWipe(registration: Registration): Promise<void> {
+  deviceTokens.delete(registration.deviceId);
+  remember(await device('confirmWipe', { deviceId: registration.deviceId }));
 }
 
 /** Notes when the access token expires: from its arrival, with its known lifetime. */
@@ -204,14 +207,17 @@ const locking = new Set<ApiErrorCode>([
  */
 async function sessionRefused(code: ApiErrorCode, owner: SessionOwner): Promise<void> {
   try {
-    if (code === 'DEVICE_REVOKED') {
-      await wipeRegistration(owner);
-      return;
-    }
     const current = await device('session', null);
     const theirs = current !== null && memberKey(current) === memberKey(owner);
-    if (code === 'ENROLLMENT_REVOKED') {
-      remember(await device('removeMember', owner));
+    if (code === 'DEVICE_REVOKED' || code === 'ENROLLMENT_REVOKED') {
+      // The main process asks the server itself, and wipes the registration or deletes the
+      // member's key on its own answer, never on this one (a request of the main process that was
+      // refused has done so already).
+      await refreshDevice(owner).catch(() => undefined);
+      if (code === 'DEVICE_REVOKED') {
+        await confirmWipe(owner);
+        return;
+      }
     }
     if (code === 'UNAUTHENTICATED' && theirs && current.access) {
       // The server no longer takes this access token: a new session is opened on the next request.
@@ -250,47 +256,11 @@ export async function lockSession(): Promise<void> {
   await lockApp();
 }
 
-/**
- * Rule 29: the clinic revoked this computer. The device token comes first (a revoked device still
- * gets one until it confirms), then the registration's keys and data are deleted, then the wipe is
- * confirmed. Unconfirmed, the device key stays, and the lock screen confirms on the next start.
- */
-export async function wipeRegistration(
-  registration: Registration,
-  options: { confirmed?: boolean } = {},
-): Promise<void> {
-  let token: string | undefined;
-  let confirmed = options.confirmed ?? false;
-  if (!confirmed) {
-    try {
-      token = await deviceToken(registration);
-    } catch (error) {
-      confirmed = error instanceof ApiError && error.code === 'DEVICE_REVOKED';
-    }
-  }
-  remember(await device('wipe', { deviceId: registration.deviceId }));
-  if (token) {
-    try {
-      const { wipedAt } = await unwrap(
-        identityApi.POST('/api/devices/current/wiped', {
-          headers: { [DEVICE_TOKEN_HEADER]: token },
-        }),
-      );
-      // The server records a wipe of a revoked device only.
-      confirmed = wipedAt !== null;
-    } catch (error) {
-      logErrorLabel(error);
-    }
-  }
-  deviceTokens.delete(registration.deviceId);
-  if (confirmed) remember(await device('wipeConfirmed', { deviceId: registration.deviceId }));
-}
-
 /** Confirms the wipes the server has not heard of yet (the device was offline when it wiped). */
 export async function confirmPendingWipes(view: InstallationView): Promise<void> {
   for (const registration of view.registrations.filter((item) => item.wipePending)) {
     try {
-      await wipeRegistration(registration);
+      await confirmWipe(registration);
     } catch (error) {
       logErrorLabel(error);
     }

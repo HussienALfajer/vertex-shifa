@@ -4103,6 +4103,9 @@
                 "name": {
                   "type": "string"
                 },
+                "phone": {
+                  "type": "string"
+                },
                 "roles": {
                   "type": "array",
                   "items": {
@@ -4119,6 +4122,7 @@
                 "enrollmentId",
                 "membershipId",
                 "name",
+                "phone",
                 "roles",
                 "lastConfirmedAt"
               ],

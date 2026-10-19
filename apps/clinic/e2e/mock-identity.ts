@@ -382,6 +382,7 @@ export function currentDeviceOf(identity: MockIdentity, device: Device): Current
             enrollmentId: item.id,
             membershipId: item.membershipId,
             name: account.name ?? account.invitedName,
+            phone: account.phone,
             roles: membership.roles,
             lastConfirmedAt: item.lastConfirmedAt,
           },

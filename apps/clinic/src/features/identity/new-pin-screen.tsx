@@ -184,8 +184,9 @@ async function register(
       roles: choice.roles,
     });
     remember(view);
-    const registered = view.registrations.find((item) => item.deviceId === view.currentDeviceId);
-    if (registered) void sessionStarted(registered, access.accessToken);
+    // No access: someone locked or switched clinic meanwhile; the member unlocks with their PIN.
+    const registered = view.registrations.find((item) => item.tenantId === choice.tenantId);
+    if (registered && access) void sessionStarted(registered, access.accessToken);
   } catch (error) {
     await device('discardKeys', { pendingId: keys.pendingId }).catch(() => undefined);
     throw error;
@@ -210,7 +211,7 @@ async function enroll(
       memberName: flow.name,
     });
     remember(view);
-    void sessionStarted(registration, access.accessToken);
+    if (access) void sessionStarted(registration, access.accessToken);
   } catch (error) {
     await device('discardKeys', { pendingId: keys.pendingId }).catch(() => undefined);
     throw error;

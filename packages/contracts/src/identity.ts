@@ -413,6 +413,8 @@ export const currentDeviceSchema = z
         enrollmentId: z.uuid(),
         membershipId: z.uuid(),
         name: z.string(),
+        /** The account's phone now: the device signs in with it to re-enable a PIN (rule 22). */
+        phone: z.string(),
         roles: z.array(roleSchema),
         lastConfirmedAt: instant,
       }),

@@ -321,18 +321,19 @@ describe('Installation', () => {
     await installation.calls.lock(null);
     const ids = await ownerOf();
     for (let i = 0; i < 5; i += 1) await installation.calls.unlock({ ...ids, pin: '000000' });
-    // The owner's enrollment here was revoked elsewhere: the server sends an OTP instead.
+    // The owner's enrollment here was revoked elsewhere: the server no longer lists them, so
+    // their key is deleted before any sign-in (rule 8).
     for (const enrollment of server.enrollments)
       enrollment.revokedAt = new Date(clock).toISOString();
-    const result = await installation.calls.reenablePin({
-      deviceId: ids.deviceId,
-      enrollmentId: ids.enrollmentId,
-      password: 'synthetic-owner-pass',
-    });
-    expect(result.result).toBe('otp');
-    expect((await installation.calls.view(null)).registrations[0]?.members[0]).toMatchObject({
-      pinDisabled: true,
-    });
+    const reenable = () =>
+      installation.calls.reenablePin({
+        deviceId: ids.deviceId,
+        enrollmentId: ids.enrollmentId,
+        password: 'synthetic-owner-pass',
+      });
+    expect(await code(reenable())).toBe('NOT_FOUND');
+    expect(server.requests.some((request) => request.path === '/api/auth/sign-in')).toBe(false);
+    expect((await installation.calls.view(null)).registrations[0]?.members).toEqual([]);
   });
 
   it('counts parallel attempts one at a time', async () => {
@@ -500,6 +501,131 @@ describe('Installation', () => {
     expect(view.registrations[0]?.members[0]).toMatchObject({ windowOpen: false });
   });
 
+  it('keeps the window closing after a restart with the clock set back before it closed', async () => {
+    await register();
+    pass(6 * DAY);
+    // Seen once a minute at most: the highest time seen (day 6) is written.
+    await installation.calls.view(null);
+    installation = open();
+    clock = start;
+    const ids = await ownerOf();
+    expect((await installation.calls.unlock({ ...ids, pin: ownerPin })).result).toBe('unlocked');
+    // Two days run in the new process: day 8 by the highest time seen, whatever the clock says.
+    monotonic += 2 * DAY;
+    await installation.checkWindow();
+    expect(events).toEqual([{ type: 'locked' }]);
+    const view = await installation.calls.view(null);
+    expect(view.unlocked).toBeNull();
+    expect(view.registrations[0]?.members[0]).toMatchObject({ windowOpen: false });
+  });
+
+  /** Holds the next request to `path` until the returned function is called. */
+  function hold(path: string): () => void {
+    let release: () => void = () => undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const through = server.transport;
+    let held = false;
+    transport = async (request) => {
+      if (!held && request.path === path) {
+        held = true;
+        await gate;
+      }
+      return through(request);
+    };
+    return release;
+  }
+
+  it('unlocks nobody when the app locks while an enrollment is on its way (rule 25)', async () => {
+    await register();
+    const deviceId = (await installation.calls.view(null)).currentDeviceId ?? '';
+    const keys = await installation.calls.prepareKeys({
+      deviceId,
+      phone: receptionistPhone,
+      pin: receptionistPin,
+    });
+    const release = hold('/api/devices/current/enrollments');
+    const enrolling = installation.calls.enroll({
+      pendingId: keys.pendingId,
+      ticket: server.ticket(receptionist),
+      memberName: 'موظف استقبال',
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect((await installation.calls.lock(null)).unlocked).toBeNull();
+    release();
+    const result = await enrolling;
+    expect(result.access).toBeNull();
+    expect(result.view.unlocked).toBeNull();
+    expect(await installation.calls.session(null)).toBeNull();
+    // The enrollment the server made is kept: the receptionist's PIN unlocks them.
+    const member = result.view.registrations[0]?.members.find(
+      (item) => item.membershipId === receptionist.membershipId,
+    );
+    expect(member).toBeDefined();
+    expect(
+      (
+        await installation.calls.unlock({
+          deviceId,
+          enrollmentId: member?.enrollmentId ?? '',
+          pin: receptionistPin,
+        })
+      ).result,
+    ).toBe('unlocked');
+  });
+
+  it('unlocks nobody and keeps the clinic chosen when it switches during a registration (rule 26)', async () => {
+    const first = await register(clinicA);
+    const keys = await installation.calls.prepareKeys({
+      tenantId: clinicB,
+      phone: ownerPhone,
+      pin: ownerPin,
+    });
+    const release = hold('/api/devices');
+    const registering = installation.calls.register({
+      pendingId: keys.pendingId,
+      ticket: server.ticket(owner),
+      facilityId: null,
+      deviceName: 'حاسوب الاستقبال',
+      clinicName: 'عيادة تجريبية',
+      clinicNameLatin: null,
+      facilityName: null,
+      memberName: 'مالك تجريبي',
+      roles: ['owner'],
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    await installation.calls.lock(null);
+    await installation.calls.select({ deviceId: first.deviceId });
+    release();
+    const result = await registering;
+    expect(result.access).toBeNull();
+    expect(result.view.unlocked).toBeNull();
+    expect(result.view.currentDeviceId).toBe(first.deviceId);
+    expect(result.view.registrations.map((item) => item.tenantId)).toEqual([clinicA, clinicB]);
+  });
+
+  it('re-enables a PIN with the phone the server lists now, after support changed it (edge case 13)', async () => {
+    await register();
+    const ids = await ownerOf();
+    await installation.calls.lock(null);
+    owner.phone = '+963900000199';
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      await installation.calls.unlock({ ...ids, pin: '000000' });
+    }
+    const result = await installation.calls.reenablePin({
+      deviceId: ids.deviceId,
+      enrollmentId: ids.enrollmentId,
+      password: 'synthetic-owner-pass',
+    });
+    expect(result.result).toBe('reenabled');
+    const signIn = server.requests.findLast((request) => request.path === '/api/auth/sign-in');
+    expect(signIn?.body).toMatchObject({ phone: '+963900000199' });
+    expect((await installation.calls.view(null)).registrations[0]?.members[0]).toMatchObject({
+      phone: '+963900000199',
+      pinDisabled: false,
+    });
+  });
+
   it('reads the server’s confirmations itself, and a newer one reopens the window', async () => {
     await register();
     pass(8 * DAY);
@@ -588,14 +714,23 @@ describe('Installation', () => {
     expect((await unlock('741852')).result).toBe('unlocked');
   });
 
+  /** The clinic revokes `deviceId`; the main process hears it on its own request and wipes. */
+  async function revoke(deviceId: string) {
+    const device = server.devices.find((item) => item.id === deviceId);
+    if (device) device.status = 'revoked';
+    expect(await code(installation.calls.refreshDevice({ deviceId }))).toBe('DEVICE_REVOKED');
+    return installation.calls.view(null);
+  }
+
   it('wipes one registration, keeps its device key until the wipe is confirmed (rule 29)', async () => {
     const first = await register(clinicA);
-    const second = await register(clinicB);
     await installation.calls.setLogo({
       deviceId: first.deviceId,
       logo: { contentType: 'image/png', data: 'AAAA' },
     });
-    let view = await installation.calls.wipe({ deviceId: first.deviceId });
+    const second = await register(clinicB);
+    const device = server.devices.find((item) => item.id === first.deviceId);
+    let view = await revoke(first.deviceId);
     const wiped = view.registrations.find((item) => item.deviceId === first.deviceId);
     expect(wiped).toMatchObject({ status: 'wiped', wipePending: true, members: [], logo: null });
     expect(wiped?.clinicName).toBe('عيادة تجريبية');
@@ -611,10 +746,17 @@ describe('Installation', () => {
     expect(await code(installation.calls.dismissWiped({ deviceId: first.deviceId }))).toBe(
       'INVALID_INPUT',
     );
-    view = await installation.calls.wipeConfirmed({ deviceId: first.deviceId });
+    // Offline, the wipe stays pending; the main process confirms it itself once online.
+    server.reachable = false;
+    expect(await code(installation.calls.confirmWipe({ deviceId: first.deviceId }))).toBe(
+      'NETWORK_ERROR',
+    );
+    server.reachable = true;
+    view = await installation.calls.confirmWipe({ deviceId: first.deviceId });
     expect(view.registrations.find((item) => item.deviceId === first.deviceId)?.wipePending).toBe(
       false,
     );
+    expect(device?.wipedAt).toBeDefined();
     expect(await code(sign())).toBe('NOT_FOUND');
     expect(store.text).not.toContain('AAAA');
 
@@ -622,10 +764,24 @@ describe('Installation', () => {
     expect(view.registrations.map((item) => item.deviceId)).toEqual([second.deviceId]);
   });
 
+  it('wipes nothing and keeps the device key on a confirmation the server does not back (F03)', async () => {
+    const first = await register(clinicA);
+    // A renderer asking to confirm a wipe of an active registration changes nothing.
+    const view = await installation.calls.confirmWipe({ deviceId: first.deviceId });
+    expect(view.registrations[0]).toMatchObject({ status: 'active', wipePending: false });
+    expect(view.unlocked?.deviceId).toBe(first.deviceId);
+    expect(server.requests.some((request) => request.path === '/api/devices/current/wiped')).toBe(
+      false,
+    );
+    expect(
+      await code(installation.calls.signDeviceToken({ deviceId: first.deviceId, nonce: 'n' })),
+    ).toBe('resolved');
+  });
+
   it('can register the same clinic again after a wipe', async () => {
     const first = await register(clinicA);
-    await installation.calls.wipe({ deviceId: first.deviceId });
-    await installation.calls.wipeConfirmed({ deviceId: first.deviceId });
+    await revoke(first.deviceId);
+    await installation.calls.confirmWipe({ deviceId: first.deviceId });
     const second = await register(clinicA);
     const view = await installation.calls.view(null);
     expect(view.registrations).toMatchObject([{ deviceId: second.deviceId, status: 'active' }]);

@@ -1308,6 +1308,7 @@ export interface components {
                 /** Format: uuid */
                 membershipId: string;
                 name: string;
+                phone: string;
                 roles: components["schemas"]["StaffRole"][];
                 /** Format: date-time */
                 lastConfirmedAt: string;

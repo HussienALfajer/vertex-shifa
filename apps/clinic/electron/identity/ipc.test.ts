@@ -67,6 +67,17 @@ describe('device bridge', () => {
     expect(await call('reenablePin', ids)).toEqual({ ok: false, code: 'INVALID_INPUT' });
   });
 
+  it('has no call that wipes a registration or deletes a member’s key on the renderer’s word (F03)', async () => {
+    const ids = { deviceId: crypto.randomUUID(), enrollmentId: crypto.randomUUID() };
+    for (const [method, input] of [
+      ['wipe', { deviceId: ids.deviceId }],
+      ['wipeConfirmed', { deviceId: ids.deviceId }],
+      ['removeMember', ids],
+    ] as const) {
+      expect(await call(method, input)).toEqual({ ok: false, code: 'INVALID_INPUT' });
+    }
+  });
+
   it('answers a refusal of the API with its code', async () => {
     const offline = new Installation(memoryStore(), testProtector(), undefined, testPinCost, {
       server: async () => ({ status: 401, body: { code: 'TICKET_INVALID', message: 'x' } }),

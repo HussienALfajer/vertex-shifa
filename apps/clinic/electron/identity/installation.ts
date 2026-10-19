@@ -5,6 +5,7 @@ import {
   currentDeviceSchema,
   deviceTokenMessage,
   deviceTokenSchema,
+  deviceWipedSchema,
   enrolledSchema,
   isWeakPin,
   nonceSchema,
@@ -186,6 +187,12 @@ export class Installation {
   private persistedHighestSeen = 0;
   private readonly pending = new Map<string, Pending>();
   private unlocked: Unlocked | undefined;
+  /**
+   * Moves on every change of who is unlocked or which clinic is shown (a lock, an unlock, a switch,
+   * a removed member, a wipe): a registration or an enrollment whose answer comes back after one
+   * stores what the server created but unlocks nobody.
+   */
+  private identity = 0;
   private queue: Promise<unknown> = Promise.resolve();
   /** The latest trusted time and the monotonic time it was taken at. */
   private anchor: { time: number; monotonic: number } | undefined;
@@ -254,9 +261,7 @@ export class Installation {
       }),
     reenablePin: (input) => this.reenablePin(input),
     changePin: (input) => this.serial(() => this.changePin(input)),
-    removeMember: (input) => this.serial(() => this.removeMember(input)),
-    wipe: (input) => this.serial(() => this.wipe(input.deviceId)),
-    wipeConfirmed: (input) => this.serial(() => this.wipeConfirmed(input.deviceId)),
+    confirmWipe: (input) => this.confirmWipe(input.deviceId),
     dismissWiped: (input) => this.serial(() => this.dismissWiped(input.deviceId)),
   };
 
@@ -290,11 +295,15 @@ export class Installation {
 
   /**
    * Rule 24: the device clock, but never earlier than the last trusted time plus the monotonic
-   * time since, so setting the clock back while the app runs does not stop the window's clock.
+   * time since, so setting the clock back while the app runs does not stop the window's clock. A
+   * new process starts from the highest time seen, so a clock set back before a restart does not
+   * stop it either: the window keeps closing from there.
    */
   private trustedNow(): Date {
     const monotonic = this.monotonic();
-    const carried = this.anchor ? this.anchor.time + (monotonic - this.anchor.monotonic) : 0;
+    const carried = this.anchor
+      ? this.anchor.time + (monotonic - this.anchor.monotonic)
+      : Date.parse(this.loaded.highestSeenAt);
     const time = Math.max(this.now().getTime(), carried);
     this.anchor = { time, monotonic };
     return new Date(time);
@@ -410,6 +419,7 @@ export class Installation {
   private async select(deviceId: string): Promise<InstallationView> {
     await this.registration(deviceId);
     if (this.unlocked && this.unlocked.deviceId !== deviceId) this.forgetUnlocked();
+    if (this.loaded.currentDeviceId !== deviceId) this.identity += 1;
     this.loaded.currentDeviceId = deviceId;
     await this.persist();
     return this.view();
@@ -490,7 +500,10 @@ export class Installation {
   private async register(
     input: DeviceCalls['register']['input'],
   ): Promise<DeviceCalls['register']['output']> {
-    const pending = await this.serial(async () => this.takePending(input.pendingId, 'register'));
+    const { pending, identity } = await this.serial(async () => ({
+      pending: this.takePending(input.pendingId, 'register'),
+      identity: this.identity,
+    }));
     const { tenantId, deviceKey } = pending;
     if (!tenantId || !deviceKey) throw new DeviceError('INVALID_INPUT');
     const { device, enrollment, session } = await ask(
@@ -533,11 +546,31 @@ export class Installation {
         members: [this.storedMember(pending, enrollment, input.memberName, input.roles)],
       });
       this.observe(new Date(enrollment.lastConfirmedAt));
-      this.loaded.currentDeviceId = device.id;
+      const current = this.identity === identity;
+      if (current || !this.loaded.currentDeviceId) this.loaded.currentDeviceId = device.id;
       await this.persist();
-      this.setUnlocked(device.id, enrollment.id, pending.userKey, session);
-      return { view: await this.view(), access: grant(session) };
+      return this.enrolled(current, device.id, enrollment.id, pending.userKey, session);
     });
+  }
+
+  /**
+   * The member a registration or an enrollment created is unlocked with its session only while
+   * nobody locked, unlocked or switched clinic during the request; otherwise their PIN unlocks
+   * them like anyone enrolled here, and the session is dropped.
+   */
+  private async enrolled(
+    current: boolean,
+    deviceId: string,
+    enrollmentId: string,
+    key: KeyPair,
+    session: SessionTokens,
+  ): Promise<{ view: InstallationView; access: AccessGrant | null }> {
+    if (!current) {
+      key.privateKey.fill(0);
+      return { view: await this.view(), access: null };
+    }
+    this.setUnlocked(deviceId, enrollmentId, key, session);
+    return { view: await this.view(), access: grant(session) };
   }
 
   /**
@@ -548,10 +581,15 @@ export class Installation {
   private async enroll(
     input: DeviceCalls['enroll']['input'],
   ): Promise<DeviceCalls['enroll']['output']> {
-    const { pending, deviceId, tenantId } = await this.serial(async () => {
+    const { pending, deviceId, tenantId, identity } = await this.serial(async () => {
       const taken = this.takePending(input.pendingId, 'enroll');
       const registration = await this.activeRegistration(taken.deviceId ?? '');
-      return { pending: taken, deviceId: registration.deviceId, tenantId: registration.tenantId };
+      return {
+        pending: taken,
+        deviceId: registration.deviceId,
+        tenantId: registration.tenantId,
+        identity: this.identity,
+      };
     });
     const { enrollment, session } = await this.asDevice(
       { deviceId, tenantId },
@@ -575,10 +613,10 @@ export class Installation {
         this.storedMember(pending, enrollment, input.memberName, []),
       ];
       this.observe(new Date(enrollment.lastConfirmedAt));
-      this.loaded.currentDeviceId = deviceId;
+      const current = this.identity === identity;
+      if (current) this.loaded.currentDeviceId = deviceId;
       await this.persist();
-      this.setUnlocked(deviceId, enrollment.id, pending.userKey, session);
-      return { view: await this.view(), access: grant(session) };
+      return this.enrolled(current, deviceId, enrollment.id, pending.userKey, session);
     });
   }
 
@@ -642,16 +680,23 @@ export class Installation {
 
   /**
    * Rule 22: an online password sign-in on this device re-enables the member's PIN. The main
-   * process signs in itself, with the phone it stored for the member and its own device token,
-   * and re-enables the PIN only on the server's `done`: the account is enrolled on this device.
+   * process signs in itself, with the member's phone as the server lists it now (support may have
+   * changed it, edge case 13) and its own device token, and re-enables the PIN only on the
+   * server's `done`: the account is enrolled on this device.
    */
   private async reenablePin(
     input: DeviceCalls['reenablePin']['input'],
   ): Promise<DeviceCalls['reenablePin']['output']> {
-    const { deviceId, tenantId, phone } = await this.serial(async () => {
+    await this.refreshDevice(input.deviceId);
+    const { deviceId, tenantId, phone, membershipId } = await this.serial(async () => {
       const registration = await this.activeRegistration(input.deviceId);
-      const { phone } = this.member(registration, input.enrollmentId);
-      return { deviceId: registration.deviceId, tenantId: registration.tenantId, phone };
+      const { phone, membershipId } = this.member(registration, input.enrollmentId);
+      return {
+        deviceId: registration.deviceId,
+        tenantId: registration.tenantId,
+        phone,
+        membershipId,
+      };
     });
     const { challenge, difficulty } = await ask(
       this.server,
@@ -672,7 +717,7 @@ export class Installation {
     if (result.step === 'otp') return { result: 'otp', challengeId: result.challengeId };
     return this.serial(async () => {
       const member = this.member(await this.activeRegistration(deviceId), input.enrollmentId);
-      if (member.phone !== phone) throw new DeviceError('NOT_FOUND');
+      if (member.membershipId !== membershipId) throw new DeviceError('NOT_FOUND');
       member.failedAttempts = 0;
       await this.persist();
       return { result: 'reenabled', view: await this.view() };
@@ -729,6 +774,7 @@ export class Installation {
   }
 
   private forgetUnlocked(): void {
+    this.identity += 1;
     this.unlocked?.privateKey.fill(0);
     this.unlocked = undefined;
     if (this.windowTimer) clearInterval(this.windowTimer);
@@ -999,7 +1045,9 @@ export class Installation {
         Date.parse(server.lastConfirmedAt) > Date.parse(member.lastConfirmedAt)
           ? server.lastConfirmedAt
           : member.lastConfirmedAt;
-      return [{ ...member, name: server.name, roles: server.roles, lastConfirmedAt }];
+      return [
+        { ...member, name: server.name, phone: server.phone, roles: server.roles, lastConfirmedAt },
+      ];
     });
     const unlocked = this.unlocked;
     if (
@@ -1044,12 +1092,39 @@ export class Installation {
     return this.view();
   }
 
-  private async wipeConfirmed(deviceId: string): Promise<InstallationView> {
-    const registration = await this.registration(deviceId);
-    if (registration.status !== 'wiped') throw new DeviceError('INVALID_INPUT');
-    registration.deviceKey = null;
-    await this.persist();
-    return this.view();
+  /**
+   * Tells the server a wiped registration's data is gone (`POST /api/devices/current/wiped`),
+   * then forgets its device key. The main process asks itself: the server records the wipe of a
+   * revoked device only, and refuses a device token once it has (`DEVICE_REVOKED`), which also
+   * means confirmed. An active registration is left as it is.
+   */
+  private async confirmWipe(deviceId: string): Promise<InstallationView> {
+    const { status, deviceKey, tenantId } = await this.serial(() => this.registration(deviceId));
+    if (status !== 'wiped' || !deviceKey) return this.serial(() => this.view());
+    let confirmed: boolean;
+    try {
+      const { wipedAt } = await this.asDevice(
+        { deviceId, tenantId },
+        (token) => ({
+          method: 'POST',
+          path: '/api/devices/current/wiped',
+          headers: { [DEVICE_TOKEN_HEADER]: token },
+        }),
+        deviceWipedSchema,
+      );
+      confirmed = wipedAt !== null;
+    } catch (error) {
+      if (!(error instanceof ServerRefusal && error.code === 'DEVICE_REVOKED')) throw error;
+      confirmed = true;
+    }
+    return this.serial(async () => {
+      const registration = await this.registration(deviceId);
+      if (confirmed && registration.status === 'wiped') {
+        registration.deviceKey = null;
+        await this.persist();
+      }
+      return this.view();
+    });
   }
 
   /** The owner read the wipe notice: the registration's name goes too. */
