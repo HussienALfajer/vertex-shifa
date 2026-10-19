@@ -1,6 +1,7 @@
 /** Text of the platform console (`apps/console`), used by Vertex Shifa staff. */
 export const platformConsole = {
   productLabel: 'لوحة المنصة',
+  tagline: 'إدارة منصة فيرتكس شفا وعياداتها.',
   home: {
     title: 'لوحة إدارة المنصة',
     description: 'لوحة المنصة جاهزة. تُضاف الشاشات مع ميزاتها.',
@@ -10,7 +11,6 @@ export const platformConsole = {
     home: 'الرئيسية',
     platformUsers: 'مستخدمو المنصة',
     account: 'حسابي',
-    accountOf: 'حسابي: {{name}}',
     signOut: 'تسجيل الخروج',
   },
   states: {

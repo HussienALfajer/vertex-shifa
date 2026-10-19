@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 // The web export (`pnpm build`), served by e2e/web-server.ts, in Chromium at a phone's size, once per
-// color scheme. The web export exists only for these screenshots: the app ships to the stores
+// color scheme, and at a tablet's. The web export exists only for these screenshots: the app ships to the stores
 // (ADR 0003). Screenshots are attached to each test's results (test-results/), which CI uploads.
 export default defineConfig({
   testDir: 'e2e',
@@ -17,6 +17,8 @@ export default defineConfig({
   projects: [
     { name: 'light', use: { ...devices['Pixel 7'], colorScheme: 'light' } },
     { name: 'dark', use: { ...devices['Pixel 7'], colorScheme: 'dark' } },
+    // An Android tablet in portrait (AGENTS.md "Responsive").
+    { name: 'tablet', use: { ...devices['Galaxy Tab S4'], colorScheme: 'light' } },
   ],
   webServer: {
     command: 'node e2e/web-server.ts',

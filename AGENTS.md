@@ -66,6 +66,7 @@ The PR that adds a command adds it to this table and keeps it true. Run from the
 - **Never lock medical data for non-payment (ADR 0013):** suspension means read-only plus export.
 - **Messaging (ADR 0012):** in-app push and WhatsApp only. WhatsApp carries OTPs and consented, transactional messages without medical content, throttled per number.
 - **Audit; archive, don't delete:** every change to clinical, money, access or contract data writes an audit entry in the same transaction; business records are archived; audit rows are never updated or deleted.
+- **Responsive (owner, 2026-10-19):** every screen, component and element built works at every size, from a 320 px phone through tablets to wide desktops: no page scrolls sideways, nothing is cut off, overlaps or needs zooming, and controls stay usable by touch. Build mobile-first with Tailwind's breakpoints (`sm` 640 px, `md` 768 px where the sidebar appears, `lg` 1024 px, `xl` 1280 px); wide content (a table, a row of tabs) scrolls inside its own box, never the page. Signed-in web screens sit in `AppFrame` (Vertex Hub's sidebar shell), the screens before a session in `AuthFrame` (`packages/ui/CLAUDE.md`). The patient app follows the same rule on phones and tablets. The E2E runs every web screen at desktop, tablet and phone sizes, and a screenshot of a page wider than its window fails.
 - **Arabic-first RTL UI:** logical CSS only, all text through i18n, Latin digits, design-system components and tokens only (ADR 0018). "Vertex" is always visible to customers.
 - **Public repository:** no secrets and no real patient, clinic or phone data anywhere in the repo: synthetic data only. `.env` files are git-ignored; `.env.example` holds fake values.
 - **No Cloudflare** (blocked in Syria) (ADR 0015, 0017).
@@ -74,7 +75,7 @@ The PR that adds a command adds it to this table and keeps it true. Run from the
 
 - Continue without asking when the next step needs no input from the owner. Put brief status notes in the same message as the next action.
 - Stop and ask only when a decision belongs to the owner (scope, business rules, prices, clinical rules, anything in `open-questions.md`), when a spec is ambiguous in a way that changes the result, or before a destructive or outward-facing action (deleting data, dropping tables, restoring a database snapshot, force-push, sending real WhatsApp messages, publishing to an app store). Deploying `main` to production and changing production through the server or an admin panel need no approval (owner, 2026-10-18): do them when the task calls for them and report what changed.
-- A task is done only when its checks pass: typecheck, lint, the relevant tests; for UI changes, a Playwright screenshot in RTL. Show the evidence (commands run and their results) instead of asserting success.
+- A task is done only when its checks pass: typecheck, lint, the relevant tests; for UI changes, Playwright screenshots in RTL at desktop, tablet and phone sizes. Show the evidence (commands run and their results) instead of asserting success.
 - Fix root causes. Never silence a failing test, type error or lint rule.
 - For multi-step work keep a checklist in `TASKS.md`: tick items and add work you discover.
 - Mark anything you could not confirm and say where you looked.

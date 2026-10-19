@@ -1,12 +1,9 @@
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { Link, Navigate, useRouterState } from '@tanstack/react-router';
+import { Navigate, useRouterState } from '@tanstack/react-router';
 import type { Tenant } from '@vertex-shifa/contracts';
-import { Button } from '@vertex-shifa/ui';
 import type { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
 import { QueryStates } from '../../components/query-states';
-import { useStaffAccess } from '../../lib/staff-access';
-import { facilitiesQuery, tenantQuery } from './queries';
+import { tenantQuery } from './queries';
 import { ReadOnlyBanner } from './read-only-banner';
 
 /**
@@ -20,7 +17,7 @@ export function useTenant(): Tenant {
 /**
  * Every clinic screen needs the tenant first. While it is onboarding, only the setup screen (and
  * the member's account) is reachable (rule 4); after, the setup screen leads home. Suspended or closed, the read-only banner
- * stays above every screen (screen 7).
+ * stays above every screen (screen 7). The navigation is in the shell's sidebar (`ClinicNav`).
  */
 export function TenantGate({ children }: { children: ReactNode }) {
   const tenant = useQuery(tenantQuery);
@@ -39,63 +36,10 @@ export function TenantGate({ children }: { children: ReactNode }) {
         return (
           <div className="flex flex-col gap-6">
             <ReadOnlyBanner tenant={tenant.data as Tenant} />
-            {status !== 'onboarding' && <MainNav />}
             {children}
           </div>
         );
       }}
     </QueryStates>
-  );
-}
-
-/**
- * The clinic's screens. A single-branch clinic never sees the word "branch" (rule 9): its
- * location screen stands where the branch list would. Staff, devices and security show to the
- * members whose permissions open them (cosmetic: the API decides).
- */
-function MainNav() {
-  const { t } = useTranslation('clinic');
-  const access = useStaffAccess();
-  const branches = useQuery(facilitiesQuery(false));
-  const several = (branches.data?.total ?? 0) >= 2;
-  const link = 'data-[status=active]:bg-muted data-[status=active]:font-bold';
-  return (
-    <nav aria-label={t('nav.label')} className="flex flex-wrap gap-1 border-b border-border pb-2">
-      <Button
-        variant="ghost"
-        className={link}
-        render={<Link to="/" activeOptions={{ exact: true }} />}
-      >
-        {t('nav.home')}
-      </Button>
-      <Button variant="ghost" className={link} render={<Link to="/settings/clinic" />}>
-        {t('nav.clinic')}
-      </Button>
-      {branches.data &&
-        (several ? (
-          <Button variant="ghost" className={link} render={<Link to="/settings/branches" />}>
-            {t('nav.branches')}
-          </Button>
-        ) : (
-          <Button variant="ghost" className={link} render={<Link to="/settings/location" />}>
-            {t('nav.location')}
-          </Button>
-        ))}
-      {access.readStaff && (
-        <Button variant="ghost" className={link} render={<Link to="/settings/staff" />}>
-          {t('nav.staff')}
-        </Button>
-      )}
-      {access.manageDevices && (
-        <Button variant="ghost" className={link} render={<Link to="/settings/devices" />}>
-          {t('nav.devices')}
-        </Button>
-      )}
-      {access.manageTenant && (
-        <Button variant="ghost" className={link} render={<Link to="/settings/security" />}>
-          {t('nav.security')}
-        </Button>
-      )}
-    </nav>
   );
 }

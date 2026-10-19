@@ -9,6 +9,11 @@ export const common = {
   notFoundTitle: 'الصفحة غير موجودة',
   notFoundDescription: 'لا توجد صفحة بهذا العنوان.',
   close: 'إغلاق',
+  shell: {
+    skipToContent: 'انتقل إلى المحتوى',
+    openNavigation: 'افتح القائمة',
+    userMenu: 'قائمة الحساب: {{name}}',
+  },
   theme: {
     toDark: 'فعّل الوضع الداكن',
     toLight: 'فعّل الوضع الفاتح',

@@ -1,34 +1,27 @@
-import { PageContainer, ThemeToggle, VertexShifaMark } from '@vertex-shifa/ui';
+import { AppFrame } from '@vertex-shifa/ui';
 import type { ReactNode } from 'react';
 import { i18n } from '../lib/i18n';
 
 /**
- * The frame of every page. "Powered by Vertex Shifa" is always visible (ADR 0018). The header
- * and every page share one column (`PageContainer`), so their edges line up.
+ * The frame of every page (`AppFrame` without a sidebar): the brand and the theme toggle in the top
+ * bar, "Powered by Vertex Shifa" always visible (ADR 0018).
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const { t } = i18n;
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b border-border bg-surface">
-        <PageContainer className="flex items-center gap-3 py-3">
-          <VertexShifaMark className="w-7 text-primary" />
-          <span className="text-lg font-bold">{t('productName')}</span>
-          <span className="text-muted-foreground">{t('site:productLabel')}</span>
-          <ThemeToggle
-            className="ms-auto"
-            labels={{ toDark: t('theme.toDark'), toLight: t('theme.toLight') }}
-          />
-        </PageContainer>
-      </header>
-      <main className="flex-1 py-6">
-        <PageContainer>{children}</PageContainer>
-      </main>
-      <footer className="border-t border-border">
-        <PageContainer className="py-2 text-sm text-muted-foreground">
-          {t('poweredBy')}
-        </PageContainer>
-      </footer>
-    </div>
+    <AppFrame
+      labels={{
+        productName: t('productName'),
+        productLabel: t('site:productLabel'),
+        poweredBy: t('poweredBy'),
+        toDark: t('theme.toDark'),
+        toLight: t('theme.toLight'),
+        skipToContent: t('shell.skipToContent'),
+        openNavigation: t('shell.openNavigation'),
+        navigation: t('site:productLabel'),
+      }}
+    >
+      {children}
+    </AppFrame>
   );
 }

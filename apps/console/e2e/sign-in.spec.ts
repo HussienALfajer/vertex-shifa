@@ -8,6 +8,7 @@ import {
   totpCode,
   totpSecret,
 } from './mock-api.js';
+import { closeNav, mainNav, openUserMenu } from './nav.js';
 import { screenshot } from './screenshot.js';
 
 // Console sign-in (spec S02 screen 12, rules 36–39) against the mocked API. Synthetic data only.
@@ -39,8 +40,9 @@ test.describe('console sign-in', () => {
 
     await expect(page).toHaveURL('/');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('لوحة إدارة المنصة');
-    const nav = page.getByRole('navigation', { name: 'أقسام لوحة المنصة' });
+    const nav = await mainNav(page);
     await expect(nav.getByRole('link', { name: 'مستخدمو المنصة' })).toBeVisible();
+    await closeNav(page);
     await expect(page.getByRole('banner')).toContainText('مدير تجريبي');
     await expect(page.locator('body')).not.toHaveText(/[٠-٩]/);
     await screenshot(page, testInfo, 'signed-in');
@@ -59,9 +61,11 @@ test.describe('console sign-in', () => {
 
     await expect(page).toHaveURL('/');
     // Support holds no platform users (cosmetic; the API refuses too).
-    const nav = page.getByRole('navigation', { name: 'أقسام لوحة المنصة' });
+    const nav = await mainNav(page);
     await expect(nav.getByRole('link', { name: 'مستخدمو المنصة' })).toHaveCount(0);
-    await nav.getByRole('link', { name: 'حسابي' }).click();
+    await closeNav(page);
+    await openUserMenu(page);
+    await page.getByRole('menuitem', { name: 'حسابي' }).click();
     await expect(page.getByText('بقي 9 من 10 رموز.')).toBeVisible();
   });
 
@@ -145,10 +149,10 @@ test.describe('console sign-in', () => {
     await expect(page.getByRole('banner')).toContainText('مدير تجريبي');
 
     api.endSession();
-    await page.getByRole('link', { name: 'مستخدمو المنصة' }).click();
+    await (await mainNav(page)).getByRole('link', { name: 'مستخدمو المنصة' }).click();
     await expect(page).toHaveURL('/sign-in?ended=true');
     await expect(page.getByRole('status').filter({ hasText: 'انتهت جلستك' })).toBeVisible();
-    await expect(page.getByRole('banner')).not.toContainText('مدير تجريبي');
+    await expect(page.getByText('مدير تجريبي')).toHaveCount(0);
     await screenshot(page, testInfo, 'session-ended');
 
     // Without a session every screen sends to the sign-in.
@@ -159,7 +163,8 @@ test.describe('console sign-in', () => {
   test('signs out', async ({ page }) => {
     const api = await mockConsoleApi(page, { signedIn: 'admin' });
     await page.goto('/');
-    await page.getByRole('button', { name: 'تسجيل الخروج' }).click();
+    await openUserMenu(page);
+    await page.getByRole('menuitem', { name: 'تسجيل الخروج' }).click();
     await expect(page).toHaveURL('/sign-in');
     await expect(page.getByText('سجّلت الخروج.')).toBeVisible();
     expect(api.session).toBeNull();

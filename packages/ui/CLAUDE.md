@@ -32,9 +32,14 @@ The Vertex design system for the web apps (clinic, console, site; ADR 0018): Ver
 - `QrCode` (`uqr`) draws a code as SVG modules, dark on white in both themes, because phone scanners expect it; `label` names it for screen readers. The console's TOTP setup is its first use.
 
 ## Layout and navigation
-- `PageContainer` is the one column of an app: the header row, the navigation and every page sit in it, so their edges line up in RTL. Pages and state cards start at its start edge, never centered on their own.
+- Vertex Hub's shell (`src/components/app-frame.tsx`, `sidebar.tsx`). `AppFrame` frames every signed-in screen: the app's `SidebarNav` (Vertex Green, the brand row on top, `SidebarLink`s with a sand marker on the current page, `aria-current="page"` from the router; `SidebarGroup` titles a set of links) sits at the inline start from the `md` breakpoint (768 px) and moves into a `Sheet` opened from the top bar's menu button below it (a followed link closes it); the top bar holds the person's menu (`headerEnd`: Vertex Hub's avatar menu, the name from `sm`) and the `ThemeToggle`; "Powered by Vertex Shifa" closes every screen. Without `navigation` (a gate loading, the site) the brand shows in the top bar. `AuthFrame` frames the screens before a session: the form column, and from `lg` the full logo in sand on Vertex Green with the app's tagline. Labels come in as props; each app wraps both in its `components/app-shell.tsx`.
+- `PageContainer` is the one column of a screen: the top bar's controls and the page sit in it, so their edges line up in RTL (16 px gutter on phones, 32 px from `md`, at most 72rem wide). Pages and state cards start at its start edge, never centered on their own.
 - `PageHeader` takes `back`: a `BackButton` (`render={<Link …/>}`, labelled with where it goes, arrow to the inline start) on every sub-page.
 - Wizards show a `Stepper`: one segment per step over its label; completed steps go back with `onSelect`, upcoming ones are not clickable.
+
+## Responsive (AGENTS.md "Responsive")
+- Every component works from a 320 px phone to a wide screen: mobile-first classes, `min-w-0` on flex children that hold text, `wrap-anywhere` for names users type, `flex-wrap` on rows of actions, grids that gain columns at a breakpoint (`grid gap-4 sm:grid-cols-2`), never a fixed width wider than a phone. Wide content scrolls inside its own box (`Table`, `TabsList`); dialogs fit the window and scroll inside it.
+- The apps' E2E runs at desktop (light and dark), tablet (768 px) and phone (Pixel 7) sizes, and `screenshot()` fails when the page scrolls sideways.
 
 ## Rules to apply yourself
 - Every app mounts `<DirectionProvider direction={textDirection}>` (from this package, `textDirection` from `@vertex-shifa/i18n`) around its tree: Base UI reads the direction from it, not from `<html dir>`, for keyboard navigation and logical placement.
@@ -43,7 +48,7 @@ The Vertex design system for the web apps (clinic, console, site; ADR 0018): Ver
 - Every component sets `data-slot` (directly, or through `useRender` state as in `badge.tsx`), merges `className` with `cn`, and passes other props through.
 - Variants through `cva` with semantic names (`tone`, `variant`, `size`), mapped to semantic tokens (`bg-primary`, `text-muted-foreground`), never to raw palette steps in app code.
 - No user-facing text inside components: labels come in as props, so the app translates them.
-- New components arrive with their first real use; the clinic-specific ones of ADR 0018 (queue board, odontogram, form fields, print templates, patient card, visit timeline, sync status) come with their specs. UI changes update the apps' E2E screenshots.
+- New components arrive with their first real use; the clinic-specific ones of ADR 0018 (queue board, odontogram, form fields, print templates, patient card, visit timeline, sync status) come with their specs. UI changes update the apps' E2E screenshots, at every size.
 
 ## Map (`src/components/location-picker.tsx`, ADR 0023)
 - `LocationPicker` is the only map screens use: coordinates in (`center`, `value`), coordinates out (`onChange`), short links resolved by the app (`resolveShortLink`, `POST /api/maps/resolve-link`), labels as props. MapLibre and PMTiles never appear outside this file, so another provider is a new implementation of it.

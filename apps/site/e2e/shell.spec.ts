@@ -1,7 +1,14 @@
 import { expect, type Page, type TestInfo, test } from '@playwright/test';
 
-/** An RTL screenshot per color scheme, kept in test-results/ (uploaded by CI) and in the report. */
+/**
+ * An RTL screenshot per project (desktop light and dark, tablet, phone), kept in test-results/
+ * (uploaded by CI) and in the report. No page is wider than its window (AGENTS.md "Responsive").
+ */
 async function screenshot(page: Page, testInfo: TestInfo, name: string): Promise<void> {
+  const overflow = await page.evaluate<number>(
+    'document.documentElement.scrollWidth - document.documentElement.clientWidth',
+  );
+  expect(overflow, `${name} scrolls sideways on ${testInfo.project.name}`).toBe(0);
   const path = testInfo.outputPath(`${name}-${testInfo.project.name}.png`);
   await page.screenshot({ path, fullPage: true });
   await testInfo.attach(name, { path, contentType: 'image/png' });
@@ -41,7 +48,7 @@ test.describe('site shell', () => {
   }, testInfo) => {
     await page.goto('/');
     const html = page.locator('html');
-    const systemDark = testInfo.project.name === 'dark';
+    const systemDark = testInfo.project.use.colorScheme === 'dark';
     await expect(html).toHaveClass(systemDark ? /dark/ : /^(?!.*dark)/);
     const toDark = page.getByRole('button', { name: 'فعّل الوضع الداكن' });
     const toLight = page.getByRole('button', { name: 'فعّل الوضع الفاتح' });
