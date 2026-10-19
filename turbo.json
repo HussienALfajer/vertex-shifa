@@ -8,6 +8,21 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
+    "@vertex-shifa/clinic#build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/brand/logo/svg/favicon.svg"],
+      "outputs": ["dist/**"]
+    },
+    "@vertex-shifa/console#build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/brand/logo/svg/favicon.svg"],
+      "outputs": ["dist/**"]
+    },
+    "@vertex-shifa/site#build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/brand/logo/svg/favicon.svg"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
     "typecheck": {
       "dependsOn": ["^build"]
     },
@@ -52,6 +67,28 @@
     "@vertex-shifa/clinic#test": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/api/openapi.json"],
+      "outputs": [],
+      "passThroughEnv": [
+        "DATABASE_OWNER_URL",
+        "DATABASE_APP_URL",
+        "DATABASE_JOBS_URL",
+        "DATABASE_QUEUE_URL"
+      ]
+    },
+    "@vertex-shifa/console#test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/api/openapi.json"],
+      "outputs": [],
+      "passThroughEnv": [
+        "DATABASE_OWNER_URL",
+        "DATABASE_APP_URL",
+        "DATABASE_JOBS_URL",
+        "DATABASE_QUEUE_URL"
+      ]
+    },
+    "@vertex-shifa/patient#test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/patches/**"],
       "outputs": [],
       "passThroughEnv": [
         "DATABASE_OWNER_URL",
