@@ -2,6 +2,7 @@ import { expect, type Page, test } from '@playwright/test';
 import { facility, mockApi, tenant } from './mock-api.js';
 import { mainNav } from './nav.js';
 import { screenshot } from './screenshot.js';
+import { settled } from './settle.js';
 
 // The behaviours every screen shares (the owner's decisions of 2026-10-18): the theme toggle,
 // Enter in forms, Save and unsaved changes, feedback that never moves the page, back navigation,
@@ -214,7 +215,8 @@ test.describe('navigation', () => {
     await expect(steps.getByRole('button')).toHaveText(['1. العيادة', '2. العنوان والتواصل']);
     await expect(steps.getByRole('listitem').nth(2)).toHaveAttribute('aria-current', 'step');
 
-    // Each segment sits over its own label.
+    // Each segment sits over its own label, measured once the page has settled.
+    await settled(page);
     const items = await steps.getByRole('listitem').all();
     for (const item of items) {
       const [segment, label] = await Promise.all([

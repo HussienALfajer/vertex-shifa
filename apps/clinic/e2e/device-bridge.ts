@@ -4,6 +4,7 @@ import { Installation } from '../electron/identity/installation.js';
 import { handleDeviceCall } from '../electron/identity/ipc.js';
 import { offline, type Transport } from '../electron/identity/server.js';
 import { memoryStore, testPinCost, testProtector } from '../electron/identity/test-support.js';
+import { trackActivity } from './settle.js';
 
 /**
  * The desktop app's device bridge for the E2E, which runs the renderer in Chromium without
@@ -23,6 +24,8 @@ export type DeviceBridge = {
 };
 
 export async function installDeviceBridge(page: Page): Promise<DeviceBridge> {
+  // Before the page opens anything: `settled` waits for its requests and the bridge's calls.
+  const working = await trackActivity(page);
   let offset = 0;
   /** The furthest the clock was moved forward: time that passed, for the monotonic clock. */
   let passed = 0;
@@ -52,7 +55,7 @@ export async function installDeviceBridge(page: Page): Promise<DeviceBridge> {
     },
   );
   await page.exposeFunction('vertexShifaDeviceE2e', (method: unknown, input: unknown) =>
-    handleDeviceCall(installation, appInfo, method, input),
+    working(() => handleDeviceCall(installation, appInfo, method, input)),
   );
   // A string: the E2E is typed for Node, without the DOM's globals.
   await page.addInitScript(`
