@@ -1,6 +1,8 @@
-import { Field, FieldDescription, FieldError, FieldLabel, OtpField } from '@vertex-shifa/ui';
+'use client';
+
 import type { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Field, FieldDescription, FieldError, FieldLabel } from './field';
+import { OtpField } from './otp-field';
 
 /** Arabic-Indic and Persian digits typed on an Arabic keyboard become Latin ones. */
 function latinDigits(value: string): string {
@@ -19,13 +21,15 @@ type CodeFieldProps = {
   autoFocus?: boolean;
   /** A PIN: the digits are masked. */
   mask?: boolean;
+  /** Accessible name of each slot after the first, e.g. "Digit 2". */
+  slotLabel: (position: number) => string;
 };
 
 /**
- * Six digits: an OTP from WhatsApp, or a PIN (masked). Read left to right in every language
- * (`OtpField`).
+ * Six digits in a form row: a one-time code (WhatsApp OTP, TOTP) or a PIN (masked). Read left to
+ * right in every language (`OtpField`); Arabic-Indic digits are taken as Latin ones.
  */
-export function CodeField({
+function CodeField({
   label,
   description,
   error,
@@ -35,9 +39,10 @@ export function CodeField({
   disabled = false,
   autoFocus = false,
   mask = false,
+  slotLabel,
 }: CodeFieldProps) {
-  const { t } = useTranslation('clinic');
   return (
+    // `data-slot="field"` from `Field`: the row is a field like any other.
     <Field invalid={error !== undefined} disabled={disabled} className="items-start">
       <FieldLabel>{label}</FieldLabel>
       <OtpField
@@ -52,10 +57,12 @@ export function CodeField({
         disabled={disabled}
         autoFocus={autoFocus}
         aria-invalid={error !== undefined || undefined}
-        slotLabel={(position) => t('identity.code.digit', { position })}
+        slotLabel={slotLabel}
       />
       {description && <FieldDescription>{description}</FieldDescription>}
       <FieldError match={error !== undefined}>{error}</FieldError>
     </Field>
   );
 }
+
+export { CodeField, type CodeFieldProps, latinDigits };

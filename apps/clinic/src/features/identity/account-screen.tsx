@@ -9,6 +9,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CodeField,
   Field,
   FieldError,
   FieldLabel,
@@ -28,7 +29,6 @@ import { device, deviceErrorCode, type MemberView, type RegistrationView } from 
 import { useErrorText } from '../../lib/error-text';
 import { useOnline } from '../../lib/online';
 import { meQuery } from '../../lib/staff-access';
-import { CodeField } from './code-fields';
 import { unlockedMember, useInstallation } from './installation';
 import { remember } from './session';
 import { PasswordHints, passwordHints } from './sign-in-screen';
@@ -243,6 +243,7 @@ function ChangePin({
         </div>
         <FormFields>
           <CodeField
+            slotLabel={(position) => t('identity.code.digit', { position })}
             mask
             label={t('identity.account.currentPin')}
             error={
@@ -252,6 +253,7 @@ function ChangePin({
             onValueChange={setCurrent}
           />
           <CodeField
+            slotLabel={(position) => t('identity.code.digit', { position })}
             mask
             label={t('identity.account.newPin')}
             description={t('identity.pin.rule')}
@@ -260,6 +262,7 @@ function ChangePin({
             onValueChange={setNext}
           />
           <CodeField
+            slotLabel={(position) => t('identity.code.digit', { position })}
             mask
             label={t('identity.pin.confirm')}
             error={confirmError}

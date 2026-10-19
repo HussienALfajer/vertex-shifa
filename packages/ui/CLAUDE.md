@@ -27,6 +27,10 @@ The Vertex design system for the web apps (clinic, console, site; ADR 0018): Ver
 - Feedback: success is a `toast` (`Toaster` mounted once per app, `closeLabel` from i18n); a notice that needs attention (conflict, refusal) shows under the actions, never above the form, so nothing under the cursor moves.
 - Leaving with unsaved changes asks through `UnsavedChangesDialog` ("Stay" focused, Escape stays): the app wires it to its router's blocker and to `beforeunload` (clinic: `components/unsaved-changes.tsx`).
 
+## Codes
+- `CodeField` is the six-digit row of every app: an OTP, a TOTP, or a PIN (`mask`). Slots read left to right in every language, Arabic-Indic digits become Latin, `slotLabel` names the slots after the first; `onComplete` runs on the sixth digit.
+- `QrCode` (`uqr`) draws a code as SVG modules, dark on white in both themes, because phone scanners expect it; `label` names it for screen readers. The console's TOTP setup is its first use.
+
 ## Layout and navigation
 - `PageContainer` is the one column of an app: the header row, the navigation and every page sit in it, so their edges line up in RTL. Pages and state cards start at its start edge, never centered on their own.
 - `PageHeader` takes `back`: a `BackButton` (`render={<Link …/>}`, labelled with where it goes, arrow to the inline start) on every sub-page.

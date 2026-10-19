@@ -6,6 +6,7 @@ import {
   Button,
   Callout,
   Card,
+  CodeField,
   Form,
   FormActions,
   FormFields,
@@ -18,7 +19,6 @@ import { api, apiErrorCode, TICKET_HEADER, unwrap } from '../../lib/api';
 import { device, deviceErrorCode, type RegistrationView } from '../../lib/device';
 import { useErrorText } from '../../lib/error-text';
 import { useOnline } from '../../lib/online';
-import { CodeField } from './code-fields';
 import { type SignInFlow, setSignInFlow, useSignInFlow } from './flow';
 import { useInstallation } from './installation';
 import { asDevice, clearLockReason, deviceInfo, remember, sessionStarted } from './session';
@@ -106,6 +106,7 @@ function NewPinForm({
         <Card className="flex flex-col gap-6 p-6">
           <FormFields>
             <CodeField
+              slotLabel={(position) => t('identity.code.digit', { position })}
               mask
               autoFocus
               label={t('identity.pin.new')}
@@ -115,6 +116,7 @@ function NewPinForm({
               onValueChange={setPin}
             />
             <CodeField
+              slotLabel={(position) => t('identity.code.digit', { position })}
               mask
               label={t('identity.pin.confirm')}
               error={confirmError}

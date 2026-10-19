@@ -4,9 +4,10 @@ import { useTranslation } from 'react-i18next';
 
 /**
  * The frame of every screen. "Powered by Vertex Shifa" is always visible (ADR 0018). The header
- * and every page share one column (`PageContainer`), so their edges line up.
+ * and every page share one column (`PageContainer`), so their edges line up. The signed-in user's
+ * controls sit before the theme toggle (`headerEnd`).
  */
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, headerEnd }: { children: ReactNode; headerEnd?: ReactNode }) {
   const { t } = useTranslation(['common', 'console']);
   return (
     <div className="flex min-h-screen flex-col">
@@ -15,10 +16,10 @@ export function AppShell({ children }: { children: ReactNode }) {
           <VertexShifaMark className="w-7 text-primary" />
           <span className="text-lg font-bold">{t('productName')}</span>
           <span className="text-muted-foreground">{t('console:productLabel')}</span>
-          <ThemeToggle
-            className="ms-auto"
-            labels={{ toDark: t('theme.toDark'), toLight: t('theme.toLight') }}
-          />
+          <div className="ms-auto flex items-center gap-2">
+            {headerEnd}
+            <ThemeToggle labels={{ toDark: t('theme.toDark'), toLight: t('theme.toLight') }} />
+          </div>
         </PageContainer>
       </header>
       <main className="flex-1 py-6">
