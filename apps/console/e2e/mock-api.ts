@@ -17,13 +17,15 @@ import {
   platformRolePermissions,
   updatePlatformUserSchema,
 } from '@vertex-shifa/contracts';
+import { trackActivity } from './settle.js';
 
 /**
  * An in-memory stand-in for the console routes of `apps/api/openapi.json` (spec S02 rules 36–41):
  * bodies validated with the same contracts, the proof of work checked, sign-in steps with single-use
  * tickets, the session (here a flag, as the real cookie is `Secure` and `HttpOnly`), the 5-minute
  * re-authentication window, admins only for platform users, never oneself, never the last admin.
- * The authenticator of every user shows `totpCode`. Synthetic data only.
+ * The authenticator of every user shows `totpCode`. The page's requests are tracked for `settled`.
+ * Synthetic data only.
  */
 
 export const adminPhone = '+963900000201';
@@ -192,6 +194,7 @@ export async function mockConsoleApi(
   const activeAdmins = () =>
     state.users.filter((item) => item.role === 'admin' && item.status === 'active').length;
 
+  await trackActivity(page);
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;

@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { mockConsoleApi } from './mock-api.js';
 import { screenshot } from './screenshot.js';
+import { settled } from './settle.js';
 
 test.describe('console shell', () => {
   // Every screen but the sign-in needs a session (spec S02 rule 37).
@@ -27,7 +28,9 @@ test.describe('console shell', () => {
       page.getByText('لوحة المنصة', { exact: true }).filter({ visible: true }),
     ).toHaveCount(1);
     await expect(page.getByRole('contentinfo')).toHaveText('بدعم من فيرتكس شفا');
-    // Right to left: the sidebar at the right from 768 px, the menu button below it.
+    // Right to left: the sidebar at the right from 768 px, the menu button below it, measured once
+    // the page has settled.
+    await settled(page);
     const width = page.viewportSize()?.width ?? 0;
     const sidebar = page.locator('[data-slot="app-sidebar"]');
     if (width >= 768) {
@@ -52,6 +55,8 @@ test.describe('console shell', () => {
     await expect(html).toHaveClass(systemDark ? /dark/ : /^(?!.*dark)/);
     const toDark = page.getByRole('button', { name: 'فعّل الوضع الداكن' });
     const toLight = page.getByRole('button', { name: 'فعّل الوضع الفاتح' });
+    // The shell, and its toggle, are drawn once the session is known.
+    await expect(toDark.or(toLight)).toBeVisible();
     for (const [button, dark] of [
       [toDark, true],
       [toLight, false],
