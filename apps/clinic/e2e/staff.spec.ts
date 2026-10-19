@@ -10,6 +10,7 @@ import {
   signInBeforehand,
 } from './mock-identity.js';
 import { specialties } from './mock-staff.js';
+import { closeNav, mainNav } from './nav.js';
 import { screenshot } from './screenshot.js';
 
 // Staff, doctor profiles, devices and security (S02 screens 6–10) against the mocked API.
@@ -146,7 +147,7 @@ test.describe('staff', () => {
     await screenshot(page, testInfo, 'staff-doctor-profile');
 
     // Both wait for their first sign-in.
-    await page.getByRole('link', { name: 'الموظفون' }).first().click();
+    await (await mainNav(page)).getByRole('link', { name: 'الموظفون' }).click();
     await page.getByRole('button', { name: 'المدعوون' }).click();
     await expect(page).toHaveURL('/settings/staff?status=invited');
     await expect(page.getByRole('row')).toHaveCount(3);
@@ -259,11 +260,12 @@ test.describe('staff', () => {
     const receptionist = addReceptionist(api);
     await signInBeforehand(api.identity, api.device, receptionist, api.tenant.id);
     await page.goto('/');
-    const nav = page.getByRole('navigation', { name: 'التنقل الرئيسي' });
+    const nav = await mainNav(page);
     await expect(nav).toContainText('بيانات العيادة');
     await expect(nav).not.toContainText('الموظفون');
     await expect(nav).not.toContainText('الحواسيب');
     await expect(nav).not.toContainText('الأمان');
+    await closeNav(page);
     for (const path of ['/settings/staff', '/settings/devices']) {
       await page.goto(path);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(

@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import { facility, mockApi, tenant } from './mock-api.js';
+import { mainNav } from './nav.js';
 import { screenshot } from './screenshot.js';
 
 // The behaviours every screen shares (the owner's decisions of 2026-10-18): the theme toggle,
@@ -16,7 +17,7 @@ test.describe('theme', () => {
   }, testInfo) => {
     await mockApi(page, { tenant: tenant({ status: 'active' }), facilities: [facility()] });
     await page.goto('/');
-    const systemDark = testInfo.project.name === 'dark';
+    const systemDark = testInfo.project.use.colorScheme === 'dark';
     const html = page.locator('html');
     await expect(html).toHaveClass(systemDark ? /dark/ : /^(?!.*dark)/);
     await screenshot(page, testInfo, 'theme-system');
@@ -108,11 +109,13 @@ test.describe('forms', () => {
 
   test('ask before leaving with unsaved changes', async ({ page }, testInfo) => {
     await mockApi(page, { tenant: tenant({ status: 'active' }), facilities: [facility()] });
-    await page.goto('/settings/clinic');
+    // From home, so the history keys have a step back inside the app.
+    await page.goto('/');
+    await (await mainNav(page)).getByRole('link', { name: 'بيانات العيادة' }).click();
     const latin = page.getByLabel('اسم العيادة بالأحرف اللاتينية (اختياري)');
     await latin.fill('Test Clinic');
 
-    await page.getByRole('navigation').getByRole('link', { name: 'الرئيسية' }).click();
+    await (await mainNav(page)).getByRole('link', { name: 'الرئيسية' }).click();
     const dialog = page.getByRole('alertdialog');
     await expect(dialog).toContainText('لم تُحفظ تغييراتك');
     await expect(dialog.getByRole('button', { name: 'البقاء' })).toBeFocused();
@@ -120,6 +123,7 @@ test.describe('forms', () => {
     await dialog.getByRole('button', { name: 'البقاء' }).click();
     await expect(page).toHaveURL('/settings/clinic');
     await expect(latin).toHaveValue('Test Clinic');
+    await expect(dialog).toBeHidden();
 
     // The history keys ask too.
     await page.keyboard.press('Alt+ArrowLeft');
@@ -141,12 +145,12 @@ test.describe('forms', () => {
     await page.getByLabel('اسم العيادة بالأحرف اللاتينية (اختياري)').fill('Test Clinic');
     await page.getByRole('button', { name: 'حفظ' }).click();
     await expect(page.getByText('حُفظت التغييرات.')).toBeVisible();
-    await page.getByRole('navigation').getByRole('link', { name: 'الرئيسية' }).click();
+    await (await mainNav(page)).getByRole('link', { name: 'الرئيسية' }).click();
     await expect(page).toHaveURL('/');
 
-    await page.getByRole('navigation').getByRole('link', { name: 'بيانات العيادة' }).click();
+    await (await mainNav(page)).getByRole('link', { name: 'بيانات العيادة' }).click();
     await page.getByLabel('اسم العيادة بالأحرف اللاتينية (اختياري)').fill('Other');
-    await page.getByRole('navigation').getByRole('link', { name: 'الرئيسية' }).click();
+    await (await mainNav(page)).getByRole('link', { name: 'الرئيسية' }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'المغادرة دون حفظ' }).click();
     await expect(page).toHaveURL('/');
   });

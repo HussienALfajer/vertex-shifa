@@ -1,6 +1,7 @@
 /** Text of Vertex Shifa Clinic (`apps/clinic`). */
 export const clinic = {
   productLabel: 'العيادة',
+  tagline: 'إدارة العيادة وفريقها وسجلاتها، حتى دون اتصال بالإنترنت.',
   home: {
     title: 'مرحبًا بك في فيرتكس شفا',
     description: 'تطبيق العيادة جاهز. تُضاف الشاشات مع ميزاتها.',
@@ -8,6 +9,8 @@ export const clinic = {
   nav: {
     label: 'التنقل الرئيسي',
     home: 'الرئيسية',
+    setup: 'إعداد العيادة',
+    settings: 'الإعدادات',
     clinic: 'بيانات العيادة',
     location: 'الموقع والإعدادات',
     branches: 'الفروع',
@@ -690,7 +693,6 @@ export const clinic = {
       wipedDismiss: 'حسنًا',
     },
     menu: {
-      account: 'حسابي: {{name}}',
       lock: 'قفل',
     },
     account: {

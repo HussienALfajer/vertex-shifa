@@ -1,9 +1,21 @@
 import { Link, Navigate, useRouterState } from '@tanstack/react-router';
-import { Button } from '@vertex-shifa/ui';
-import { LockKeyholeIcon, UserRoundIcon } from 'lucide-react';
+import {
+  Avatar,
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuHeader,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@vertex-shifa/ui';
+import { ChevronDownIcon, CircleUserIcon, LockKeyholeIcon } from 'lucide-react';
 import { type ReactNode, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppShell } from '../../components/app-shell';
+import { AppShell, AuthShell } from '../../components/app-shell';
 import { ErrorState } from '../../components/error-state';
 import { LoadingState } from '../../components/query-states';
 import { StateCard } from '../../components/state-card';
@@ -15,6 +27,7 @@ import {
 } from '../../lib/device';
 import { logErrorLabel } from '../../lib/error-logging';
 import { useOnline } from '../../lib/online';
+import { ClinicNav } from '../tenancy/clinic-nav';
 import { TenantGate } from '../tenancy/tenant-gate';
 import { useIdleLock } from './idle-lock';
 import { unlockedMember, useInstallation } from './installation';
@@ -35,25 +48,25 @@ export function IdentityGate({ children }: { children: ReactNode }) {
 
   if (!hasDevice()) {
     return (
-      <AppShell>
+      <AuthShell>
         <StateCard
           role="status"
           title={t('identity.desktopOnly.title')}
           description={t('identity.desktopOnly.description')}
         />
-      </AppShell>
+      </AuthShell>
     );
   }
   if (installation.isPending) {
     return (
-      <AppShell>
+      <AuthShell>
         <LoadingState />
-      </AppShell>
+      </AuthShell>
     );
   }
   if (installation.isError) {
     return (
-      <AppShell>
+      <AuthShell>
         <ErrorState
           description={
             deviceErrorCode(installation.error) === 'STORAGE_UNAVAILABLE'
@@ -62,7 +75,7 @@ export function IdentityGate({ children }: { children: ReactNode }) {
           }
           onRetry={() => void installation.refetch()}
         />
-      </AppShell>
+      </AuthShell>
     );
   }
 
@@ -75,13 +88,13 @@ export function IdentityGate({ children }: { children: ReactNode }) {
     if (pathname === '/welcome' && view.registrations.length > 0) {
       return <Navigate to="/lock" replace />;
     }
-    return <AppShell>{children}</AppShell>;
+    return <AuthShell>{children}</AuthShell>;
   }
   if (!signedIn) {
     return <Navigate to={view.registrations.length > 0 ? '/lock' : '/welcome'} replace />;
   }
   return (
-    <AppShell headerEnd={<MemberMenu {...signedIn} />}>
+    <AppShell navigation={<ClinicNav />} headerEnd={<MemberMenu {...signedIn} />}>
       <SignedIn registration={signedIn.registration}>{children}</SignedIn>
     </AppShell>
   );
@@ -105,7 +118,10 @@ function SignedIn({
   return <TenantGate>{children}</TenantGate>;
 }
 
-/** Who is signed in, their account, and the lock. */
+/**
+ * Who is signed in (Vertex Hub's user menu: the avatar, the name from the `sm` breakpoint), their
+ * account, and the lock, which stays one press away beside the menu from 384 px.
+ */
 function MemberMenu({
   registration,
   member,
@@ -113,25 +129,59 @@ function MemberMenu({
   registration: RegistrationView;
   member: MemberView;
 }) {
-  const { t } = useTranslation('clinic');
+  const { t } = useTranslation(['clinic', 'common']);
+  const name = member.name || t('identity.lock.unnamed');
   return (
     <div className="flex items-center gap-1">
-      <span className="hidden text-sm text-muted-foreground lg:inline">
-        {registration.clinicName}
-      </span>
-      <Button
-        variant="ghost"
-        size="sm"
-        render={<Link to="/me" />}
-        aria-label={t('identity.menu.account', { name: member.name })}
-      >
-        <UserRoundIcon aria-hidden />
-        <span>{member.name || t('identity.lock.unnamed')}</span>
-      </Button>
-      <Button variant="ghost" size="sm" onClick={() => void lockSession()}>
-        <LockKeyholeIcon aria-hidden />
-        {t('identity.menu.lock')}
-      </Button>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon"
+              // On the narrowest phones the lock waits in the menu, so the brand keeps its room.
+              className="hidden min-[24rem]:inline-flex"
+              onClick={() => void lockSession()}
+              aria-label={t('identity.menu.lock')}
+            />
+          }
+        >
+          <LockKeyholeIcon aria-hidden />
+        </TooltipTrigger>
+        <TooltipContent>{t('identity.menu.lock')}</TooltipContent>
+      </Tooltip>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant="ghost"
+              className="h-10 gap-2 px-2"
+              aria-label={t('common:shell.userMenu', { name })}
+            />
+          }
+        >
+          <Avatar name={name} size="sm" className="size-8" />
+          <span className="hidden max-w-40 truncate text-sm font-medium sm:inline">{name}</span>
+          <ChevronDownIcon aria-hidden className="hidden size-4 text-muted-foreground sm:block" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-60">
+          <DropdownMenuHeader>
+            <span className="font-medium wrap-anywhere">{name}</span>
+            <span className="text-sm text-muted-foreground wrap-anywhere">
+              {registration.clinicName}
+            </span>
+          </DropdownMenuHeader>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem render={<Link to="/me" />}>
+            <CircleUserIcon aria-hidden />
+            {t('identity.account.title')}
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => void lockSession()}>
+            <LockKeyholeIcon aria-hidden />
+            {t('identity.menu.lock')}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

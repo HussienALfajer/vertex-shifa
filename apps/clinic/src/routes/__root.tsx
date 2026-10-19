@@ -1,5 +1,5 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router';
-import { AppShell } from '../components/app-shell';
+import { AuthShell } from '../components/app-shell';
 import { ErrorState } from '../components/error-state';
 import { NotFoundState } from '../components/not-found-state';
 import { IdentityGate } from '../features/identity/identity-gate';
@@ -17,9 +17,9 @@ function Root() {
 export const Route = createRootRoute({
   component: Root,
   errorComponent: ({ reset }) => (
-    <AppShell>
+    <AuthShell>
       <ErrorState onRetry={reset} />
-    </AppShell>
+    </AuthShell>
   ),
   notFoundComponent: NotFoundState,
 });

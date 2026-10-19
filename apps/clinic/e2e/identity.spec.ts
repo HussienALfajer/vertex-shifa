@@ -8,6 +8,7 @@ import {
   seededPin,
   signInBeforehand,
 } from './mock-identity.js';
+import { openUserMenu } from './nav.js';
 import { screenshot } from './screenshot.js';
 
 // Sign-in, registration, PIN and lock screen (spec S02 screens 1–5 and 11) against the mocked API
@@ -185,6 +186,22 @@ test.describe('signing in on this computer', () => {
 });
 
 test.describe('lock screen', () => {
+  test('locks from the member menu on the narrowest window', async ({ page }, testInfo) => {
+    await mockApi(page, { tenant: tenant({ status: 'active' }), facilities: [facility()] });
+    // 360 px is the desktop window's minimum width (electron/main.ts): the lock button gives its
+    // room to the brand, and the lock waits in the member menu.
+    await page.setViewportSize({ width: 360, height: 740 });
+    await page.goto('/');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('مرحبًا بك في فيرتكس شفا');
+    await expect(page.getByRole('button', { name: 'قفل' })).toBeHidden();
+    await openUserMenu(page);
+    await screenshot(page, testInfo, 'member-menu-360');
+    await page.getByRole('menuitem', { name: 'قفل' }).click();
+    await expect(page).toHaveURL('/lock');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('عيادة الاختبار');
+    await expect(codeField(page, 'الرمز السري لـ مالك تجريبي').first()).toBeVisible();
+  });
+
   test('unlocks with the PIN, disables it after five wrong ones, re-enables it with the password', async ({
     page,
   }, testInfo) => {
@@ -373,7 +390,9 @@ test.describe('my account', () => {
     // An unlocked app never shows the lock screen: a step back to it lands home.
     await page.goto('/lock');
     await expect(page).toHaveURL('/');
-    await page.getByRole('link', { name: 'حسابي: مالك تجريبي' }).click();
+    await openUserMenu(page);
+    await expect(page.getByRole('menu')).toContainText('مالك تجريبي');
+    await page.getByRole('menuitem', { name: 'حسابي' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('حسابي');
     await expect(page.getByText('+963900000101')).toBeVisible();
     await screenshot(page, testInfo, 'account');

@@ -1,7 +1,14 @@
 import { expect, type Page, type TestInfo, test } from '@playwright/test';
 
-/** An RTL screenshot per color scheme, kept in test-results/ (uploaded by CI) and in the report. */
+/**
+ * An RTL screenshot per project (phone light and dark, tablet), kept in test-results/ (uploaded by
+ * CI) and in the report. No screen is wider than its window (AGENTS.md "Responsive").
+ */
 async function screenshot(page: Page, testInfo: TestInfo, name: string): Promise<void> {
+  const overflow = await page.evaluate<number>(
+    'document.documentElement.scrollWidth - document.documentElement.clientWidth',
+  );
+  expect(overflow, `${name} scrolls sideways on ${testInfo.project.name}`).toBe(0);
   const path = testInfo.outputPath(`${name}-${testInfo.project.name}.png`);
   await page.screenshot({ path, fullPage: true });
   await testInfo.attach(name, { path, contentType: 'image/png' });
@@ -22,7 +29,8 @@ test.describe('patient shell', () => {
     await expect(page.getByRole('banner')).toContainText('فيرتكس شفا');
     // The device's color scheme applies (the web export is rendered ahead in light): the surface
     // token is white in light and green-900 in dark (packages/tokens).
-    const surface = testInfo.project.name === 'dark' ? 'rgb(11, 45, 40)' : 'rgb(255, 255, 255)';
+    const surface =
+      testInfo.project.use.colorScheme === 'dark' ? 'rgb(11, 45, 40)' : 'rgb(255, 255, 255)';
     await expect(page.getByRole('banner')).toHaveCSS('background-color', surface);
 
     // Right to left: the product name starts at the right edge of the header.

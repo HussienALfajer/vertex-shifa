@@ -1,11 +1,23 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, useNavigate, useRouterState } from '@tanstack/react-router';
 import type { ConsoleMe } from '@vertex-shifa/contracts';
-import { Button, toast } from '@vertex-shifa/ui';
-import { LogOutIcon, UserRoundIcon } from 'lucide-react';
+import {
+  Avatar,
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuHeader,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  SidebarLink,
+  SidebarNav,
+  toast,
+} from '@vertex-shifa/ui';
+import { ChevronDownIcon, CircleUserIcon, HouseIcon, LogOutIcon, UsersIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppShell } from '../../components/app-shell';
+import { AppShell, AuthShell } from '../../components/app-shell';
 import { QueryStates } from '../../components/query-states';
 import { apiErrorCode } from '../../lib/api';
 import { useErrorText } from '../../lib/error-text';
@@ -19,7 +31,7 @@ import { holds, meQuery, signOut } from './session';
  */
 export function SessionGate({ children }: { children: ReactNode }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  if (pathname === '/sign-in') return <AppShell>{children}</AppShell>;
+  if (pathname === '/sign-in') return <AuthShell>{children}</AuthShell>;
   return <SignedIn>{children}</SignedIn>;
 }
 
@@ -32,49 +44,40 @@ function SignedIn({ children }: { children: ReactNode }) {
     );
   }
   return (
-    <AppShell headerEnd={me.data && <UserMenu me={me.data} />}>
-      <QueryStates queries={[me]}>
-        {() => (
-          <ReauthProvider>
-            <div className="flex flex-col gap-6">
-              <MainNav me={me.data as ConsoleMe} />
-              {children}
-            </div>
-          </ReauthProvider>
-        )}
-      </QueryStates>
+    <AppShell
+      navigation={me.data && <MainNav me={me.data} />}
+      headerEnd={me.data && <UserMenu me={me.data} />}
+    >
+      <QueryStates queries={[me]}>{() => <ReauthProvider>{children}</ReauthProvider>}</QueryStates>
     </AppShell>
   );
 }
 
-/** The console's screens; platform users show to admins (cosmetic: the API decides). */
+/** The console's screens, in the sidebar; platform users show to admins (cosmetic: the API decides). */
 function MainNav({ me }: { me: ConsoleMe }) {
   const { t } = useTranslation('console');
-  const link = 'data-[status=active]:bg-muted data-[status=active]:font-bold';
   return (
-    <nav aria-label={t('nav.label')} className="flex flex-wrap gap-1 border-b border-border pb-2">
-      <Button
-        variant="ghost"
-        className={link}
-        render={<Link to="/" activeOptions={{ exact: true }} />}
-      >
+    <SidebarNav aria-label={t('nav.label')}>
+      <SidebarLink render={<Link to="/" activeOptions={{ exact: true }} />}>
+        <HouseIcon aria-hidden />
         {t('nav.home')}
-      </Button>
+      </SidebarLink>
       {holds(me, 'platform-users.manage') && (
-        <Button variant="ghost" className={link} render={<Link to="/platform-users" />}>
+        <SidebarLink render={<Link to="/platform-users" />}>
+          <UsersIcon aria-hidden />
           {t('nav.platformUsers')}
-        </Button>
+        </SidebarLink>
       )}
-      <Button variant="ghost" className={link} render={<Link to="/me" />}>
-        {t('nav.account')}
-      </Button>
-    </nav>
+    </SidebarNav>
   );
 }
 
-/** Who is signed in, and the sign-out, which ends the session on the server. */
+/**
+ * Who is signed in (Vertex Hub's user menu: the avatar, the name from the `sm` breakpoint), their
+ * account, and the sign-out, which ends the session on the server.
+ */
 function UserMenu({ me }: { me: ConsoleMe }) {
-  const { t } = useTranslation('console');
+  const { t } = useTranslation(['console', 'common']);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const errorText = useErrorText();
@@ -87,20 +90,34 @@ function UserMenu({ me }: { me: ConsoleMe }) {
     onError: (error) => toast.add({ title: errorText(error), type: 'error' }),
   });
   return (
-    <div className="flex items-center gap-1">
-      <Button
-        variant="ghost"
-        size="sm"
-        render={<Link to="/me" />}
-        aria-label={t('nav.accountOf', { name: me.name })}
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="ghost"
+            className="h-10 gap-2 px-2"
+            aria-label={t('common:shell.userMenu', { name: me.name })}
+          />
+        }
       >
-        <UserRoundIcon aria-hidden />
-        <span>{me.name}</span>
-      </Button>
-      <Button variant="ghost" size="sm" loading={out.isPending} onClick={() => out.mutate()}>
-        <LogOutIcon aria-hidden />
-        {t('nav.signOut')}
-      </Button>
-    </div>
+        <Avatar name={me.name} size="sm" className="size-8" />
+        <span className="hidden max-w-40 truncate text-sm font-medium sm:inline">{me.name}</span>
+        <ChevronDownIcon aria-hidden className="hidden size-4 text-muted-foreground sm:block" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-60">
+        <DropdownMenuHeader>
+          <span className="font-medium wrap-anywhere">{me.name}</span>
+        </DropdownMenuHeader>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem render={<Link to="/me" />}>
+          <CircleUserIcon aria-hidden />
+          {t('nav.account')}
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={out.isPending} onClick={() => out.mutate()}>
+          <LogOutIcon aria-hidden className="rtl:-scale-x-100" />
+          {t('nav.signOut')}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

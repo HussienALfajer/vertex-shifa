@@ -17,6 +17,6 @@ The Vertex Shifa patient app for Android and iOS (ADR 0003, layout ADR 0020): Re
 - The app shows a patient only the items a clinic shared (ADR 0006, 0016). Booking needs a connection; the read cache and tokens in secure storage arrive with S19 (ADR 0003). Validation through `packages/contracts`.
 - Push is Expo notifications plus the native token, tested on development builds, never Expo Go (ADR 0022). Service-account keys and `google-services.json` never enter the repository.
 - Versions of Expo packages come from `pnpm exec expo install <package>`, which matches the SDK.
-- UI changes add or update the E2E RTL screenshots (light and dark) and are looked at before the PR.
+- UI changes add or update the E2E RTL screenshots (phone light and dark, tablet) and are looked at before the PR.
 
 Run: `pnpm --filter @vertex-shifa/patient test` · E2E (after `build`): `pnpm --filter @vertex-shifa/patient test:e2e` · dev: `pnpm --filter @vertex-shifa/patient dev`.

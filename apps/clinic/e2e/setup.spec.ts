@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { areas, facility, logoPng, mockApi, shortLink, tenant } from './mock-api.js';
+import { closeNav, mainNav } from './nav.js';
 import { screenshot } from './screenshot.js';
 
 // The onboarding wizard (S01 screen 1) against the mocked API, without map tiles: the location is
@@ -103,7 +104,8 @@ test.describe('onboarding wizard', () => {
     await page.getByRole('button', { name: 'إنهاء الإعداد' }).click();
 
     await expect(page).toHaveURL('/');
-    await expect(page.getByRole('navigation')).toContainText('الموقع والإعدادات');
+    await expect(await mainNav(page)).toContainText('الموقع والإعدادات');
+    await closeNav(page);
     expect(api.tenant.status).toBe('active');
     expect(api.writes).toEqual([
       'PUT /api/tenant/logo',

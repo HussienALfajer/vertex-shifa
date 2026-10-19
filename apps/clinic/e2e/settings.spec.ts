@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { areas, facility, mockApi, tenant } from './mock-api.js';
+import { closeNav, mainNav } from './nav.js';
 import { screenshot } from './screenshot.js';
 
 // Clinic settings, branch settings and the branch list (S01 screens 3–6) against the mocked API.
@@ -56,7 +57,8 @@ test.describe('clinic settings', () => {
     // Only "Add a branch" names a branch (rule 9).
     const main = page.getByRole('main');
     await expect(main.getByText(/فرع/)).toHaveText(['إضافة فرع']);
-    await expect(page.getByRole('navigation')).not.toContainText('الفروع');
+    await expect(await mainNav(page)).not.toContainText('الفروع');
+    await closeNav(page);
     await screenshot(page, testInfo, 'settings-location');
   });
 
@@ -102,7 +104,8 @@ test.describe('branches', () => {
 
     // Two branches in use: the list replaces the location screen.
     await expect(page).toHaveURL('/settings/branches');
-    await expect(page.getByRole('navigation')).toContainText('الفروع');
+    await expect(await mainNav(page)).toContainText('الفروع');
+    await closeNav(page);
     const rows = page.getByRole('row');
     await expect(rows).toHaveCount(3);
     await expect(rows.nth(2)).toContainText('فرع السوق');
@@ -185,8 +188,11 @@ test.describe('offline', () => {
 
     // The preview server stands in for the app's local files: load the next screen's code first,
     // as the built app always has it.
-    await page.getByRole('link', { name: 'الموقع والإعدادات' }).hover();
+    const preloaded = page.waitForResponse(/\/assets\/location-[^/]+\.js$/);
+    await (await mainNav(page)).getByRole('link', { name: 'الموقع والإعدادات' }).hover();
+    await preloaded;
     await page.waitForLoadState('networkidle');
+    await closeNav(page);
     await context.setOffline(true);
     await expect(
       page.getByRole('status').filter({ hasText: 'لا يمكن الحفظ دون اتصال' }),
@@ -201,7 +207,7 @@ test.describe('offline', () => {
 
     // A screen whose data is not loaded yet waits for the connection: nothing is queued. The
     // change typed above is left on purpose.
-    await page.getByRole('link', { name: 'الموقع والإعدادات' }).click();
+    await (await mainNav(page)).getByRole('link', { name: 'الموقع والإعدادات' }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'المغادرة دون حفظ' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('لا يوجد اتصال بالإنترنت');
     await screenshot(page, testInfo, 'offline-state');
@@ -230,7 +236,7 @@ test.describe('read-only clinic', () => {
     await expect(page.getByRole('link', { name: 'إضافة فرع' })).toHaveCount(0);
     await screenshot(page, testInfo, 'read-only-banner');
 
-    await page.getByRole('navigation').getByRole('link', { name: 'الرئيسية' }).click();
+    await (await mainNav(page)).getByRole('link', { name: 'الرئيسية' }).click();
     await expect(banner).toBeVisible();
   });
 

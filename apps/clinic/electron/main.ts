@@ -101,8 +101,9 @@ function createWindow(): BrowserWindow {
   const window = new BrowserWindow({
     width: 1280,
     height: 800,
-    minWidth: 960,
-    minHeight: 600,
+    // Every screen fits a phone's width (AGENTS.md "Responsive"): the window may be narrow.
+    minWidth: 360,
+    minHeight: 480,
     show: false,
     autoHideMenuBar: true,
     webPreferences: {
