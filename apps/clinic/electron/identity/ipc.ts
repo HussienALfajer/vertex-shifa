@@ -1,27 +1,24 @@
 import {
-  currentDeviceSchema,
   logoUpload,
   mobilePhoneNumberSchema,
+  passwordPolicy,
   roleSchema,
-  sessionTokensSchema,
 } from '@vertex-shifa/contracts';
 import { z } from 'zod';
 import type { DeviceCalls, DeviceErrorCode, DeviceMethod, DeviceResult } from './bridge.js';
 import { DeviceError, type Installation } from './installation.js';
 import { solveProofOfWork } from './proof-of-work.js';
+import { ServerRefusal } from './server.js';
 
 // The renderer is untrusted (ADR 0021): every call's input is checked here before it reaches the
-// installation, and a refusal goes back as a code only.
+// installation, and a refusal goes back as a code only (the API's code for a refusal of the API).
 
 const id = z.uuid();
 const pin = z.string().regex(/^\d{6}$/);
 const nonce = z.string().min(1).max(100);
-const member = z.object({
-  enrollmentId: id,
-  membershipId: id,
-  name: z.string().max(100),
-  roles: z.array(roleSchema).max(5),
-});
+const ticket = z.string().min(1).max(2_000);
+const name = z.string().max(200);
+const owner = z.object({ deviceId: id, tenantId: id, enrollmentId: id });
 // The clinic's logo as the API stores it: a PNG of at most 256 KiB, base64.
 const logo = z.object({
   contentType: z.literal('image/png'),
@@ -40,38 +37,33 @@ const inputs: { [M in DeviceMethod]: z.ZodType<DeviceCalls[M]['input']> } = {
     z.object({ tenantId: id, phone: mobilePhoneNumberSchema, pin }),
     z.object({ deviceId: id, phone: mobilePhoneNumberSchema, pin }),
   ]),
-  completeRegistration: z.object({
+  register: z.object({
     pendingId: id,
-    deviceId: id,
-    tenantId: id,
-    clinicName: z.string().max(200),
-    clinicNameLatin: z.string().max(200).nullable(),
-    facilityName: z.string().max(200).nullable(),
-    member,
-    lastConfirmedAt: z.iso.datetime(),
-    session: sessionTokensSchema,
+    ticket,
+    facilityId: id.nullable(),
+    deviceName: name,
+    clinicName: name,
+    clinicNameLatin: name.nullable(),
+    facilityName: name.nullable(),
+    memberName: name,
+    roles: z.array(roleSchema).max(5),
   }),
-  completeEnrollment: z.object({
-    pendingId: id,
-    member,
-    lastConfirmedAt: z.iso.datetime(),
-    session: sessionTokensSchema,
-  }),
+  enroll: z.object({ pendingId: id, ticket, memberName: name }),
   discardKeys: z.object({ pendingId: id }),
   signDeviceToken: z.object({ deviceId: id, nonce }),
   unlock: z.object({ deviceId: id, enrollmentId: id, pin }),
-  signSession: z.object({ nonce }),
+  openSession: owner,
+  refreshSession: owner.extend({ sessionId: id }),
+  dropSession: owner.extend({ sessionId: id }),
   session: z.null(),
-  setSession: z.object({
-    deviceId: id,
-    tenantId: id,
-    enrollmentId: id,
-    session: sessionTokensSchema.nullable(),
-  }),
   lock: z.null(),
-  updateDevice: z.object({ current: currentDeviceSchema }),
+  refreshDevice: z.object({ deviceId: id }),
   setLogo: z.object({ deviceId: id, logo: logo.nullable() }),
-  reenablePin: z.object({ deviceId: id, enrollmentId: id }),
+  reenablePin: z.object({
+    deviceId: id,
+    enrollmentId: id,
+    password: z.string().min(1).max(passwordPolicy.maxLength),
+  }),
   changePin: z.object({ deviceId: id, enrollmentId: id, currentPin: pin, newPin: pin }),
   removeMember: z.object({ deviceId: id, enrollmentId: id }),
   wipe: z.object({ deviceId: id }),
@@ -106,6 +98,7 @@ export async function handleDeviceCall(
     const call = installation.calls[name] as (value: unknown) => Promise<unknown>;
     return { ok: true, value: await call(parsed.data) };
   } catch (error) {
+    if (error instanceof ServerRefusal) return { ok: false, code: 'REFUSED', refusal: error.code };
     const code: DeviceErrorCode = error instanceof DeviceError ? error.code : 'INTERNAL';
     return { ok: false, code };
   }

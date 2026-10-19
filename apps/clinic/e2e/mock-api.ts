@@ -19,6 +19,7 @@ import {
   type Clinic,
   createIdentity,
   identityRoutes,
+  identityTransport,
   type MockIdentity,
   ownerPassword,
   ownerPhone,
@@ -253,9 +254,10 @@ export async function mockApi(
     writeDelayMs: 0,
     editBehind: (change) => change(state),
   };
+  const sessions = identityRoutes(identity);
+  device.connect(identityTransport(sessions));
   if (seed.signedIn !== false && !seed.ownerInvited)
     await signInBeforehand(identity, device, owner, seed.tenant.id);
-  const sessions = identityRoutes(identity);
   const staff = staffRoutes(state);
 
   const refuse = (route: Route, code: ErrorCode) =>

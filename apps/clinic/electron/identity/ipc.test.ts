@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { DEVICE_CHANNEL } from './bridge.js';
+import { DEVICE_CHANNEL, DEVICE_EVENT_CHANNEL } from './bridge.js';
 import { Installation } from './installation.js';
 import { handleDeviceCall } from './ipc.js';
 import { solveProofOfWork } from './proof-of-work.js';
@@ -37,12 +37,64 @@ describe('device bridge', () => {
         pin: '123456',
       }),
     ).toEqual({ ok: false, code: 'PIN_WEAK' });
-    expect(await call('signSession', { nonce: 'n' })).toEqual({ ok: false, code: 'NOT_UNLOCKED' });
+    const owner = {
+      deviceId: crypto.randomUUID(),
+      tenantId: crypto.randomUUID(),
+      enrollmentId: crypto.randomUUID(),
+    };
+    expect(await call('openSession', owner)).toEqual({ ok: false, code: 'NOT_UNLOCKED' });
   });
 
-  it('uses the channel the preload names', async () => {
+  it('has no call that takes a session, a confirmation or a success from the renderer (F02)', async () => {
+    const session = {
+      sessionId: crypto.randomUUID(),
+      accessToken: 'forged',
+      accessTokenExpiresAt: '2026-10-18T09:15:00.000Z',
+      refreshToken: 'forged',
+      expiresAt: '2026-10-18T21:00:00.000Z',
+    };
+    const ids = { deviceId: crypto.randomUUID(), enrollmentId: crypto.randomUUID() };
+    for (const [method, input] of [
+      ['setSession', { ...ids, tenantId: crypto.randomUUID(), session }],
+      ['signSession', { nonce: 'n' }],
+      ['updateDevice', { current: {} }],
+      ['completeEnrollment', { pendingId: crypto.randomUUID(), session }],
+      ['completeRegistration', { pendingId: crypto.randomUUID(), session }],
+    ] as const) {
+      expect(await call(method, input)).toEqual({ ok: false, code: 'INVALID_INPUT' });
+    }
+    // Re-enabling a PIN needs the password the main process signs in with: ids alone are refused.
+    expect(await call('reenablePin', ids)).toEqual({ ok: false, code: 'INVALID_INPUT' });
+  });
+
+  it('answers a refusal of the API with its code', async () => {
+    const offline = new Installation(memoryStore(), testProtector(), undefined, testPinCost, {
+      server: async () => ({ status: 401, body: { code: 'TICKET_INVALID', message: 'x' } }),
+    });
+    const keys = await offline.calls.prepareKeys({
+      tenantId: crypto.randomUUID(),
+      phone: '+963900000101',
+      pin: '258147',
+    });
+    expect(
+      await handleDeviceCall(offline, appInfo, 'register', {
+        pendingId: keys.pendingId,
+        ticket: 'ticket',
+        facilityId: null,
+        deviceName: 'حاسوب',
+        clinicName: 'عيادة',
+        clinicNameLatin: null,
+        facilityName: null,
+        memberName: 'مالك',
+        roles: ['owner'],
+      }),
+    ).toEqual({ ok: false, code: 'REFUSED', refusal: 'TICKET_INVALID' });
+  });
+
+  it('uses the channels the preload names', async () => {
     const preload = await readFile(new URL('../preload.cts', import.meta.url), 'utf8');
     expect(preload).toContain(`'${DEVICE_CHANNEL}'`);
+    expect(preload).toContain(`'${DEVICE_EVENT_CHANNEL}'`);
   });
 });
 
