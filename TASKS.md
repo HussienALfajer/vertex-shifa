@@ -46,9 +46,9 @@ Spec: `docs/specs/S02-identity-access-and-devices.md` (Approved 2026-10-18). ADR
 - [x] Checks, reviewer, owner acceptance (steps 1, 2, 4–8 of the spec), PR with auto-merge
 
 ## PR 6 — Clinic app: staff, doctor profile, devices and security (`feat/s02-clinic-staff`)
-- [ ] Screens: staff list, invite and member detail with the permission editor, doctor profile with photo, devices, security settings
-- [ ] i18n; E2E with a mocked API; RTL screenshots light and dark
-- [ ] Checks, reviewer, owner acceptance (steps 3, 9, 11 of the spec), PR with auto-merge
+- [x] Screens: staff list, invite and member detail with the permission editor, doctor profile with photo, devices, security settings
+- [x] i18n; E2E with a mocked API; RTL screenshots light and dark
+- [x] Checks, reviewer, owner acceptance (steps 3, 9, 11 of the spec), PR with auto-merge
 
 ## PR 7 — Console: sign-in, TOTP and platform users (`feat/s02-console-sign-in`)
 - [ ] Screens: sign-in with setup and TOTP step, re-authentication dialog, platform users, my account
