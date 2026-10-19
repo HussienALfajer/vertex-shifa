@@ -291,6 +291,10 @@ export async function mockApi(
   };
 
   await page.route('**/api/**', async (route) => {
+    // `context.setOffline` does not stop routed requests: the page offline gets no answer, as the
+    // device bridge's requests get none (`device-bridge.ts`).
+    if ((await page.evaluate('navigator.onLine').catch(() => true)) === false)
+      return route.abort('internetdisconnected');
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname;

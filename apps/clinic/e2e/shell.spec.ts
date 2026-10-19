@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 import { facility, mockApi, tenant } from './mock-api.js';
 import { screenshot } from './screenshot.js';
+import { settled } from './settle.js';
 
 test.describe('clinic shell', () => {
   test.beforeEach(async ({ page }) => {
@@ -87,8 +88,10 @@ test.describe('clinic shell', () => {
 /**
  * The frame at the window's size: the sidebar at the inline start (the right) from 768 px, hidden
  * below it; the top bar's theme toggle on the page column's end edge; nothing wider than the window.
+ * Measured once the page has `settled`.
  */
 async function expectFrame(page: Page, label: string): Promise<void> {
+  await settled(page);
   const width = page.viewportSize()?.width ?? 0;
   const sidebar = page.locator('[data-slot="app-sidebar"]');
   if (width >= 768) {

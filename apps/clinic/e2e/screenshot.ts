@@ -1,11 +1,13 @@
 import { expect, type Page, type TestInfo } from '@playwright/test';
+import { settled } from './settle.js';
 
 /**
  * An RTL screenshot per project (desktop light and dark, tablet, phone), kept in test-results/
  * (uploaded by CI) and in the report. No screen is wider than its window (AGENTS.md
- * "Responsive"): the page never scrolls sideways.
+ * "Responsive"): the page never scrolls sideways. Taken once the page has `settled`.
  */
 export async function screenshot(page: Page, testInfo: TestInfo, name: string): Promise<void> {
+  await settled(page);
   // A string: the E2E is typed for Node, without the DOM's globals.
   const overflow = await page.evaluate<number>(
     'document.documentElement.scrollWidth - document.documentElement.clientWidth',

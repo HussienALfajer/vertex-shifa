@@ -11,6 +11,7 @@ import {
 } from './mock-identity.js';
 import { openUserMenu } from './nav.js';
 import { screenshot } from './screenshot.js';
+import { settled } from './settle.js';
 
 // Sign-in, registration, PIN and lock screen (spec S02 screens 1–5 and 11) against the mocked API
 // and the main process's identity in the test (`device-bridge.ts`). Synthetic data only.
@@ -263,6 +264,8 @@ test.describe('lock screen', () => {
     // The preview server stands in for the app's local files: the screen's code loads first, as
     // the built app always has it.
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('عيادة الاختبار');
+    // The lock screen's refresh on mount has answered: the connection drops after it.
+    await settled(page);
     await context.setOffline(true);
     await expect(page.getByText('يعمل الرمز السري دون اتصال.', { exact: false })).toBeVisible();
     await expect(page.getByRole('button', { name: 'مستخدم آخر' })).toBeDisabled();
@@ -288,6 +291,8 @@ test.describe('lock screen', () => {
     api.device.setClockOffset(8 * DAY);
     await page.goto('/lock');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('عيادة الاختبار');
+    // The lock screen's refresh on mount has answered: the connection drops after it.
+    await settled(page);
     await context.setOffline(true);
     await expect(page.getByText('يحتاج إلى اتصال')).toBeVisible();
     await expect(page.getByText('اتصل بالإنترنت للمتابعة')).toBeVisible();
@@ -317,6 +322,8 @@ test.describe('lock screen', () => {
     await expect(page).toHaveURL(/\/lock/);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('عيادة الاختبار');
     // Offline, the PIN no longer opens the app.
+    // The lock screen's refresh on mount has answered: the connection drops after it.
+    await settled(page);
     await context.setOffline(true);
     await expect(page.getByText('اتصل بالإنترنت للمتابعة')).toBeVisible();
     await expect(codeField(page, 'الرمز السري لـ مالك تجريبي').first()).toBeDisabled();
@@ -537,8 +544,11 @@ test.describe('forgotten password (rule 16)', () => {
     await alert.getByRole('button', { name: 'البدء من جديد' }).click();
     await requestCode(page, '0900000102');
     await typeCode(page, 'رمز التحقق', otpCode);
+    // The code is verified (the new password is asked) before the authorization ends.
+    const newPassword = page.getByLabel('كلمة المرور الجديدة');
+    await expect(newPassword).toBeVisible();
     receptionist.resetUntil = Date.now() - 1;
-    await page.getByLabel('كلمة المرور الجديدة').fill('synthetic-renewed-pass');
+    await newPassword.fill('synthetic-renewed-pass');
     await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
     await expect(page.getByRole('alert')).toHaveText(
       'انتهى السماح بتعيين كلمة مرور جديدة. اطلب من مالك العيادة السماح مرة أخرى، ثم ابدأ من جديد.',
