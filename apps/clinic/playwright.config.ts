@@ -9,7 +9,7 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   // Four projects, each signing members in with Argon2id (64 MiB): on a large machine Playwright's
   // default (half the cores) starves the preview server and the tests time out.
-  workers: process.env.CI ? undefined : '25%',
+  ...(process.env.CI ? {} : { workers: '25%' }),
   reporter: process.env.CI ? 'github' : 'list',
   use: {
     baseURL: 'http://localhost:4173',
