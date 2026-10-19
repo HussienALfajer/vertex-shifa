@@ -1,4 +1,9 @@
-export { createDatabase, type Database, type Transaction } from './client.js';
+export {
+  createDatabase,
+  DATABASE_TIMEOUTS,
+  type Database,
+  type Transaction,
+} from './client.js';
 export { describeForLog } from './describe-for-log.js';
 export * from './schema/index.js';
 export {

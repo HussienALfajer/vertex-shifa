@@ -323,6 +323,24 @@ export class ConsoleAuthService {
     assertPasswordStrong(input.newPassword, user.phone);
     const passwordHash = await hashPassword(input.newPassword);
     await this.db.transaction(async (tx) => {
+      // Locked and rechecked: the password verified above may have changed meanwhile (another
+      // change, a reset), the user been disabled, or this session ended.
+      const [locked] = await tx
+        .select({ passwordHash: platformUsers.passwordHash, status: platformUsers.status })
+        .from(platformUsers)
+        .where(eq(platformUsers.id, user.id))
+        .for('update');
+      const [session] = await tx
+        .select({ endedAt: platformSessions.endedAt })
+        .from(platformSessions)
+        .where(eq(platformSessions.id, actor.sessionId))
+        .for('update');
+      if (!session || session.endedAt) {
+        throw new DomainError('SESSION_ENDED', 'The console session has ended');
+      }
+      if (locked?.status !== 'active' || locked.passwordHash !== user.passwordHash) {
+        throw invalidCredentials();
+      }
       await tx
         .update(platformUsers)
         .set({ passwordHash, updatedAt: now })

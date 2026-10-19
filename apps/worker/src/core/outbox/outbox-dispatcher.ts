@@ -16,6 +16,12 @@ import { JOBS_DATABASE } from './jobs-database.js';
 export const OUTBOX_BATCH_SIZE = 100;
 /** The pause between two polls once the outbox is drained. */
 const POLL_INTERVAL_MS = 1000;
+/**
+ * How long shutdown waits for a poll in flight. The poll's statements are bounded by the pool's
+ * timeouts; past this wait, shutdown goes on and the pool closes once the poll gives its connection
+ * back, its claim rolled back unless it committed.
+ */
+export const SHUTDOWN_WAIT_MS = 10_000;
 
 /**
  * The transactional outbox's dispatcher (ADR 0001, ADR 0012). As the audited jobs role it claims
@@ -86,7 +92,15 @@ export class OutboxDispatcher implements OnApplicationBootstrap, BeforeApplicati
   async beforeApplicationShutdown() {
     this.stopped = true;
     clearTimeout(this.timer);
-    await this.polling;
+    let timeout: NodeJS.Timeout | undefined;
+    const finished = await Promise.race([
+      this.polling?.then(() => true),
+      new Promise<false>((resolve) => {
+        timeout = setTimeout(() => resolve(false), SHUTDOWN_WAIT_MS);
+      }),
+    ]);
+    clearTimeout(timeout);
+    if (finished === false) this.logger.warn('Shutdown did not wait for the poll in flight');
   }
 
   private schedule(delay: number) {
