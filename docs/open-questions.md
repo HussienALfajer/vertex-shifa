@@ -7,7 +7,6 @@ Decisions that belong to the owner. Agents must not guess answers to these. When
 | Q1 | Hosting provider and region; the platform domain (public pages, API, patient app links) | Phase 0 deploy skeleton | A VPS provider that serves Syrian users without blocking (as for the owner's other Vertex servers); a dedicated product domain |
 | Q2 | Legal review: Law No. 12 of 2024 obligations for health data, record retention periods, consent wording | Pilot | A Syrian lawyer reviews the privacy policy, consent texts and retention before the pilot |
 | Q3 | Syrian trade-name drug data: license from an existing drug-guide publisher, or build from official lists and clinic suggestions only | S12 | Start with official lists and suggestions; contact the "دليل الأدوية السورية" publisher for a license |
-| Q4 | Platform WhatsApp numbers for OTP: how many, Syrian or Turkish SIMs, who keeps the phones | S03 (one test number for Spike B) | Two numbers at launch for failover, kept by the owner |
 | Q5 | Package contents, limits and list prices for Plus, Pro and Max | S22 (and before the first sale) | Spec interview |
 | Q6 | Pilot clinics: which two or three clinics in Azaz, which specialties, their working style (queue or times) | S09 | One dental, one general; interview them before S09 |
 | Q7 | Medical advisor (a doctor) who reviews templates, documents and prescription forms | S11 | A doctor from the pilot clinics |
@@ -39,4 +38,5 @@ Decisions that belong to the owner. Agents must not guess answers to these. When
 | Brand | Vertex Hub identity and logo with SHIFA; components copied and adapted at the brand phase (ADR 0018) | 2026-10-09 |
 | Development method | Claude Code (Opus 5.5) with the method in ADR 0019 and `docs/workflow.md` | 2026-10-09 |
 | Map provider | OpenStreetMap vector tiles served by us with MapLibre; Google Maps refused billing from Syria (`OR_BACR2_59`), kept as a later option behind the map component; coordinates stored by us; paste-a-link fallback (ADR 0023) | 2026-10-10 |
+| Platform WhatsApp numbers (Q4) | Two Syrian numbers at launch, phones kept by the owner (online at least every 14 days), linked from the console; OTPs spread over every healthy number (ADR 0026, S03) | 2026-10-20 |
 | Revoked device's pending commands (Q14) | Quarantine: uploaded and flagged as coming from a revoked device; nothing applied until an owner accepts (run as a late command) or rejects each one with a reason. A deactivated member's commands on an active device are accepted when made before the deactivation with an acceptable clock skew, quarantined otherwise (ADR 0024, S02) | 2026-10-18 |

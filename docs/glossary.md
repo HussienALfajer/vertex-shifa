@@ -93,6 +93,12 @@ One name per concept. Code, contracts and tables use the English term; the Arabi
 | رمز التحقق | OTP | One-time code sent by WhatsApp |
 | ربط واتساب | WhatsApp link | Linking a clinic's WhatsApp number by scanning a QR code |
 | جلسة واتساب | WhatsApp session | A linked WhatsApp number running in the gateway (clinic or platform) |
+| رقم المنصة | platform number | A Vertex WhatsApp number that sends OTPs, invitations and admin alerts |
+| رقم سليم | healthy number | A WhatsApp session that is connected, not paused, and held by a live gateway lease |
+| تسخين الرقم | warm-up | The daily cap of a newly linked number, rising with its age |
+| مستلم معروف | known recipient | A person a number has already messaged; only their incoming messages are processed |
+| إيقاف الرسائل | opt-out | A person's request, by sending «إيقاف», to stop messages they did not request |
+| الرد الآلي | auto-reply | The once-a-day answer of a platform number to a known recipient's message |
 | نطاق المزامنة | replication scope | The data a device receives: the union of what its registered users' roles may read in its tenant and branch, decided on the server |
 | أُدخل خطأً | entered in error | A version that withdraws an earlier clinical version |
 | الإشعار | notification | A push or WhatsApp message |
