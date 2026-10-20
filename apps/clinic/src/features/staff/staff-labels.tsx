@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import type { Role, StaffMember } from '@vertex-shifa/contracts';
+import { formatDateTime } from '@vertex-shifa/i18n';
 import { Badge } from '@vertex-shifa/ui';
 import { useTranslation } from 'react-i18next';
 import { StateCard } from '../../components/state-card';
-import { formatDateTime } from '../../lib/format';
 import { facilitiesQuery } from '../tenancy/queries';
 
 /** A member's roles in one line ("مالك، طبيب"). */

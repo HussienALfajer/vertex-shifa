@@ -7,6 +7,7 @@ import {
   platformRoleSchema,
   platformUserNameSchema,
 } from '@vertex-shifa/contracts';
+import { formatDateTime } from '@vertex-shifa/i18n';
 import {
   AlertDialog,
   AlertDialogClose,
@@ -52,7 +53,6 @@ import { OfflineNotice } from '../../components/offline-notice';
 import { QueryStates } from '../../components/query-states';
 import { StateCard } from '../../components/state-card';
 import { useErrorText } from '../../lib/error-text';
-import { formatDateTime } from '../../lib/format';
 import { useOnline } from '../../lib/online';
 import { useReauth } from '../session/reauth';
 import { holds, meQuery } from '../session/session';

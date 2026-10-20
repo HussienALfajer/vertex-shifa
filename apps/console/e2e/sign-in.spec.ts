@@ -55,7 +55,9 @@ test.describe('console sign-in', () => {
     await page.getByLabel('رقم الهاتف').fill(supportPhone);
     await page.getByLabel('كلمة المرور', { exact: true }).fill('synthetic-support-pass');
     await page.getByRole('button', { name: 'متابعة' }).click();
-    await page.getByRole('button', { name: 'لا يصلني هاتفي؟ استعمل رمز استرداد' }).click();
+    await page
+      .getByRole('button', { name: 'لا يمكنك الوصول إلى هاتفك؟ استعمل رمز استرداد' })
+      .click();
     await page.getByLabel('رمز الاسترداد').fill(recovery.toLowerCase());
     await page.getByRole('button', { name: 'تحقق' }).click();
 

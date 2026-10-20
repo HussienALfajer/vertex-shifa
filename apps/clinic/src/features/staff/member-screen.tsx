@@ -6,6 +6,7 @@ import {
   type PreviousPractitioner,
   type StaffMember,
 } from '@vertex-shifa/contracts';
+import { formatDateTime } from '@vertex-shifa/i18n';
 import {
   AlertDialog,
   AlertDialogClose,
@@ -48,7 +49,6 @@ import { QueryStates } from '../../components/query-states';
 import { useUnsavedChangesGuard } from '../../components/unsaved-changes';
 import { ApiError } from '../../lib/api';
 import { useErrorText } from '../../lib/error-text';
-import { formatDateTime } from '../../lib/format';
 import { useOnline } from '../../lib/online';
 import { meQuery, useStaffAccess } from '../../lib/staff-access';
 import {

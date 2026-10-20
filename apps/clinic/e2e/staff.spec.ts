@@ -198,7 +198,7 @@ test.describe('staff', () => {
     await dialog.getByLabel('السبب').fill('اختبار');
     await dialog.getByRole('button', { name: 'إيقاف' }).click();
     await expect(dialog.getByRole('alert')).toHaveText('يجب أن يبقى للعيادة مالك واحد على الأقل.');
-    await dialog.getByRole('button', { name: 'رجوع' }).click();
+    await dialog.getByRole('button', { name: 'تراجع' }).click();
 
     // An active member: deactivated with a reason, then reactivated.
     await page.goto(`/settings/staff/${membershipOf(receptionist).id}`);
@@ -421,7 +421,7 @@ test.describe('devices', () => {
     const renameDialog = page.getByRole('dialog', { name: 'اسم الحاسوب' });
     await second.getByRole('button', { name: 'إعادة التسمية' }).click();
     await renameDialog.getByLabel('الاسم').fill('اسم لم يُحفظ');
-    await renameDialog.getByRole('button', { name: 'رجوع' }).click();
+    await renameDialog.getByRole('button', { name: 'تراجع' }).click();
     await expect(renameDialog).toBeHidden();
     await second.getByRole('button', { name: 'إعادة التسمية' }).click();
     await expect(renameDialog.getByLabel('الاسم')).toHaveValue('حاسوب العيادة 2');

@@ -106,7 +106,7 @@ test.describe('platform users', () => {
     const dialog = page.getByRole('dialog', { name: 'تغيير دور دعم تجريبي' });
     await dialog.getByRole('button', { name: 'مدير' }).click();
     await dialog.getByRole('button', { name: 'حفظ الدور' }).click();
-    await reauth(page).getByRole('button', { name: 'إلغاء' }).click();
+    await reauth(page).getByRole('button', { name: 'تراجع' }).click();
     await expect(reauth(page)).toBeHidden();
     await expect(dialog.getByRole('alert')).toContainText(
       'أدخل رمز التحقق من تطبيق المصادقة لإتمام هذه العملية.',

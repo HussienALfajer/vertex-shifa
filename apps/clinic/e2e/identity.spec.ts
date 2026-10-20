@@ -54,7 +54,7 @@ test.describe('signing in on this computer', () => {
 
     // A wrong code, then the right one; the code is submitted when its sixth digit is typed.
     await expect(page.getByText('رمز التحقق', { exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: /إعادة الإرسال بعد \d+ ثانية/ })).toBeDisabled();
+    await expect(page.getByRole('button', { name: /^إعادة الإرسال بعد / })).toBeDisabled();
     await typeCode(page, 'رمز التحقق', '000000');
     await expect(page.getByText('رمز التحقق غير صحيح.')).toBeVisible();
     await screenshot(page, testInfo, 'sign-in-otp');
@@ -489,7 +489,7 @@ test.describe('forgotten password (rule 16)', () => {
     await openReset(page);
     await screenshot(page, testInfo, 'password-reset');
     await requestCode(page, '0900000102');
-    await expect(page.getByRole('button', { name: /إعادة الإرسال بعد \d+ ثانية/ })).toBeDisabled();
+    await expect(page.getByRole('button', { name: /^إعادة الإرسال بعد / })).toBeDisabled();
     await typeCode(page, 'رمز التحقق', '000000');
     await expect(page.getByText('رمز التحقق غير صحيح.')).toBeVisible();
     await screenshot(page, testInfo, 'password-reset-otp');
