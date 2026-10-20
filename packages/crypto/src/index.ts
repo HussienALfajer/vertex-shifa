@@ -23,6 +23,9 @@ export class KeyedHash {
   }
 }
 
+/** GCM tags are always the full 128 bits. */
+const TAG_BYTES = 16;
+
 /**
  * Values the server must read back (console TOTP secrets, WhatsApp credentials, queued message
  * bodies and recipients), encrypted with AES-256-GCM under a 32-byte key (ADR 0025). Each one is
@@ -46,10 +49,15 @@ export class SecretBox {
   open(context: string, value: string): string | undefined {
     const [version, iv, sealed, tag] = value.split('.');
     if (version !== 'v1' || !iv || sealed === undefined || !tag) return undefined;
+    const authTag = Buffer.from(tag, 'base64url');
+    // A shorter tag would weaken the check (Node accepts down to 4 bytes unless told the length).
+    if (authTag.length !== TAG_BYTES) return undefined;
     try {
-      const decipher = createDecipheriv('aes-256-gcm', this.key, Buffer.from(iv, 'base64url'));
+      const decipher = createDecipheriv('aes-256-gcm', this.key, Buffer.from(iv, 'base64url'), {
+        authTagLength: TAG_BYTES,
+      });
       decipher.setAAD(Buffer.from(context));
-      decipher.setAuthTag(Buffer.from(tag, 'base64url'));
+      decipher.setAuthTag(authTag);
       const plain = Buffer.concat([
         decipher.update(Buffer.from(sealed, 'base64url')),
         decipher.final(),

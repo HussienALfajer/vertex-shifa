@@ -14,8 +14,8 @@ Spec: `docs/specs/S03-whatsapp-gateway-and-otp.md` (Approved 2026-10-20). Five P
 ## PR 2 — gateway runtime on the fake transport (`feat/s03-gateway`)
 - [ ] config: `DATABASE_APP_URL`, messaging keys
 - [ ] sessions: lease (take, renew, release, takeover), state transitions in the database, events, sealed QR, link timeout, duplicate number, `CredentialStore` in PostgreSQL (store keys as `key_hash`, a test that no stored row holds a `+999` phone)
-- [ ] sending: claim with priority and `SKIP LOCKED`, `NOTIFY` wake and 2 s poll, limits through `sendBudget`, failover, backoff, deadlines, auto-pause, receipts forward only, retry-request lookup
-- [ ] incoming: known-recipient filter, keywords by time, auto-reply once per 24 h; alerts with the 30-minute throttle; `whatsapp.message_finished.v1` into the tenant outbox; the sweep
+- [ ] sending: claim with priority and `SKIP LOCKED` (only numbers whose gap has passed: `chooseWhatsAppNumber` may pick a known number whose `notBefore` is still ahead while another is ready), `NOTIFY` wake and 2 s poll, limits through `sendBudget`, failover, backoff, deadlines, auto-pause, receipts forward only, retry-request lookup
+- [ ] incoming: known-recipient filter, keywords by time, auto-reply once per 24 h; alerts with the 30-minute throttle (`alert_sent` events carry the alert's event as `reason`); `whatsapp.message_finished.v1` into the tenant outbox; the sweep
 - [ ] tests (fake transport, test database, two instances, logs carry no phone, body, code or QR)
 - [ ] checks, reviewer, acceptance, PR with auto-merge
 

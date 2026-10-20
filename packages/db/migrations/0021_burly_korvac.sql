@@ -1,0 +1,2 @@
+ALTER TABLE "whatsapp_session_events" DROP CONSTRAINT "whatsapp_session_events_reason";--> statement-breakpoint
+ALTER TABLE "whatsapp_session_events" ADD CONSTRAINT "whatsapp_session_events_reason" CHECK ("whatsapp_session_events"."reason" is null or "whatsapp_session_events"."reason" in ('restart_required', 'logged_out', 'forbidden', 'connection_replaced', 'connection_lost', 'manual', 'send_failures', 'needs_relink', 'banned', 'disconnected', 'none_healthy', 'recovered'));

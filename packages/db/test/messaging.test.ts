@@ -151,6 +151,19 @@ describe('whatsapp_session_events', () => {
     const event = (reason: string) =>
       app.insert(whatsappSessionEvents).values({ sessionId: session.id, type: 'paused', reason });
     await event('send_failures');
+    // Every alert of rule 28 keeps its own event, for its own 30-minute throttle.
+    for (const reason of [
+      'needs_relink',
+      'banned',
+      'disconnected',
+      'send_failures',
+      'none_healthy',
+      'recovered',
+    ]) {
+      await app
+        .insert(whatsappSessionEvents)
+        .values({ sessionId: session.id, type: 'alert_sent', reason });
+    }
     expect(await refusal(event('Connection Failure for +999100000009'))).toMatch(
       /whatsapp_session_events_reason/,
     );
@@ -212,7 +225,7 @@ describe('whatsapp_messages', () => {
       /whatsapp_messages_source_event_unique/,
     );
 
-    const [account] = await app.insert(accounts).values({ phone: '+963900000301' }).returning();
+    const [account] = await app.insert(accounts).values({ phone: '+999100000301' }).returning();
     const [challenge] = await app
       .insert(otpChallenges)
       .values({
@@ -264,7 +277,7 @@ describe('whatsapp_opt_outs', () => {
 
 describe('the S02 values S03 adds', () => {
   it('accepts every OTP delivery status and refuses others', async () => {
-    const [account] = await app.insert(accounts).values({ phone: '+963900000302' }).returning();
+    const [account] = await app.insert(accounts).values({ phone: '+999100000302' }).returning();
     const challenge = (deliveryStatus: string) =>
       app.insert(otpChallenges).values({
         accountId: account?.id ?? '',

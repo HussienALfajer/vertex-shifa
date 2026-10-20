@@ -36,6 +36,15 @@ describe('SecretBox', () => {
     expect(box.open('a', 'v2.x.y.z')).toBeUndefined();
   });
 
+  it('refuses a truncated authentication tag', () => {
+    const parts = box.seal('a', 'secret').split('.');
+    for (const bytes of [4, 12, 15]) {
+      const tag = Buffer.from(parts[3] as string, 'base64url').subarray(0, bytes);
+      const truncated = [...parts.slice(0, 3), tag.toString('base64url')].join('.');
+      expect(box.open('a', truncated), `${bytes} bytes`).toBeUndefined();
+    }
+  });
+
   it('seals the same text differently each time', () => {
     expect(box.seal('a', 'x')).not.toBe(box.seal('a', 'x'));
   });
