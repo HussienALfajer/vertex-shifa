@@ -1,6 +1,6 @@
 import { createHmac, randomBytes } from 'node:crypto';
 import { totpPolicy } from '@vertex-shifa/contracts';
-import { safeEqual } from './secrets.js';
+import { safeEqual } from '@vertex-shifa/crypto';
 
 /**
  * Time-based one-time passwords for the console (RFC 6238 over RFC 4226 HOTP, HMAC-SHA-1, 6 digits,

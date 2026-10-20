@@ -57,7 +57,7 @@ All tables are platform scope (no `tenant_id`, no tenant RLS): they hold Vertex'
 Grants: `SELECT, INSERT, UPDATE`. Index on `(state)` where not archived.
 
 ### `whatsapp_session_credentials` (queue: deleted on unlink)
-`session_id` → `whatsapp_sessions`, `key` (text), `value_sealed` (text), `updated_at`; unique `(session_id, key)`. Baileys' credentials and key store (Signal sessions, device lists, its LID–phone mappings) as opaque sealed values. Grants: `SELECT, INSERT, UPDATE, DELETE`. Never exported, never read by people.
+`session_id` → `whatsapp_sessions`, `key_hash` (text: the keyed hash of the store key, bound to the session, because Baileys' keys name WhatsApp addresses), `value_sealed` (text), `updated_at`; unique `(session_id, key_hash)`. Baileys' credentials and key store (Signal sessions, device lists, its LID–phone mappings) as opaque sealed values. Grants: `SELECT, INSERT, UPDATE, DELETE`. Never exported, never read by people.
 
 ### `whatsapp_session_events` (append-only)
 `id`, `session_id`, `type` (`created`, `linked`, `connected`, `disconnected`, `needs_relink`, `banned`, `link_timeout`, `duplicate_number`, `paused`, `resumed`, `relink_started`, `unlinked`, `alert_sent`), `reason` (text, nullable), `platform_user_id` (nullable: null for the gateway), `created_at`. Index `(session_id, created_at)`. Grants: `SELECT, INSERT`; `refuse_change()` triggers.

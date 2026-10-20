@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { nonceTtlSeconds } from '@vertex-shifa/contracts';
+import { KeyedHash, SecretBox } from '@vertex-shifa/crypto';
 import type { Database } from '@vertex-shifa/db';
 import { SESSION_VERIFIER } from '../../../core/access/session-verifier.js';
 import type { Config } from '../../../core/config/config.js';
@@ -30,7 +31,6 @@ import { OtpChallenges } from './otp-challenges.js';
 import { FakeOtpSender, OTP_SENDER, type OtpSender } from './otp-sender.js';
 import { PlatformUsersService } from './platform-users.service.js';
 import { ProofOfWork } from './proof-of-work.js';
-import { KeyedHash, SecretBox } from './secrets.js';
 import { SESSION_NONCES, SessionsService } from './sessions.service.js';
 import { Nonces } from './single-use.js';
 import { StaffAccountsStore } from './staff-accounts.js';

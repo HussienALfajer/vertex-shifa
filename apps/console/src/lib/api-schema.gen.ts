@@ -1109,7 +1109,7 @@ export interface components {
         AreaLevel: "governorate" | "city";
         AreaList: components["schemas"]["Area"][];
         /** @enum {string} */
-        AuditAction: "tenant.created" | "tenant.status_changed" | "tenant.directory_listing_changed" | "tenant.profile_updated" | "tenant.onboarding_completed" | "tenant_logo.replaced" | "tenant_logo.archived" | "facility.created" | "facility.updated" | "facility.archived" | "facility.restored" | "tenant.security_updated" | "staff.invited" | "staff.invitation_resent" | "staff.invitation_cancelled" | "staff.invitation_accepted" | "staff.access_changed" | "staff.deactivated" | "staff.reactivated" | "staff.password_reset_authorized" | "device.registered" | "device.renamed" | "device.revoked" | "device.wiped" | "device_enrollment.created" | "device_enrollment.revoked" | "staff_session.started" | "practitioner.created" | "practitioner.updated" | "practitioner.archived" | "practitioner.restored" | "practitioner_photo.replaced" | "practitioner_photo.archived" | "account.created" | "account.password_set" | "account.password_reset_authorized" | "account.phone_changed" | "account.looked_up" | "account.sign_in_locked" | "console.request" | "platform_user.created" | "platform_user.role_changed" | "platform_user.disabled" | "platform_user.enabled" | "platform_user.reset" | "platform_user.setup_completed" | "platform_user.signed_in" | "platform_user.sign_in_failed" | "platform_user.sign_in_locked" | "platform_user.totp_failed" | "platform_user.recovery_code_used" | "platform_user.reauthenticated" | "platform_user.password_changed" | "platform_user.signed_out";
+        AuditAction: "tenant.created" | "tenant.status_changed" | "tenant.directory_listing_changed" | "tenant.profile_updated" | "tenant.onboarding_completed" | "tenant_logo.replaced" | "tenant_logo.archived" | "facility.created" | "facility.updated" | "facility.archived" | "facility.restored" | "tenant.security_updated" | "staff.invited" | "staff.invitation_resent" | "staff.invitation_cancelled" | "staff.invitation_accepted" | "staff.access_changed" | "staff.deactivated" | "staff.reactivated" | "staff.password_reset_authorized" | "device.registered" | "device.renamed" | "device.revoked" | "device.wiped" | "device_enrollment.created" | "device_enrollment.revoked" | "staff_session.started" | "practitioner.created" | "practitioner.updated" | "practitioner.archived" | "practitioner.restored" | "practitioner_photo.replaced" | "practitioner_photo.archived" | "account.created" | "account.password_set" | "account.password_reset_authorized" | "account.phone_changed" | "account.looked_up" | "account.sign_in_locked" | "console.request" | "platform_user.created" | "platform_user.role_changed" | "platform_user.disabled" | "platform_user.enabled" | "platform_user.reset" | "platform_user.setup_completed" | "platform_user.signed_in" | "platform_user.sign_in_failed" | "platform_user.sign_in_locked" | "platform_user.totp_failed" | "platform_user.recovery_code_used" | "platform_user.reauthenticated" | "platform_user.password_changed" | "platform_user.signed_out" | "whatsapp_session.created" | "whatsapp_session.relinked" | "whatsapp_session.paused" | "whatsapp_session.resumed" | "whatsapp_session.unlinked";
         /** @enum {string} */
         AuditActorKind: "staff" | "patient" | "platform" | "system";
         AuthorizeAccountPasswordReset: {
@@ -1182,7 +1182,7 @@ export interface components {
             phone: string;
             name: string;
             role: components["schemas"]["PlatformRole"];
-            permissions: ("tenants.read" | "tenants.create" | "tenants.change-status" | "tenants.manage-directory" | "accounts.recover" | "platform-users.manage")[];
+            permissions: ("tenants.read" | "tenants.create" | "tenants.change-status" | "tenants.manage-directory" | "accounts.recover" | "platform-users.manage" | "whatsapp-sessions.read" | "whatsapp-sessions.manage")[];
             recoveryCodesRemaining: number;
             session: {
                 /** Format: date-time */
@@ -1208,7 +1208,7 @@ export interface components {
             phone: string;
             name: string;
             role: components["schemas"]["PlatformRole"];
-            permissions: ("tenants.read" | "tenants.create" | "tenants.change-status" | "tenants.manage-directory" | "accounts.recover" | "platform-users.manage")[];
+            permissions: ("tenants.read" | "tenants.create" | "tenants.change-status" | "tenants.manage-directory" | "accounts.recover" | "platform-users.manage" | "whatsapp-sessions.read" | "whatsapp-sessions.manage")[];
             recoveryCodesRemaining: number;
             session: {
                 /** Format: date-time */
@@ -1279,6 +1279,9 @@ export interface components {
             phone: components["schemas"]["MobilePhoneNumber"];
             name: string;
             role: components["schemas"]["PlatformRole"];
+        };
+        CreatePlatformWhatsAppSession: {
+            label: string;
         };
         CreateTenant: {
             nameAr: string;
@@ -1380,7 +1383,7 @@ export interface components {
         /** @enum {string} */
         EnrollmentRevokeReason: "device_revoked" | "member_deactivated" | "removed_from_device" | "pin_forgotten" | "branch_left";
         /** @enum {string} */
-        ErrorCode: "VALIDATION_FAILED" | "POW_INVALID" | "UNAUTHENTICATED" | "INVALID_CREDENTIALS" | "TICKET_INVALID" | "SESSION_ENDED" | "SIGNATURE_INVALID" | "DEVICE_UNKNOWN" | "FORBIDDEN" | "DEVICE_REVOKED" | "ENROLLMENT_REVOKED" | "MEMBERSHIP_INACTIVE" | "BRANCH_NOT_IN_SCOPE" | "REAUTH_REQUIRED" | "NOT_ENTITLED" | "TENANT_SUSPENDED" | "TENANT_CLOSED" | "NOT_FOUND" | "CONFLICT" | "INVALID_STATUS_TRANSITION" | "LAST_ACTIVE_FACILITY" | "ALREADY_MEMBER" | "LAST_OWNER" | "LAST_ADMIN" | "FACILITY_HAS_DEVICES" | "CURRENCY_MISMATCH" | "INVALID_AMOUNT" | "ONBOARDING_INCOMPLETE" | "FILE_REJECTED" | "MAP_LINK_UNRECOGNIZED" | "OTP_INVALID" | "OTP_EXPIRED" | "PASSWORD_TOO_WEAK" | "TOTP_INVALID" | "PERMISSION_NOT_GRANTABLE" | "RATE_LIMITED" | "OTP_ATTEMPTS_EXCEEDED" | "OTP_COOLDOWN" | "INTERNAL_ERROR" | "SERVICE_UNAVAILABLE" | "OTP_DELIVERY_UNAVAILABLE";
+        ErrorCode: "VALIDATION_FAILED" | "POW_INVALID" | "UNAUTHENTICATED" | "INVALID_CREDENTIALS" | "TICKET_INVALID" | "SESSION_ENDED" | "SIGNATURE_INVALID" | "DEVICE_UNKNOWN" | "FORBIDDEN" | "DEVICE_REVOKED" | "ENROLLMENT_REVOKED" | "MEMBERSHIP_INACTIVE" | "BRANCH_NOT_IN_SCOPE" | "REAUTH_REQUIRED" | "NOT_ENTITLED" | "TENANT_SUSPENDED" | "TENANT_CLOSED" | "NOT_FOUND" | "CONFLICT" | "INVALID_STATUS_TRANSITION" | "LAST_ACTIVE_FACILITY" | "ALREADY_MEMBER" | "LAST_OWNER" | "LAST_ADMIN" | "FACILITY_HAS_DEVICES" | "WHATSAPP_SESSION_LIMIT" | "CURRENCY_MISMATCH" | "INVALID_AMOUNT" | "ONBOARDING_INCOMPLETE" | "FILE_REJECTED" | "MAP_LINK_UNRECOGNIZED" | "OTP_INVALID" | "OTP_EXPIRED" | "PASSWORD_TOO_WEAK" | "TOTP_INVALID" | "PERMISSION_NOT_GRANTABLE" | "RATE_LIMITED" | "OTP_ATTEMPTS_EXCEEDED" | "OTP_COOLDOWN" | "INTERNAL_ERROR" | "SERVICE_UNAVAILABLE" | "OTP_DELIVERY_UNAVAILABLE";
         ErrorResponse: {
             code: components["schemas"]["ErrorCode"];
             message: string;
@@ -1427,7 +1430,7 @@ export interface components {
         };
         IdleLockMinutes: number;
         /** @enum {string} */
-        InvitationMessageStatus: "pending" | "sent" | "failed";
+        InvitationMessageStatus: "pending" | "sent" | "failed" | "opted_out";
         Jwks: {
             keys: {
                 /** @constant */
@@ -1541,6 +1544,11 @@ export interface components {
         };
         /** @enum {string} */
         MembershipStatus: "invited" | "active" | "deactivated";
+        MessagingHealth: {
+            healthy: number;
+            total: number;
+            otpAvailable: boolean;
+        };
         MobilePhoneNumber: components["schemas"]["PhoneNumber"];
         Money: {
             amount: number;
@@ -1562,6 +1570,11 @@ export interface components {
             challengeId: string;
         };
         OtpCode: string;
+        OtpDelivery: {
+            status: components["schemas"]["OtpDeliveryStatus"];
+        };
+        /** @enum {string} */
+        OtpDeliveryStatus: "queued" | "sent" | "delivered" | "failed" | "unknown";
         /** @enum {string} */
         OtpPurpose: "device_sign_in" | "first_sign_in" | "password_reset";
         OtpRequest: {
@@ -1623,6 +1636,33 @@ export interface components {
         };
         /** @enum {string} */
         PlatformUserStatus: "pending_setup" | "active" | "disabled";
+        PlatformWhatsAppSession: {
+            /** Format: uuid */
+            id: string;
+            label: string;
+            phone: string | null;
+            state: components["schemas"]["WhatsAppSessionState"];
+            pausedAt: string | null;
+            pauseReason: components["schemas"]["WhatsAppPauseReason"] | null;
+            linkedAt: string | null;
+            warmUpDay: number | null;
+            sentLast24h: number;
+            dailyCap: number;
+            firstContactsLast24h: number;
+            firstContactCap: number;
+            sentLastHour: number;
+            hourlyCap: number;
+            lastConnectedAt: string | null;
+            leaseHeld: boolean;
+            healthy: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        PlatformWhatsAppSessionDetail: {
+            session: components["schemas"]["PlatformWhatsAppSession"];
+            events: components["schemas"]["WhatsAppSessionEvent"][];
+        };
+        PlatformWhatsAppSessionList: components["schemas"]["PlatformWhatsAppSession"][];
         Practitioner: {
             /** Format: uuid */
             id: string;
@@ -1897,6 +1937,27 @@ export interface components {
             /** Format: date-time */
             expectedUpdatedAt: string;
         };
+        /** @enum {string} */
+        WhatsAppPauseReason: "manual" | "send_failures";
+        WhatsAppSessionEvent: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["WhatsAppSessionEventType"];
+            reason: string | null;
+            platformUserName: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @enum {string} */
+        WhatsAppSessionEventType: "created" | "linked" | "connected" | "disconnected" | "needs_relink" | "banned" | "link_timeout" | "duplicate_number" | "paused" | "resumed" | "relink_started" | "unlinked" | "alert_sent";
+        WhatsAppSessionQr: {
+            state: components["schemas"]["WhatsAppSessionState"];
+            qr: string | null;
+            expiresAt: string | null;
+            linkDeadlineAt: string | null;
+        };
+        /** @enum {string} */
+        WhatsAppSessionState: "linking" | "connected" | "disconnected" | "needs_relink" | "banned" | "unlinked";
         WorkingDays: number;
     };
     responses: never;

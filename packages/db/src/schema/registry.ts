@@ -39,6 +39,13 @@ export const tableRegistry = {
   practitioners: { module: 'practitioners', scope: 'tenant', kind: 'business' },
   practitioner_specialties: { module: 'practitioners', scope: 'tenant', kind: 'business' },
   practitioner_photos: { module: 'practitioners', scope: 'tenant', kind: 'business' },
+  whatsapp_sessions: { module: 'messaging', scope: 'platform', kind: 'business' },
+  whatsapp_session_credentials: { module: 'messaging', scope: 'platform', kind: 'queue' },
+  whatsapp_session_events: { module: 'messaging', scope: 'platform', kind: 'append-only' },
+  whatsapp_messages: { module: 'messaging', scope: 'platform', kind: 'queue' },
+  // Derived from sends and deleted with the session (spec S03), so not archived like a record.
+  whatsapp_known_recipients: { module: 'messaging', scope: 'platform', kind: 'queue' },
+  whatsapp_opt_outs: { module: 'messaging', scope: 'platform', kind: 'business' },
 } as const satisfies Record<string, TableInfo>;
 
 export type TableScope = 'tenant' | 'platform';

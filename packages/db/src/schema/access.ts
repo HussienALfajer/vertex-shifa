@@ -118,7 +118,7 @@ export const staffMemberships = pgTable(
     ),
     check(
       'staff_memberships_invitation_message_status',
-      sql`${t.invitationMessageStatus} in ('pending', 'sent', 'failed')`,
+      sql`${t.invitationMessageStatus} in ('pending', 'sent', 'failed', 'opted_out')`,
     ),
     check(
       'staff_memberships_deactivated',

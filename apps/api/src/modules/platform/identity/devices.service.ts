@@ -15,6 +15,7 @@ import {
   type RegisteredDevice,
   type TenantStatus,
 } from '@vertex-shifa/contracts';
+import { KeyedHash } from '@vertex-shifa/crypto';
 import {
   accounts,
   type Database,
@@ -36,7 +37,7 @@ import {
 } from '../access/index.js';
 import { type AuditActor, recordAudit } from '../audit/index.js';
 import { type FacilityDevices, readFacilitiesInUse, readTenant } from '../tenancy/index.js';
-import { KeyedHash, verifyEd25519 } from './secrets.js';
+import { verifyEd25519 } from './secrets.js';
 import type { Nonces } from './single-use.js';
 import { assertMemberMayUse, endSessions, SessionIssuer } from './staff-sessions.js';
 import { Tickets } from './tickets.js';

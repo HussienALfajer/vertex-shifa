@@ -1,0 +1,5 @@
+ALTER TABLE "whatsapp_session_credentials" DROP CONSTRAINT "whatsapp_session_credentials_session_key_unique";--> statement-breakpoint
+ALTER TABLE "whatsapp_session_credentials" ADD COLUMN "key_hash" text NOT NULL;--> statement-breakpoint
+ALTER TABLE "whatsapp_session_credentials" ADD CONSTRAINT "whatsapp_session_credentials_session_key_hash_unique" UNIQUE("session_id","key_hash");--> statement-breakpoint
+ALTER TABLE "whatsapp_session_events" ADD CONSTRAINT "whatsapp_session_events_reason" CHECK ("whatsapp_session_events"."reason" is null or "whatsapp_session_events"."reason" in ('restart_required', 'logged_out', 'forbidden', 'connection_replaced', 'connection_lost', 'manual', 'send_failures'));--> statement-breakpoint
+ALTER TABLE "whatsapp_sessions" ADD CONSTRAINT "whatsapp_sessions_last_disconnect_reason" CHECK ("whatsapp_sessions"."last_disconnect_reason" is null or "whatsapp_sessions"."last_disconnect_reason" in ('restart_required', 'logged_out', 'forbidden', 'connection_replaced', 'connection_lost'));

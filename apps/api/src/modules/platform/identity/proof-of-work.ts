@@ -4,8 +4,9 @@ import {
   type ProofOfWorkChallenge,
   type ProofOfWorkSolution,
 } from '@vertex-shifa/contracts';
+import { type KeyedHash, safeEqual } from '@vertex-shifa/crypto';
 import type { Database } from '@vertex-shifa/db';
-import { type KeyedHash, randomToken, safeEqual } from './secrets.js';
+import { randomToken } from './secrets.js';
 import { useToken } from './single-use.js';
 
 /** A challenge is valid for 2 minutes. */

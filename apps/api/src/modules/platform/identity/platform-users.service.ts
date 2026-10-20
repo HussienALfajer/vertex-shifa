@@ -9,6 +9,7 @@ import {
   type PlatformUserSetup,
   type UpdatePlatformUser,
 } from '@vertex-shifa/contracts';
+import { KeyedHash } from '@vertex-shifa/crypto';
 import {
   type Database,
   platformUserRecoveryCodes,
@@ -20,7 +21,6 @@ import type { PlatformActor, SystemActor } from '../../../core/access/actor.js';
 import { DATABASE } from '../../../core/database/database.module.js';
 import { recordPlatformAudit } from '../audit/index.js';
 import { endConsoleSessions, sessionsOfUser } from './console-sessions.js';
-import { KeyedHash } from './secrets.js';
 import { newTypedCode } from './totp.js';
 import { isUniqueViolation } from './unique-violation.js';
 

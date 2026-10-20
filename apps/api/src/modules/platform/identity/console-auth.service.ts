@@ -18,6 +18,7 @@ import {
   ticketTtlSeconds,
   totpCodeSchema,
 } from '@vertex-shifa/contracts';
+import { KeyedHash, SecretBox, safeEqual } from '@vertex-shifa/crypto';
 import {
   type Database,
   platformSessions,
@@ -40,15 +41,7 @@ import {
 import { DecoyLocks, signInLocked } from './decoy-locks.js';
 import { archiveRecoveryCodes } from './platform-users.service.js';
 import { ProofOfWork } from './proof-of-work.js';
-import {
-  decoyPasswordHash,
-  hashPassword,
-  KeyedHash,
-  randomToken,
-  SecretBox,
-  safeEqual,
-  verifyPassword,
-} from './secrets.js';
+import { decoyPasswordHash, hashPassword, randomToken, verifyPassword } from './secrets.js';
 import { isTokenUsed, useToken } from './single-use.js';
 import { TokenSigner } from './tokens.js';
 import { matchTotp, newTotpSecret, newTypedCode, totpUri } from './totp.js';
