@@ -8,7 +8,7 @@ First market: Azaz, northern Aleppo. Arabic-first.
 
 ## Status
 
-Phase 0 — Foundation. The repository holds the product scope, the architecture decisions and the working method; the code scaffold follows. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
+Phase 1 — Platform core. Phase 0 is done except the deploy skeleton, which waits for a server; and so are S01 (tenancy and clinic setup) and S02 (identity, access and devices); S03 (WhatsApp gateway) is next. No production server exists yet. See [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Documents
 

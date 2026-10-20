@@ -194,7 +194,7 @@ All in the clinic app, Arabic RTL, design-system components, online-only screens
 
 1. **Onboarding wizard** (`/setup`), owner, tenant `onboarding`. Steps with a progress indicator, each saved on "Next":
    1. Clinic: Arabic name (prefilled from creation), Latin name (optional, explained as "for your web address later"), logo upload with preview and remove.
-   2. Location: governorate → city pickers, address details (neighborhood, street, building, landmark), the map (ADR 0023) with a draggable pin centered on the chosen city and the "© OpenStreetMap" attribution, a field to paste a Google Maps link or coordinates, contact phones (1–3, each with a WhatsApp toggle on mobile numbers).
+   2. Location: governorate → city pickers, address details (neighborhood, street, building, landmark), the map (ADR 0023) with a draggable pin (it opens on Azaz: areas carry no coordinates, so centering on the chosen city is deferred, `docs/ROADMAP.md`) and the "© OpenStreetMap" attribution, a field to paste a Google Maps link or coordinates, contact phones (1–3, each with a WhatsApp toggle on mobile numbers).
    3. Working days (seven toggles, Saturday first, default Saturday–Thursday) and default currency (USD, TRY, SYP).
    4. Waiting-room display: name format (ticket number only, default, or first name and father's initial, with a sample) and call sound.
    5. Review: a summary with "Edit" per step, and "Finish setup".
@@ -225,7 +225,7 @@ Every change writes an audit entry in the same transaction (ADR 0016, configurat
 ## Edge cases
 1. Two owners edit the same branch at once: the second save gets `CONFLICT` and reloads (rule 16).
 2. The owner removes a working day that later has S07 working hours: S07 decides (warn and keep, or block); S01 only stores the days.
-3. The city is not in the list: the owner asks Vertex, which adds it by migration (S22: from the console); until then the owner picks the nearest city and the pin gives the exact place.
+3. The city is not in the list: the owner asks Vertex, which adds it by migration (S22: from the console); until then the owner picks the nearest city and the pin gives the exact place. Whatever the city, the map opens on Azaz until areas carry a center (deferred by the owner, 2026-10-20).
 4. An area is archived later: branches that reference it keep it and show it; pickers stop offering it.
 5. A pasted short link resolves to a place without coordinates: `MAP_LINK_UNRECOGNIZED`, and the owner sets the pin on the map.
 6. The tenant is suspended while the owner is in the wizard: the next save returns `TENANT_SUSPENDED` and the banner appears.
