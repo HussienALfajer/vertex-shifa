@@ -67,7 +67,7 @@ docs/                 product, decisions, specs, roadmap, workflow
 | platform | commercial | catalog_items, packages, quotes, contracts, contract_items, platform_invoices, platform_payments | ADR 0013, 0014 |
 | platform | entitlements | entitlement_overrides, resolved cache | ADR 0013 |
 | platform | config | templates, template_versions, custom_field_definitions | ADR 0010 |
-| platform | messaging | message_templates, messages, whatsapp_sessions (with lease), send_counters, known_recipients, whatsapp_lid_map, push_tokens (Expo and native), opt_outs | ADR 0012, 0022 |
+| platform | messaging | whatsapp_sessions (with lease), whatsapp_session_credentials, whatsapp_session_events, whatsapp_messages (the send queue; rate limits are counted from it), whatsapp_known_recipients, whatsapp_opt_outs (S03); message_templates, push_tokens (Expo and native) (S18) | ADR 0012, 0022, 0026, S03 |
 | platform | files | files, attachments | ADR 0016 |
 | platform | audit | audit_entries, platform_audit_entries (append-only) | ADR 0016 |
 | platform | events | outbox_events (work queue) | ADR 0012, 0020 |

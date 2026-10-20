@@ -25,10 +25,11 @@ Short records of decisions that shape the system. Each has a status: **Accepted*
 | [0019](0019-ai-assisted-development.md) | Claude Code (Opus 5.5) as the primary developer: files as memory, skills, subagents, enforcement | Accepted |
 | [0020](0020-engineering-conventions.md) | Engineering conventions: layout, module anatomy, access, data, errors, tests, enforcement | Accepted |
 | [0021](0021-sync-engine-confirmed-by-spike-a.md) | Spike A confirms PowerSync self-hosted (PostgreSQL bucket storage); commands, never-blocking command endpoint, encryption, RLS exception for the sync service, revocation | Accepted |
-| [0022](0022-messaging-confirmed-by-spike-b.md) | Spike B confirms Baileys and Expo push in Syria; disconnect-code states, session lease, LID and `append` intake, durable rate limits, OTP budget, two push tokens | Accepted |
+| [0022](0022-messaging-confirmed-by-spike-b.md) | Spike B confirms Baileys and Expo push in Syria; disconnect-code states, session lease, LID and `append` intake, durable rate limits, OTP budget, two push tokens | Accepted, amended by 0026 |
 | [0023](0023-maps-openstreetmap-self-hosted.md) | Maps: OpenStreetMap vector tiles served by us with MapLibre; one provider-neutral map component; coordinates owned by us; paste-a-link fallback; Google later | Accepted |
 | [0024](0024-identity-sessions-and-devices.md) | S02 identity: an installation registered to several clinics, one device per registration; PIN with a 7-day offline window and lockout; per-member permission adjustments within limits; quarantine of a revoked device's commands (Q14); console TOTP | Accepted |
 | [0025](0025-identity-built-in-house.md) | Identity built in-house on `node:crypto` (EdDSA tokens, Argon2id, keyed hashes, sealed secrets, TOTP), without Better Auth | Accepted |
+| [0026](0026-platform-messaging-send-queue.md) | Platform messaging: two Syrian numbers, a PostgreSQL send queue claimed by the gateway, limits counted from sent messages, LID pairs in the sealed key store | Accepted |
 
 Template:
 
