@@ -42,6 +42,12 @@ describe('branch draft', () => {
     expect(locationErrors(located({ coordinates: cairo, outsideConfirmed: true }))).toEqual({});
   });
 
+  it('refuses while the pasted location is refused or resolving, though the old one is valid', () => {
+    expect(locationErrors(located({ locationUnsettled: true }))).toEqual({
+      coordinates: 'location.unsettled',
+    });
+  });
+
   it('finds the same phone typed twice in different forms (edge case 8)', () => {
     const phones = [
       { phone: '0900 000 001', whatsapp: false },

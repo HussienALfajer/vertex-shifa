@@ -37,6 +37,16 @@ describe('theme-init.js', () => {
     runInitScript();
     expect(root.classList.contains('dark')).toBe(false);
   });
+
+  it('follows the system when storage is blocked', () => {
+    systemPrefersDark(true);
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new DOMException('blocked', 'SecurityError');
+    });
+    runInitScript();
+    vi.restoreAllMocks();
+    expect(root.classList.contains('dark')).toBe(true);
+  });
 });
 
 describe('ThemeToggle', () => {

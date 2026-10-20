@@ -11,11 +11,16 @@ export const themeStorageKey = 'vertex-theme';
 /**
  * Runs synchronously from `<head>`, before the body is painted: a file the app serves from
  * `'self'` (`theme-init.js`), since the clinic's CSP forbids inline scripts. Storage may be
- * unavailable (blocked, private mode): the system setting applies then.
+ * unavailable (blocked, private mode) or hold an unknown value: the system setting applies then.
  */
-export const themeInitScript = `try {
-  var saved = localStorage.getItem(${JSON.stringify(themeStorageKey)});
-  var dark = saved ? saved === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+export const themeInitScript = `var saved = null;
+try {
+  saved = localStorage.getItem(${JSON.stringify(themeStorageKey)});
+} catch (error) {}
+try {
+  var dark = saved === 'dark' || saved === 'light'
+    ? saved === 'dark'
+    : matchMedia('(prefers-color-scheme: dark)').matches;
   document.documentElement.classList.toggle('dark', dark);
 } catch (error) {}
 `;

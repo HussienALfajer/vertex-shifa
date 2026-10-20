@@ -22,6 +22,8 @@ export type FacilityDraft = {
   coordinates: Coordinates | undefined;
   /** A point outside Syria and Turkey is allowed once the owner confirms it (rule 13). */
   outsideConfirmed: boolean;
+  /** The pasted location is refused or still resolving: `coordinates` is not what the field shows. */
+  locationUnsettled: boolean;
   phones: { phone: string; whatsapp: boolean }[];
   /** Unset until the owner picks one. */
   defaultCurrency: CurrencyCode | undefined;
@@ -51,6 +53,7 @@ export function emptyDraft(name: string): FacilityDraft {
     addressDetails: '',
     coordinates: undefined,
     outsideConfirmed: false,
+    locationUnsettled: false,
     phones: [{ phone: '', whatsapp: false }],
     defaultCurrency: undefined,
     workingDays: DEFAULT_WORKING_DAYS,
@@ -71,6 +74,7 @@ export function draftFromFacility(
     addressDetails: facility.addressDetails,
     coordinates: facility.coordinates,
     outsideConfirmed: !isInServiceRegion(facility.coordinates),
+    locationUnsettled: false,
     phones: facility.contactPhones.map((entry) => ({ ...entry })),
     defaultCurrency: facility.defaultCurrency,
     workingDays: facility.workingDays,
@@ -97,7 +101,12 @@ export function locationErrors(draft: FacilityDraft): DraftErrors {
   if (!fields.addressDetails.safeParse(draft.addressDetails).success) {
     errors.addressDetails = 'addressDetails.invalid';
   }
-  if (!draft.coordinates || (!isInServiceRegion(draft.coordinates) && !draft.outsideConfirmed)) {
+  if (draft.locationUnsettled) {
+    errors.coordinates = 'location.unsettled';
+  } else if (
+    !draft.coordinates ||
+    (!isInServiceRegion(draft.coordinates) && !draft.outsideConfirmed)
+  ) {
     errors.coordinates = 'location.invalid';
   }
   const seen = new Set<string>();

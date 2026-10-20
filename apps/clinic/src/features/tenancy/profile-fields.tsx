@@ -19,6 +19,7 @@ import { ImageUp, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldGroup } from '../../components/field-group';
+import { ImageLoadFailed } from '../../components/image-load-failed';
 import { useErrorText } from '../../lib/error-text';
 import { archiveLogo, logoQuery, replaceLogo, useSetupCache } from './queries';
 
@@ -171,9 +172,16 @@ export function LogoField({ disabled }: { disabled: boolean }) {
               </Button>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">
-            {logo.data || logo.isPending ? t('fields.logo.description') : t('fields.logo.none')}
-          </p>
+          {!logo.data && logo.isError ? (
+            <ImageLoadFailed
+              text={t('fields.logo.loadFailed')}
+              onRetry={() => void logo.refetch()}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {logo.data || logo.isPending ? t('fields.logo.description') : t('fields.logo.none')}
+            </p>
+          )}
         </div>
       </div>
       <input

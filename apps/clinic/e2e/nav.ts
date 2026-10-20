@@ -23,3 +23,19 @@ export async function closeNav(page: Page): Promise<void> {
 export async function openUserMenu(page: Page): Promise<void> {
   await page.getByRole('button', { name: /^قائمة الحساب: / }).click();
 }
+
+/**
+ * Locks the computer: the top bar's lock button, or the member menu's item below 384 px, where the
+ * button gives its room to the brand.
+ */
+export async function lock(page: Page): Promise<void> {
+  const menu = page.getByRole('button', { name: /^قائمة الحساب: / });
+  await expect(menu).toBeVisible();
+  const button = page.getByRole('button', { name: 'قفل' });
+  if (await button.isVisible()) {
+    await button.click();
+    return;
+  }
+  await menu.click();
+  await page.getByRole('menuitem', { name: 'قفل' }).click();
+}

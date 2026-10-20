@@ -88,21 +88,34 @@ export function BranchesScreen({ archived }: { archived: boolean }) {
       <QueryStates queries={[branches]}>
         {() =>
           branches.data?.items.length ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('branches.columns.name')}</TableHead>
-                  <TableHead>{t('branches.columns.area')}</TableHead>
-                  <TableHead>{t('branches.columns.status')}</TableHead>
-                  <TableHead>{t('branches.columns.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {branches.data.items.map((branch) => (
-                  <BranchRow key={branch.id} branch={branch} onError={setError} />
-                ))}
-              </TableBody>
-            </Table>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('branches.columns.name')}</TableHead>
+                    <TableHead>{t('branches.columns.area')}</TableHead>
+                    <TableHead>{t('branches.columns.status')}</TableHead>
+                    <TableHead>{t('branches.columns.actions')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {branches.data.items.map((branch) => (
+                    <BranchRow key={branch.id} branch={branch} onError={setError} />
+                  ))}
+                </TableBody>
+              </Table>
+              {branches.data.total > branches.data.items.length && (
+                // One page until S05 brings the branch limits and paging: never a silent cut.
+                <Callout
+                  role="status"
+                  tone="warning"
+                  title={t('branches.truncated', {
+                    shown: branches.data.items.length,
+                    total: branches.data.total,
+                  })}
+                />
+              )}
+            </>
           ) : (
             <EmptyState
               title={archived ? t('branches.emptyArchived.title') : t('settings.location.empty')}

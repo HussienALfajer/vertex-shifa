@@ -29,6 +29,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
   Field,
   FieldError,
   FieldLabel,
@@ -547,9 +548,9 @@ function DeactivateDialog({
         }
       }}
     >
-      <Button variant="outline" disabled={disabled} onClick={() => setOpen(true)}>
+      <DialogTrigger render={<Button variant="outline" disabled={disabled} />}>
         {t('staff.member.deactivate')}
-      </Button>
+      </DialogTrigger>
       <DialogContent>
         <Form onSubmit={submit} busy={deactivate.isPending} className="flex flex-col gap-4">
           <DialogHeader>

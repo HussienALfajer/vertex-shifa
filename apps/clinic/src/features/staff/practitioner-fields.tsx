@@ -17,6 +17,7 @@ import { ImageUp, Trash2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldGroup } from '../../components/field-group';
+import { ImageLoadFailed } from '../../components/image-load-failed';
 import { QueryStates } from '../../components/query-states';
 import { useErrorText } from '../../lib/error-text';
 import type { PractitionerDraft, PractitionerErrors } from './practitioner-draft';
@@ -204,6 +205,8 @@ export function PhotoField({
             alt={t('practitioner.fields.photo.alt')}
             className="size-20 rounded-full border border-border object-cover"
           />
+        ) : photo.isError ? (
+          <div className="size-20 rounded-full border border-border bg-muted" />
         ) : (
           <Avatar name={name} size="xl" tone="muted" />
         )}
@@ -228,11 +231,18 @@ export function PhotoField({
               </Button>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">
-            {photo.data || photo.isPending
-              ? t('practitioner.fields.photo.description')
-              : t('practitioner.fields.photo.none')}
-          </p>
+          {!photo.data && photo.isError ? (
+            <ImageLoadFailed
+              text={t('practitioner.fields.photo.loadFailed')}
+              onRetry={() => void photo.refetch()}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {photo.data || photo.isPending
+                ? t('practitioner.fields.photo.description')
+                : t('practitioner.fields.photo.none')}
+            </p>
+          )}
         </div>
       </div>
       <input

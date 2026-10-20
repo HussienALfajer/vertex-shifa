@@ -42,6 +42,59 @@ test.describe('clinic settings', () => {
     await screenshot(page, testInfo, 'settings-clinic-conflict');
   });
 
+  test('says a logo failed to load, never that there is none, and retries', async ({
+    page,
+  }, testInfo) => {
+    await mockApi(page, { tenant: tenant({ status: 'active' }), logo: true });
+    let failing = true;
+    await page.route('**/api/tenant/logo', (route) =>
+      failing && route.request().method() === 'GET' ? route.abort('failed') : route.fallback(),
+    );
+    await page.goto('/settings/clinic');
+    const failed = page.getByRole('alert').filter({ hasText: 'تعذّر تحميل الشعار.' });
+    await expect(failed).toBeVisible();
+    await expect(page.getByText('لا يوجد شعار.', { exact: false })).toBeHidden();
+    await screenshot(page, testInfo, 'settings-clinic-logo-failed');
+
+    failing = false;
+    await failed.getByRole('button', { name: 'إعادة المحاولة' }).click();
+    await expect(page.getByRole('img', { name: 'شعار العيادة' })).toBeVisible();
+    await expect(failed).toBeHidden();
+  });
+
+  test('refuses to save while the pasted location is refused', async ({ page }, testInfo) => {
+    const api = await mockApi(page, {
+      tenant: tenant({ status: 'active' }),
+      facilities: [facility()],
+    });
+    await page.goto('/settings/location');
+    await page.getByLabel('تفاصيل العنوان').fill('الشارع الرئيسي، بناء جديد');
+    const paste = page.getByLabel('الصق رابط خرائط Google أو الإحداثيات');
+    await paste.fill('not coordinates');
+    await paste.blur();
+    await expect(page.getByText('لم نتعرف على موقع في هذا النص.', { exact: false })).toBeVisible();
+    await page.getByRole('button', { name: 'حفظ' }).click();
+    await expect(page.getByText('لم يُعتمد الموقع الملصق بعد', { exact: false })).toBeVisible();
+    await expect(paste).toBeFocused();
+    expect(api.writes).toEqual([]);
+    await screenshot(page, testInfo, 'settings-location-unsettled');
+
+    // Discarding takes the refused text with the changes: the saved point shows again.
+    await page.getByRole('button', { name: 'تجاهل التغييرات' }).click();
+    await expect(paste).toHaveValue(/^36\.5866/);
+    await page.getByLabel('تفاصيل العنوان').fill('الشارع الرئيسي، بناء جديد');
+    await paste.fill('not coordinates');
+    await paste.blur();
+    await page.getByRole('button', { name: 'حفظ' }).click();
+    await expect(page.getByText('لم يُعتمد الموقع الملصق بعد', { exact: false })).toBeVisible();
+    expect(api.writes).toEqual([]);
+
+    await paste.fill('36.5866, 37.0469');
+    await paste.press('Enter');
+    await page.getByRole('button', { name: 'حفظ' }).click();
+    await expect(page.getByText('حُفظت التغييرات.')).toBeVisible();
+  });
+
   test('shows the location of a single-branch clinic without the word "branch"', async ({
     page,
   }, testInfo) => {
@@ -130,6 +183,16 @@ test.describe('branches', () => {
     await rows.nth(1).getByRole('button', { name: 'استعادة' }).click();
     await expect(page.getByText('لا توجد فروع مؤرشفة')).toBeVisible();
     expect(api.facilities.every((branch) => branch.archivedAt === null)).toBe(true);
+  });
+
+  test('say when the clinic has more branches than the list shows', async ({ page }) => {
+    const facilities = Array.from({ length: 101 }, (_, index) =>
+      facility({ name: `فرع ${index + 1}` }),
+    );
+    await mockApi(page, { tenant: tenant({ status: 'active' }), facilities });
+    await page.goto('/settings/branches');
+    await expect(page.getByRole('row')).toHaveCount(101);
+    await expect(page.getByRole('status').filter({ hasText: 'أول 100 من أصل 101' })).toBeVisible();
   });
 });
 

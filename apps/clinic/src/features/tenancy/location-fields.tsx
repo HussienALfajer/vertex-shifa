@@ -77,13 +77,18 @@ export function LocationFields({ draft, onChange, errors, disabled }: FieldsProp
         legend={t('fields.location.label')}
         // The ODbL licence of the map data, as text: the app opens no outside links (ADR 0023).
         description={mapConfig ? t('fields.location.licence') : undefined}
-        error={errors.coordinates && !outside ? t('fields.location.invalid') : undefined}
+        error={
+          errors.coordinates && (!outside || draft.locationUnsettled)
+            ? t(`fields.${errors.coordinates}` as 'fields.location.invalid')
+            : undefined
+        }
       >
         <LocationPicker
           map={mapConfig}
           center={defaultMapCenter}
           value={draft.coordinates}
           onChange={(coordinates) => onChange({ coordinates, outsideConfirmed: false })}
+          onSettledChange={(settled) => onChange({ locationUnsettled: !settled })}
           resolveShortLink={resolveShortLink}
           disabled={disabled}
           labels={{

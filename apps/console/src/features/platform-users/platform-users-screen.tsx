@@ -26,6 +26,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
   EmptyState,
   Field,
   FieldDescription,
@@ -299,9 +300,9 @@ function CreateDialog({
   return (
     <FormDialog
       trigger={
-        <Button disabled={disabled} onClick={() => setOpen(true)}>
+        <DialogTrigger render={<Button disabled={disabled} />}>
           {t('platformUsers.create')}
-        </Button>
+        </DialogTrigger>
       }
       title={t('platformUsers.createDialog.title')}
       description={t('platformUsers.createDialog.description')}
@@ -380,9 +381,9 @@ function RoleDialog({ user, disabled }: { user: PlatformUser; disabled: boolean 
   return (
     <FormDialog
       trigger={
-        <Button variant="outline" size="sm" disabled={disabled} onClick={() => setOpen(true)}>
+        <DialogTrigger render={<Button variant="outline" size="sm" disabled={disabled} />}>
           {t('platformUsers.changeRole')}
-        </Button>
+        </DialogTrigger>
       }
       title={t('platformUsers.roleDialog.title', { name: user.name })}
       busy={save.isPending}

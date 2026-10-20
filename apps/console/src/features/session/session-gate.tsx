@@ -22,7 +22,7 @@ import { QueryStates } from '../../components/query-states';
 import { apiErrorCode } from '../../lib/api';
 import { useErrorText } from '../../lib/error-text';
 import { ReauthProvider } from './reauth';
-import { holds, meQuery, signOut } from './session';
+import { forgetSession, holds, meQuery, signOut } from './session';
 
 /**
  * Every screen but the sign-in needs a console session (rule 37): without one the person goes to
@@ -82,8 +82,9 @@ function UserMenu({ me }: { me: ConsoleMe }) {
   const navigate = useNavigate();
   const errorText = useErrorText();
   const out = useMutation({
-    mutationFn: () => signOut(queryClient),
+    mutationFn: signOut,
     onSuccess: async () => {
+      forgetSession(queryClient);
       toast.add({ title: t('session.signedOut'), type: 'success' });
       await navigate({ to: '/sign-in', replace: true });
     },

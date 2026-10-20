@@ -28,7 +28,7 @@ The Vertex design system for the web apps (clinic, console, site; ADR 0018): Ver
 - Leaving with unsaved changes asks through `UnsavedChangesDialog` ("Stay" focused, Escape stays): the app wires it to its router's blocker and to `beforeunload` (clinic: `components/unsaved-changes.tsx`).
 
 ## Codes
-- `CodeField` is the six-digit row of every app: an OTP, a TOTP, or a PIN (`mask`). Slots read left to right in every language, Arabic-Indic digits become Latin, `slotLabel` names the slots after the first; `onComplete` runs on the sixth digit.
+- `CodeField` is the six-digit row of every app: an OTP, a TOTP, or a PIN (`mask`). Slots read left to right in every language, Arabic-Indic digits become Latin, `slotLabel` names the slots after the first; `onComplete` runs on the sixth digit. The slots share the row's width (at most 44 px each), so the row fits a 320 px phone.
 - `QrCode` (`uqr`) draws a code as SVG modules, dark on white in both themes, because phone scanners expect it; `label` names it for screen readers. The console's TOTP setup is its first use.
 
 ## Layout and navigation
@@ -39,7 +39,7 @@ The Vertex design system for the web apps (clinic, console, site; ADR 0018): Ver
 
 ## Responsive (AGENTS.md "Responsive")
 - Every component works from a 320 px phone to a wide screen: mobile-first classes, `min-w-0` on flex children that hold text, `wrap-anywhere` for names users type, `flex-wrap` on rows of actions, grids that gain columns at a breakpoint (`grid gap-4 sm:grid-cols-2`), never a fixed width wider than a phone. Wide content scrolls inside its own box (`Table`, `TabsList`); dialogs fit the window and scroll inside it.
-- The apps' E2E runs at desktop (light and dark), tablet (768 px) and phone (Pixel 7) sizes, and `screenshot()` fails when the page scrolls sideways.
+- The apps' E2E runs at desktop (light and dark), tablet (768 px) and phone sizes (Pixel 7 at 412 px, and 375 px and 320 px), and `screenshot()` fails when the page scrolls sideways. A long label (a link-style action, a text button) wraps (`h-auto whitespace-normal text-start`) instead of keeping the button's single line.
 
 ## Rules to apply yourself
 - Every app mounts `<DirectionProvider direction={textDirection}>` (from this package, `textDirection` from `@vertex-shifa/i18n`) around its tree: Base UI reads the direction from it, not from `<html dir>`, for keyboard navigation and logical placement.
@@ -51,7 +51,7 @@ The Vertex design system for the web apps (clinic, console, site; ADR 0018): Ver
 - New components arrive with their first real use; the clinic-specific ones of ADR 0018 (queue board, odontogram, form fields, print templates, patient card, visit timeline, sync status) come with their specs. UI changes update the apps' E2E screenshots, at every size.
 
 ## Map (`src/components/location-picker.tsx`, ADR 0023)
-- `LocationPicker` is the only map screens use: coordinates in (`center`, `value`), coordinates out (`onChange`), short links resolved by the app (`resolveShortLink`, `POST /api/maps/resolve-link`), labels as props. MapLibre and PMTiles never appear outside this file, so another provider is a new implementation of it.
+- `LocationPicker` is the only map screens use: coordinates in (`center`, `value`), coordinates out (`onChange`), `onSettledChange(false)` while the paste field shows something that is not `value` (refused text, a link resolving, emptied), so the form refuses to save the previous location as the edit, short links resolved by the app (`resolveShortLink`, `POST /api/maps/resolve-link`), labels as props. MapLibre and PMTiles never appear outside this file, so another provider is a new implementation of it.
 - `map` (`MapConfig`) holds the style, PMTiles, glyph and worker URLs. Unset, or when the map errors before `load` or does not load within 10 s, only the paste field shows: saving never depends on the map. The "© OpenStreetMap" attribution is drawn by the component, not by MapLibre.
 - MapLibre (with its stylesheet) loads lazily on the first map. MapLibre 6 shapes Arabic itself: no RTL text plugin. Its worker is a file the app serves (`import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url'` in Vite), so the clinic CSP needs no blob worker; the app adds `maplibre-gl` to its dependencies for that import.
 - Configuration: `VITE_MAP_STYLE_URL`, `VITE_MAP_TILES_URL`, `VITE_MAP_GLYPHS_URL`. The clinic's Electron main process allows their origins in `connect-src` (`apps/clinic/electron/app-protocol.ts`): HTTPS, or HTTP on `localhost`/`127.0.0.1`.
