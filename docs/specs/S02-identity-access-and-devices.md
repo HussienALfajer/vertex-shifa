@@ -92,7 +92,7 @@ One per person (ADR 0005). Personal data, never medical; never logged (ids only)
 |---|---|---|---|
 | `phone` | text | yes | E.164 from `phoneNumberSchema` (S01), mobile only; unique |
 | `name_ar` | text | no | trimmed, 2–100 characters; set by the person at first sign-in (prefilled from the invitation) |
-| `password_hash` | text | no | Argon2id (or Better Auth's hash, ADR 0005); null until the person sets a password |
+| `password_hash` | text | no | Argon2id from `node:crypto` (ADR 0025); null until the person sets a password |
 | `password_changed_at` | timestamptz | no | |
 | `phone_verified_at` | timestamptz | no | set by the first verified OTP |
 | `password_reset_authorized_until` | timestamptz | no | set by an owner or Vertex support; 72 hours |

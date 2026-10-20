@@ -1,6 +1,6 @@
 # Spike A — Offline sync (PowerSync, Electron, encrypted SQLite)
 
-Date: 2026-10-09 · Branch: `spike/offline-sync` · Code: `spikes/offline-sync/` (throwaway) · Decision: [ADR 0021](../decisions/0021-sync-engine-confirmed-by-spike-a.md), which confirms and amends [ADR 0008](../decisions/0008-offline-first-clinic-and-sync.md)
+Date: 2026-10-09 · Branch: `spike/offline-sync` · Code: `spikes/offline-sync/` (throwaway, removed from `main` on 2026-10-20; kept on the `spike/offline-sync` branch and in history at `b8e324a`) · Decision: [ADR 0021](../decisions/0021-sync-engine-confirmed-by-spike-a.md), which confirms and amends [ADR 0008](../decisions/0008-offline-first-clinic-and-sync.md)
 
 ## Verdict
 

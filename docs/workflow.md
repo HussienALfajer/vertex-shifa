@@ -19,7 +19,7 @@ The unit of work is a spec from `docs/ROADMAP.md` (`S01`…`S23`). Each session 
 | # | Session | Model and effort | First message | The owner | Ends with |
 |---|---|---|---|---|---|
 | 1 | Spec | Opus 5.5, `high` | `/spec <id>` | Answers the interview; approves the spec | The spec's PR (`docs/<id>-spec`) |
-| 2 | Backend PR | Opus 5.5, `high` for sync, scheduling, tenancy, access, clinical records, contracts and the WhatsApp gateway; else `medium` | `/feature-slice <id>` | Approves the PR split and `TASKS.md`; may try endpoints at `/api/docs` | PR 1 (contracts, db, sync commands, api, worker) with auto-merge |
+| 2 | Backend PR | Opus 5.5, `high` for sync, scheduling, tenancy, access, clinical records, contracts and the WhatsApp gateway; else `medium` | `/feature-slice <id>` | Approves the PR split and `TASKS.md`; may try endpoints on the local API (`apps/api/openapi.json` lists them) | PR 1 (contracts, db, sync commands, api, worker) with auto-merge |
 | 3 | Front-end PR | Opus 5.5, `medium` | `/feature-slice <id>` | Runs the acceptance steps in the app | PR 2 (clinic, console, site or patient screens, E2E) with auto-merge; `docs/ROADMAP.md` updated |
 | 4 | Phase deploy (once per phase) | Opus 5.5, `low` | `Deploy phase <n> to production` | Approves the deploy; checks the live system | Deploy done, ticked in `docs/ROADMAP.md` |
 
@@ -102,7 +102,7 @@ Sonnet and Haiku never write code. Avoid `max` unless a gain is measured. Agent 
 
 ## Cloud sessions
 
-Cloud sessions (Claude Code on the web) get skills, subagents, hooks and settings from the repository. Phase 0 adds the setup and session scripts that give a cloud session the same toolchain and a disposable database, as in the owner's Vertex Digital project. What always stays local: production deploys, the owner's acceptance tests, the Electron app on Windows, real WhatsApp sessions and anything with real secrets.
+Cloud sessions (Claude Code on the web) get skills, subagents, hooks and settings from the repository. No setup or session scripts exist yet: a cloud session gets no local database, so it cannot run the database-backed tests or migration drift. Scripts that give it the same toolchain and a disposable database, as in the owner's Vertex Digital project, are open work. What always stays local: production deploys, the owner's acceptance tests, the Electron app on Windows, real WhatsApp sessions and anything with real secrets.
 
 ## References
 

@@ -1,6 +1,6 @@
 # 0005 — Identity and access: one person, many roles; devices; no email or SMS
 
-Status: Accepted, amended by [0024](0024-identity-sessions-and-devices.md) · Date: 2026-10-09
+Status: Accepted, amended by [0024](0024-identity-sessions-and-devices.md) and [0025](0025-identity-built-in-house.md) · Date: 2026-10-09
 
 ## Context
 A doctor may work in two clinics and also be a patient. Staff sign in on shared clinic PCs that are often offline. The platform uses neither email nor SMS (ADR 0012), so sign-in and recovery rely on WhatsApp OTP, passwords, devices and people.
@@ -14,7 +14,7 @@ A doctor may work in two clinics and also be a patient. Staff sign in on shared 
 - **Authorization:** role presets (owner, doctor, reception, nurse, accountant) map to permissions; owners adjust permissions within limits. Rules also use context: branch scope, and care relationship for clinical reads where the clinic enables it. Every endpoint and sync command declares the permission and the entitlement it needs.
 - **Break-glass:** a doctor may open a record outside their normal scope with a stated reason; the access is flagged in the audit log.
 - **Recovery without email:** staff passwords are reset by their clinic owner; an owner recovers through Vertex support after identity checks; patients recover with a WhatsApp OTP.
-- Implementation uses Better Auth (ADR 0002) with the phone-number and two-factor capabilities; custom flows (devices, PIN) are platform code.
+- Implementation uses Better Auth (ADR 0002) with the phone-number and two-factor capabilities; custom flows (devices, PIN) are platform code. *Amended by [0025](0025-identity-built-in-house.md): identity is built in-house on `node:crypto`, without Better Auth.*
 
 ## Consequences
 - A person's roles and patient profile never require a second account.

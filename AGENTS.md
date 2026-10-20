@@ -104,7 +104,7 @@ When a task's work is done (a spec approved, a `/feature-slice` PR accepted, a f
 4. **Checks:** lint, typecheck, test and build, plus E2E when a front end or `packages/ui*` changed and migration drift when `packages/db` changed, run through the `checker` subagent. Turbo's cache replays every task whose inputs did not change, so this run costs only what changed since the last one: run it again after any fix rather than reasoning about what already passed. Documentation-only changes run no local checks (CI skips them as well).
 5. **Review:** for feature, sync, security and clinical work, the `reviewer` subagent has run and its blocking findings are fixed.
 6. **Commit:** stage the intended files only; Conventional Commit subject, a body with what and why, ending with the session's attribution line.
-7. **Pull request:** `git push -u origin <branch>`, `gh pr create --base main` with `## Summary` and `## Test plan` (ticked checks, each marked run now or reused from the record), ending with the session's attribution line; then `gh pr merge <number> --auto --merge`. Exception: a PR that changes `v1-scope.md` or adds or changes an ADR waits for the owner's approval before auto-merge is enabled.
+7. **Pull request:** `git push -u origin <branch>`, `gh pr create --base main` with `## Summary` and `## Test plan` (ticked checks, each marked run now or replayed from Turbo's cache), ending with the session's attribution line; then `gh pr merge <number> --auto --merge`. Exception: a PR that changes `v1-scope.md` or adds or changes an ADR waits for the owner's approval before auto-merge is enabled.
 8. **Report** in the format below.
 
 ## Reporting

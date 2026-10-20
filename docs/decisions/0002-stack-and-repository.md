@@ -1,13 +1,13 @@
 # 0002 — Stack and repository: TypeScript everywhere, one monorepo
 
-Status: Accepted · Date: 2026-10-09
+Status: Accepted, amended by [0025](0025-identity-built-in-house.md) · Date: 2026-10-09
 
 ## Context
 Claude Code writes the whole system (ADR 0019). One language across server, desktop, web and mobile lets contracts, validation, i18n and business rules be written once, and lets every session learn one set of patterns. The owner's other Vertex projects (Vertex Hub, Vertex Digital) run a proven TypeScript stack; staying on it keeps tools, skills and the design system shared across Vertex.
 
 ## Decision
 - **Repository:** one public GitHub repository, pnpm workspaces + Turborepo, TypeScript strict, Node 24, package scope `@vertex-shifa/*`.
-- **Backend:** NestJS (`apps/api`, `apps/worker`, `apps/whatsapp-gateway`), Drizzle ORM with SQL migrations, PostgreSQL 17 with row-level security (ADR 0004), Zod contracts (Standard Schema) with OpenAPI generated from them, pg-boss for jobs and the outbox dispatcher, Better Auth for sessions (ADR 0005), Server-Sent Events for live updates (queue, sync status).
+- **Backend:** NestJS (`apps/api`, `apps/worker`, `apps/whatsapp-gateway`), Drizzle ORM with SQL migrations, PostgreSQL 17 with row-level security (ADR 0004), Zod contracts (Standard Schema) with OpenAPI generated from them, pg-boss for jobs and the outbox dispatcher, Better Auth for sessions (ADR 0005; replaced by in-house identity on `node:crypto`, ADR 0025), Server-Sent Events for live updates (queue, sync status).
 - **Clinic app (`apps/clinic`):** React + Vite + TanStack Router and Query, packaged with Electron for Windows; local SQLite and the sync client (ADR 0008). The same build runs in a browser for online-only use.
 - **Console (`apps/console`):** React + Vite + TanStack, browser only.
 - **Public site (`apps/site`):** Next.js (App Router), serving platform subdomains and custom domains (ADR 0015).
