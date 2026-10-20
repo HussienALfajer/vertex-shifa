@@ -148,6 +148,13 @@
       "when": 1792462456965,
       "tag": "0020_sad_turbo",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792512924484,
+      "tag": "0021_burly_korvac",
+      "breakpoints": true
     }
   ]
 }

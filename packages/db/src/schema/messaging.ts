@@ -129,10 +129,11 @@ export const whatsappSessionEvents = pgTable(
       'whatsapp_session_events_type',
       sql`${t.type} in ('created', 'linked', 'connected', 'disconnected', 'needs_relink', 'banned', 'link_timeout', 'duplicate_number', 'paused', 'resumed', 'relink_started', 'unlinked', 'alert_sent')`,
     ),
-    // Disconnect and pause reason codes only, never a library's message.
+    // Reason codes only, never a library's message: disconnect and pause reasons, and for
+    // `alert_sent` the alert's event (rule 28, throttled per session and event).
     check(
       'whatsapp_session_events_reason',
-      sql`${t.reason} is null or ${t.reason} in (${sql.raw(DISCONNECT_REASONS)}, 'manual', 'send_failures')`,
+      sql`${t.reason} is null or ${t.reason} in (${sql.raw(DISCONNECT_REASONS)}, 'manual', 'send_failures', 'needs_relink', 'banned', 'disconnected', 'none_healthy', 'recovered')`,
     ),
     index('whatsapp_session_events_session_created_idx').on(t.sessionId, t.createdAt),
     index('whatsapp_session_events_platform_user_idx').on(t.platformUserId),
