@@ -9,7 +9,7 @@ import {
   seededPin,
   signInBeforehand,
 } from './mock-identity.js';
-import { openUserMenu } from './nav.js';
+import { lock, openUserMenu } from './nav.js';
 import { screenshot } from './screenshot.js';
 import { settled } from './settle.js';
 
@@ -67,7 +67,18 @@ test.describe('signing in on this computer', () => {
     await expect(page.getByText('كلمة المرور لا تستوفي الشروط.')).toBeVisible();
     await page.getByLabel('كلمة المرور الجديدة').fill(ownerPassword);
     await screenshot(page, testInfo, 'first-sign-in');
+    // The password is saved, then the clinics fail to load once: retried with the signed-in
+    // ticket, never by setting the password again.
+    let optionsFail = true;
+    await page.route('**/api/auth/registration-options', (route) => {
+      if (!optionsFail) return route.fallback();
+      optionsFail = false;
+      return route.abort('failed');
+    });
     await page.getByRole('button', { name: 'حفظ ومتابعة' }).click();
+    await expect(page.getByRole('alert').filter({ hasText: 'تعذّر جلب العيادات' })).toBeVisible();
+    await screenshot(page, testInfo, 'registration-options-failed');
+    await page.getByRole('button', { name: 'إعادة المحاولة' }).click();
 
     // One clinic, onboarding without a branch: only the computer's name is asked (rule 28).
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('تسجيل هذا الحاسوب');
@@ -156,7 +167,7 @@ test.describe('signing in on this computer', () => {
       password: null,
     });
     await page.goto('/');
-    await page.getByRole('button', { name: 'قفل' }).click();
+    await lock(page);
     await expect(page).toHaveURL('/lock');
     await page.getByRole('button', { name: 'مستخدم آخر' }).click();
     await page.getByRole('link', { name: 'سجّل الدخول برقم هاتفك' }).click();
@@ -177,7 +188,7 @@ test.describe('signing in on this computer', () => {
     await expect(page.getByLabel('اسم العيادة بالعربية')).toBeDisabled();
 
     // Both members are on the lock screen now.
-    await page.getByRole('button', { name: 'قفل' }).click();
+    await lock(page);
     const members = page.getByRole('list', { name: 'المستخدمون على هذا الحاسوب' });
     await expect(members.getByRole('button')).toHaveCount(2);
     await expect(members).toContainText('مالك تجريبي');
@@ -212,7 +223,7 @@ test.describe('lock screen', () => {
       facilities: [facility()],
     });
     await page.goto('/');
-    await page.getByRole('button', { name: 'قفل' }).click();
+    await lock(page);
     await expect(page).toHaveURL('/lock');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('عيادة الاختبار');
     await screenshot(page, testInfo, 'lock');
@@ -260,7 +271,7 @@ test.describe('lock screen', () => {
   }, testInfo) => {
     await mockApi(page, { tenant: tenant({ status: 'active' }), facilities: [facility()] });
     await page.goto('/');
-    await page.getByRole('button', { name: 'قفل' }).click();
+    await lock(page);
     // The preview server stands in for the app's local files: the screen's code loads first, as
     // the built app always has it.
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('عيادة الاختبار');
@@ -314,7 +325,7 @@ test.describe('lock screen', () => {
       facilities: [facility()],
     });
     await page.goto('/');
-    await expect(page.getByRole('button', { name: 'قفل' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^قائمة الحساب: / })).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     // 8 days pass with the app open: the main process locks the member and says so.
     api.device.setClockOffset(8 * DAY);
@@ -414,7 +425,7 @@ test.describe('lock screen', () => {
   test('replaces a forgotten PIN after a password sign-in (rule 22)', async ({ page }) => {
     await mockApi(page, { tenant: tenant({ status: 'active' }), facilities: [facility()] });
     await page.goto('/');
-    await page.getByRole('button', { name: 'قفل' }).click();
+    await lock(page);
     await page.getByRole('button', { name: 'نسيت الرمز السري؟' }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('نسيت الرمز السري');
     await page.getByLabel('كلمة المرور', { exact: true }).fill(ownerPassword);
@@ -424,7 +435,7 @@ test.describe('lock screen', () => {
     await page.getByRole('button', { name: 'حفظ الرمز السري' }).click();
     await expect(page).toHaveURL('/');
 
-    await page.getByRole('button', { name: 'قفل' }).click();
+    await lock(page);
     await typeCode(page, 'الرمز السري لـ مالك تجريبي', seededPin);
     await expect(page.getByText('رمز سري خاطئ.', { exact: false })).toBeVisible();
     await typeCode(page, 'الرمز السري لـ مالك تجريبي', '741852');
@@ -437,7 +448,7 @@ test.describe('forgotten password (rule 16)', () => {
 
   /** From the lock screen, "Another user", then "Forgot your password?". */
   async function openReset(page: Page) {
-    await page.getByRole('button', { name: 'قفل' }).click();
+    await lock(page);
     await expect(page).toHaveURL('/lock');
     await page.getByRole('button', { name: 'مستخدم آخر' }).click();
     await page.getByRole('link', { name: 'نسيت كلمة المرور؟' }).click();
@@ -561,7 +572,7 @@ test.describe('forgotten password (rule 16)', () => {
   }) => {
     await mockApi(page, { tenant: tenant({ status: 'active' }), facilities: [facility()] });
     await page.goto('/');
-    await page.getByRole('button', { name: 'قفل' }).click();
+    await lock(page);
     await page.getByRole('button', { name: 'مستخدم آخر' }).click();
     await page.getByRole('link', { name: 'سجّل الدخول برقم هاتفك' }).click();
     await page.getByLabel('رقم الهاتف').fill('0900000101');
@@ -625,7 +636,7 @@ test.describe('several clinics on one computer', () => {
     await expect.poll(() => held.length).toBe(1);
 
     // The owner locks, and the member of the other clinic unlocks before the answer comes.
-    await page.getByRole('button', { name: 'قفل' }).click();
+    await lock(page);
     await expect(page).toHaveURL('/lock');
     await page.getByRole('combobox', { name: 'العيادة' }).click();
     await page.getByRole('option', { name: 'عيادة الشمال' }).click();
@@ -702,7 +713,7 @@ test.describe('my account', () => {
     await page.getByRole('button', { name: 'تغيير الرمز السري' }).click();
     await expect(page.getByText('تغيّر الرمز السري.')).toBeVisible();
 
-    await page.getByRole('button', { name: 'قفل' }).click();
+    await lock(page);
     await typeCode(page, 'الرمز السري لـ مالك تجريبي', '741852');
     await expect(page).toHaveURL('/');
   });

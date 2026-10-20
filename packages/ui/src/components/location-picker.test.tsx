@@ -110,6 +110,7 @@ function setup(
   } = {},
 ) {
   const onChange = vi.fn();
+  const onSettledChange = vi.fn();
   const resolveShortLink = vi.fn(props.resolveShortLink ?? (async () => ({ error: 'none' })));
   render(
     <LocationPicker
@@ -117,11 +118,12 @@ function setup(
       center={azaz}
       value={props.value}
       onChange={onChange}
+      onSettledChange={onSettledChange}
       resolveShortLink={resolveShortLink}
       labels={labels}
     />,
   );
-  return { onChange, resolveShortLink, input: screen.getByLabelText('paste') };
+  return { onChange, onSettledChange, resolveShortLink, input: screen.getByLabelText('paste') };
 }
 
 function deferred() {
@@ -248,6 +250,40 @@ describe('LocationPicker without map URLs', () => {
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(screen.getByText('unrecognized')).toBeDefined();
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('tells the form a refused edit is not the location it holds, until it is fixed', () => {
+    const { input, onChange, onSettledChange } = setup({ value: azaz });
+    fireEvent.change(input, { target: { value: 'not coordinates' } });
+    fireEvent.blur(input);
+    expect(onSettledChange).toHaveBeenLastCalledWith(false);
+    fireEvent.change(input, { target: { value: '36.5864, 37.0453' } });
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenCalledWith(azaz);
+    expect(onSettledChange).toHaveBeenLastCalledWith(true);
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.blur(input);
+    expect(onSettledChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it('tells the form it is settled when it appears, and when it goes while refused', () => {
+    const { input, onSettledChange } = setup({ value: azaz });
+    expect(onSettledChange).toHaveBeenLastCalledWith(true);
+    fireEvent.change(input, { target: { value: 'not coordinates' } });
+    fireEvent.blur(input);
+    expect(onSettledChange).toHaveBeenLastCalledWith(false);
+    cleanup();
+    expect(onSettledChange).toHaveBeenLastCalledWith(true);
+  });
+
+  it('tells the form a short link is still resolving', async () => {
+    const pending = deferred();
+    const { input, onSettledChange } = setup({ resolveShortLink: () => pending.promise });
+    fireEvent.change(input, { target: { value: 'https://maps.app.goo.gl/abc123' } });
+    fireEvent.blur(input);
+    expect(onSettledChange).toHaveBeenLastCalledWith(false);
+    await act(async () => pending.resolve({ coordinates: azaz }));
+    expect(onSettledChange).toHaveBeenLastCalledWith(true);
   });
 
   it('resolves a short link through the app and shows its error', async () => {

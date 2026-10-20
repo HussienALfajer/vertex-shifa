@@ -30,7 +30,7 @@ export default defineConfig({
   testDir: 'e2e',
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  // Four projects, each signing members in with Argon2id (64 MiB): on a large machine Playwright's
+  // Six projects, each signing members in with Argon2id (64 MiB): on a large machine Playwright's
   // default (half the cores) starves the preview server and the tests time out.
   ...(process.env.CI ? {} : { workers: '25%' }),
   reporter: process.env.CI ? 'github' : 'list',
@@ -41,7 +41,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   // Every screen at every size (AGENTS.md "Responsive"): a desktop in both color schemes, a tablet
-  // in portrait at the sidebar's breakpoint (768 px), and a phone.
+  // in portrait at the sidebar's breakpoint (768 px), and phones of 412, 375 and 320 px.
   projects: [
     { name: 'light', use: { ...devices['Desktop Chrome'], colorScheme: 'light' } },
     { name: 'dark', use: { ...devices['Desktop Chrome'], colorScheme: 'dark' } },
@@ -55,6 +55,15 @@ export default defineConfig({
       },
     },
     { name: 'phone', use: { ...devices['Pixel 7'], colorScheme: 'dark' } },
+    // The narrowest phones the apps support (AGENTS.md "Responsive"): 320 px and 375 px wide.
+    {
+      name: 'phone-320',
+      use: { ...devices['Pixel 7'], viewport: { width: 320, height: 640 }, colorScheme: 'light' },
+    },
+    {
+      name: 'phone-375',
+      use: { ...devices['Pixel 7'], viewport: { width: 375, height: 812 }, colorScheme: 'dark' },
+    },
   ],
   webServer: {
     command: `pnpm exec vite preview --port ${port}`,

@@ -5,6 +5,7 @@ import {
   otpPolicy,
   parsePhoneNumber,
   passwordPolicy,
+  type RegistrationOptions,
   signInPolicy,
 } from '@vertex-shifa/contracts';
 import {
@@ -25,7 +26,7 @@ import {
   PasswordInput,
 } from '@vertex-shifa/ui';
 import { CheckIcon, XIcon } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OfflineNotice } from '../../components/offline-notice';
 import { apiErrorCode } from '../../lib/api';
@@ -74,6 +75,8 @@ type Step =
   | { kind: 'credentials' }
   | { kind: 'otp'; challengeId: string; phone: string; sentAt: number }
   | { kind: 'password'; ticket: string; phone: string; name: string }
+  /** Signed in: the clinics this computer may register in are read with the `signed_in` ticket. */
+  | { kind: 'options'; ticket: string; phone: string; name: string }
   | { kind: 'noClinic' };
 
 /**
@@ -121,29 +124,14 @@ function SignInSteps({
   const first = mode === 'first';
   const [step, setStep] = useState<Step>({ kind: 'credentials' });
 
-  /** The person proved who they are: on to the registration or the new PIN. */
+  /**
+   * The person proved who they are: on to the registration or the new PIN. A registration reads
+   * its clinics in a step of its own, so a failed read is retried there, never by repeating the
+   * step that gave the ticket (a password set, a code verified: their tickets are used up).
+   */
   async function signedIn(ticket: string, phone: string, name: string) {
     if (search.purpose === 'register') {
-      const options = await registrationOptions(ticket);
-      // Rule 19: never a second registration to a clinic this computer holds.
-      const registered = new Set(
-        view.registrations.filter((item) => item.status === 'active').map((item) => item.tenantId),
-      );
-      const clinics = options.clinics.filter((clinic) => !registered.has(clinic.tenantId));
-      if (clinics.length === 0) {
-        setStep({ kind: 'noClinic' });
-        return;
-      }
-      setSignInFlow({
-        purpose: 'register',
-        deviceId: null,
-        phone,
-        name,
-        ticket,
-        clinics,
-        registration: null,
-      });
-      await navigate({ to: '/register' });
+      setStep({ kind: 'options', ticket, phone, name });
       return;
     }
     setSignInFlow({
@@ -156,6 +144,31 @@ function SignInSteps({
       registration: null,
     });
     await navigate({ to: '/pin/new' });
+  }
+
+  async function toRegistration(
+    { ticket, phone, name }: Extract<Step, { kind: 'options' }>,
+    options: RegistrationOptions,
+  ) {
+    // Rule 19: never a second registration to a clinic this computer holds.
+    const registered = new Set(
+      view.registrations.filter((item) => item.status === 'active').map((item) => item.tenantId),
+    );
+    const clinics = options.clinics.filter((clinic) => !registered.has(clinic.tenantId));
+    if (clinics.length === 0) {
+      setStep({ kind: 'noClinic' });
+      return;
+    }
+    setSignInFlow({
+      purpose: 'register',
+      deviceId: null,
+      phone,
+      name,
+      ticket,
+      clinics,
+      registration: null,
+    });
+    await navigate({ to: '/register' });
   }
 
   const titles: Record<SignInPurpose, string> = {
@@ -224,6 +237,17 @@ function SignInSteps({
           reset={mode === 'reset'}
           step={step}
           onDone={(ticket, name) => signedIn(ticket, step.phone, name)}
+        />
+      )}
+      {step.kind === 'options' && (
+        <OptionsStep
+          step={step}
+          onRestart={async () => {
+            // The password sign-in: a password set on the way is already saved.
+            setStep({ kind: 'credentials' });
+            await navigate({ to: '/sign-in', search: { purpose: search.purpose } });
+          }}
+          onOptions={(options) => toRegistration(step, options)}
         />
       )}
       {step.kind === 'noClinic' && (
@@ -514,6 +538,65 @@ function OtpStep({
         {resend.error && <Callout role="alert" tone="danger" title={errorText(resend.error)} />}
       </Card>
     </Form>
+  );
+}
+
+/**
+ * The clinics this computer may register in, read with the `signed_in` ticket. A failed read is
+ * retried with the same ticket; an expired one starts the password sign-in again (the password,
+ * if one was just set, is kept on the server).
+ */
+function OptionsStep({
+  step,
+  onRestart,
+  onOptions,
+}: {
+  step: Extract<Step, { kind: 'options' }>;
+  onRestart: () => Promise<void>;
+  onOptions: (options: RegistrationOptions) => Promise<void>;
+}) {
+  const { t } = useTranslation(['clinic', 'common']);
+  const errorText = useErrorText();
+  const online = useOnline();
+  const read = useMutation({
+    mutationFn: () => registrationOptions(step.ticket),
+    onSuccess: onOptions,
+  });
+  const started = useRef(false);
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    read.mutate();
+  }, [read]);
+
+  if (!read.error) {
+    return (
+      <Card className="p-6">
+        <p role="status" className="text-sm text-muted-foreground">
+          {t('clinic:identity.signIn.readingClinics')}
+        </p>
+      </Card>
+    );
+  }
+  const expired = apiErrorCode(read.error) === 'TICKET_INVALID';
+  return (
+    <Card className="flex flex-col gap-4 p-6">
+      <Callout
+        role="alert"
+        tone="danger"
+        title={t('clinic:identity.signIn.clinicsFailed')}
+        description={errorText(read.error)}
+      />
+      <FormActions>
+        {expired ? (
+          <Button onClick={() => void onRestart()}>{t('clinic:identity.signIn.startOver')}</Button>
+        ) : (
+          <Button loading={read.isPending} disabled={!online} onClick={() => read.mutate()}>
+            {t('common:retry')}
+          </Button>
+        )}
+      </FormActions>
+    </Card>
   );
 }
 

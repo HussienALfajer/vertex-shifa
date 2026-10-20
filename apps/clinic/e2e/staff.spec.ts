@@ -417,11 +417,15 @@ test.describe('devices', () => {
     await expect(second).toContainText('موظف استقبال');
     await screenshot(page, testInfo, 'devices');
 
+    // A dialog closed without saving opens again on the current name.
+    const renameDialog = page.getByRole('dialog', { name: 'اسم الحاسوب' });
     await second.getByRole('button', { name: 'إعادة التسمية' }).click();
-    await page
-      .getByRole('dialog', { name: 'اسم الحاسوب' })
-      .getByLabel('الاسم')
-      .fill('حاسوب الطبيب');
+    await renameDialog.getByLabel('الاسم').fill('اسم لم يُحفظ');
+    await renameDialog.getByRole('button', { name: 'رجوع' }).click();
+    await expect(renameDialog).toBeHidden();
+    await second.getByRole('button', { name: 'إعادة التسمية' }).click();
+    await expect(renameDialog.getByLabel('الاسم')).toHaveValue('حاسوب العيادة 2');
+    await renameDialog.getByLabel('الاسم').fill('حاسوب الطبيب');
     await page
       .getByRole('dialog', { name: 'اسم الحاسوب' })
       .getByRole('button', { name: 'حفظ' })

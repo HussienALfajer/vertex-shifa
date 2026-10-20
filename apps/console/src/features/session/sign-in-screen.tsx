@@ -290,7 +290,8 @@ function CredentialsStep({
       <p className="mt-4 text-sm">
         <Button
           variant="link"
-          className="h-auto p-0"
+          // The long Arabic label wraps on a 320 px phone instead of widening the page.
+          className="h-auto max-w-full shrink p-0 text-start whitespace-normal"
           disabled={send.isPending}
           onClick={() => onMode(mode === 'password' ? 'setupCode' : 'password')}
         >
@@ -389,6 +390,8 @@ function TotpStep({
           </Button>
           <Button
             variant="ghost"
+            // The long Arabic label wraps on a 320 px phone instead of widening the page.
+            className="h-auto min-h-9 max-w-full shrink py-1.5 text-start whitespace-normal"
             disabled={verify.isPending}
             onClick={() => {
               setRecovery(!recovery);

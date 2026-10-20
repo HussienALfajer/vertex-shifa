@@ -42,6 +42,15 @@ export default defineConfig({
     { name: 'dark', use: { ...devices['Pixel 7'], colorScheme: 'dark' } },
     // An Android tablet in portrait (AGENTS.md "Responsive").
     { name: 'tablet', use: { ...devices['Galaxy Tab S4'], colorScheme: 'light' } },
+    // The narrowest phones the apps support (AGENTS.md "Responsive"): 320 px and 375 px wide.
+    {
+      name: 'phone-320',
+      use: { ...devices['Pixel 7'], viewport: { width: 320, height: 640 }, colorScheme: 'light' },
+    },
+    {
+      name: 'phone-375',
+      use: { ...devices['Pixel 7'], viewport: { width: 375, height: 812 }, colorScheme: 'dark' },
+    },
   ],
   webServer: {
     command: `node e2e/web-server.ts ${port}`,

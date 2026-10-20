@@ -31,6 +31,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
   EmptyState,
   Field,
   FieldError,
@@ -322,9 +323,9 @@ function RenameDialog({ device, disabled }: { device: ManagedDevice; disabled: b
   return (
     <FormDialog
       trigger={
-        <Button variant="outline" disabled={disabled} onClick={() => setOpen(true)}>
+        <DialogTrigger render={<Button variant="outline" disabled={disabled} />}>
           {t('devices.rename')}
-        </Button>
+        </DialogTrigger>
       }
       title={t('devices.renameDialog.title')}
       busy={rename.isPending}
@@ -401,9 +402,9 @@ function RevokeDialog({
   return (
     <FormDialog
       trigger={
-        <Button variant="destructive" disabled={disabled} onClick={() => setOpen(true)}>
+        <DialogTrigger render={<Button variant="destructive" disabled={disabled} />}>
           {t('devices.revoke')}
-        </Button>
+        </DialogTrigger>
       }
       title={t('devices.revokeDialog.title', { name: device.name })}
       description={t('devices.revokeDialog.description')}

@@ -374,7 +374,10 @@ export async function mockApi(
         const items = state.facilities.filter(
           (branch) => (branch.archivedAt !== null) === archived,
         );
-        return route.fulfill({ json: { items, total: items.length, page: 1, pageSize: 100 } });
+        const pageSize = Number(url.searchParams.get('pageSize') ?? 20);
+        return route.fulfill({
+          json: { items: items.slice(0, pageSize), total: items.length, page: 1, pageSize },
+        });
       }
       if (method === 'POST') {
         const parsed = createFacilitySchema.safeParse(body());

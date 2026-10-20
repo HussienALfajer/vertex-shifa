@@ -1,13 +1,46 @@
 import { type ErrorCode, errorResponseSchema } from '@vertex-shifa/contracts';
-import createClient from 'openapi-fetch';
+import createClient, { type Client } from 'openapi-fetch';
 import type { paths } from './api-schema.gen';
+import { identityScope, isCurrent, withinScope } from './identity-scope';
 
 /**
- * The console's API client, typed from `apps/api/openapi.json`. Requests go to the console's own
- * origin (Vite proxies `/api` in development): the session is an `HttpOnly` cookie scoped to
- * `/api/console/`, and every write is checked against the console's `Origin` (spec S02 rule 39).
+ * Requests go to the console's own origin (Vite proxies `/api` in development): the session is an
+ * `HttpOnly` cookie scoped to `/api/console/`, and every write is checked against the console's
+ * `Origin` (spec S02 rule 39).
  */
-export const api = createClient<paths>({ baseUrl: '', credentials: 'same-origin' });
+const client = createClient<paths>({ baseUrl: '', credentials: 'same-origin' });
+
+type Method = 'GET' | 'PUT' | 'POST' | 'DELETE' | 'PATCH';
+type Send = (url: string, init?: { signal?: AbortSignal }) => Promise<ApiResult<unknown>>;
+
+/** A method whose request belongs to the identity scope it was sent in (`identity-scope.ts`). */
+function scoped<M extends Method>(method: M): Client<paths>[M] {
+  const send = client[method] as unknown as Send;
+  const call: Send = async (url, init) => {
+    const scope = identityScope();
+    const result = await withinScope(
+      scope,
+      send(url, scope.user === null ? init : { ...init, signal: scope.signal }),
+    );
+    // A refusal answered after the identity changed concerns a session that is gone already.
+    if (isCurrent(scope)) noticeEnd(url, result);
+    return result;
+  };
+  return call as unknown as Client<paths>[M];
+}
+
+/**
+ * The console's API client, typed from `apps/api/openapi.json`. A request sent for one user is
+ * cancelled when the identity changes, and its answer never settles for the next one, so the code
+ * that awaited it stops there (`identity-scope.ts`).
+ */
+export const api: Pick<Client<paths>, Method> = {
+  GET: scoped('GET'),
+  PUT: scoped('PUT'),
+  POST: scoped('POST'),
+  DELETE: scoped('DELETE'),
+  PATCH: scoped('PATCH'),
+};
 
 /** The code of a refusal; `NETWORK_ERROR` when the API could not be reached at all. */
 export type ApiErrorCode = ErrorCode | 'NETWORK_ERROR';
@@ -51,26 +84,20 @@ const signInSteps = new Set([
   '/api/console/auth/totp',
 ]);
 
+let sessionEnded: ((code: ErrorCode) => void) | undefined;
+
+function noticeEnd(url: string, result: ApiResult<unknown>): void {
+  if (result.response.status !== 401 || signInSteps.has(url)) return;
+  const body = errorResponseSchema.safeParse(result.error);
+  if (body.success && (body.data.code === 'UNAUTHENTICATED' || body.data.code === 'SESSION_ENDED'))
+    sessionEnded?.(body.data.code);
+}
+
 /**
- * Hears the end of the session (no cookie, idle or absolute expiry, or ended elsewhere): any
- * console request answered `UNAUTHENTICATED` or `SESSION_ENDED`, outside the sign-in steps.
+ * Hears the end of the session (no cookie, idle or absolute expiry, or ended elsewhere): a console
+ * request answered `UNAUTHENTICATED` or `SESSION_ENDED`, outside the sign-in steps, while the
+ * identity it was sent for is still the current one.
  */
 export function watchSession(ended: (code: ErrorCode) => void): void {
-  api.use({
-    async onResponse({ request, response }) {
-      if (response.status !== 401) return;
-      if (signInSteps.has(new URL(request.url).pathname)) return;
-      const body = errorResponseSchema.safeParse(
-        await response
-          .clone()
-          .json()
-          .catch(() => null),
-      );
-      if (
-        body.success &&
-        (body.data.code === 'UNAUTHENTICATED' || body.data.code === 'SESSION_ENDED')
-      )
-        ended(body.data.code);
-    },
-  });
+  sessionEnded = ended;
 }

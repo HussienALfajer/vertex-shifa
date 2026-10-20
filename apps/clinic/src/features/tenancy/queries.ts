@@ -33,7 +33,10 @@ export const logoQuery = queryOptions({
   },
 });
 
-/** The branches in use (`archived: false`) or the archived ones; a tenant has a handful. */
+/**
+ * The branches in use (`archived: false`) or the archived ones; a tenant has a handful. One page of
+ * 100 until S05 brings the branch limits: the branch list says when the clinic has more.
+ */
 function readFacilities(archived: boolean): Promise<FacilityPage> {
   return unwrap(
     api.GET('/api/facilities', {

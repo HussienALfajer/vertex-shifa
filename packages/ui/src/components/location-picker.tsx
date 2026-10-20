@@ -65,6 +65,11 @@ type LocationPickerProps = Omit<ComponentProps<'div'>, 'onChange'> & {
   center: Coordinates;
   value?: Coordinates | undefined;
   onChange: (coordinates: Coordinates) => void;
+  /**
+   * `false` while the paste field holds text that is not `value`: refused, a link still resolving,
+   * or emptied while a location is set. The form refuses to save then, so it never saves the previous location as the edit.
+   */
+  onSettledChange?: (settled: boolean) => void;
   resolveShortLink: (url: string) => Promise<ShortLinkResult>;
   labels: LocationPickerLabels;
   disabled?: boolean;
@@ -81,6 +86,7 @@ function LocationPicker({
   center,
   value,
   onChange,
+  onSettledChange,
   resolveShortLink,
   labels,
   disabled = false,
@@ -113,6 +119,7 @@ function LocationPicker({
         choice={choice}
         value={value}
         onChange={onChange}
+        onSettledChange={onSettledChange}
         resolveShortLink={resolveShortLink}
         labels={labels}
         disabled={disabled}
@@ -332,6 +339,7 @@ type PasteFieldProps = {
   choice: RefObject<number>;
   value: Coordinates | undefined;
   onChange: (coordinates: Coordinates) => void;
+  onSettledChange: ((settled: boolean) => void) | undefined;
   resolveShortLink: (url: string) => Promise<ShortLinkResult>;
   labels: LocationPickerLabels;
   disabled: boolean;
@@ -342,6 +350,7 @@ function PasteField({
   choice,
   value,
   onChange,
+  onSettledChange,
   resolveShortLink,
   labels,
   disabled,
@@ -354,6 +363,27 @@ function PasteField({
   const applied = useRef<string | undefined>(text);
   /** Set by a paste: the change that follows applies the field's new text. */
   const pasted = useRef(false);
+
+  // Told when the picker appears and on every change, and settled when it goes (a step left, a
+  // form discarded), so the form's flag never outlives the field it describes. An emptied field
+  // does not clear a location either.
+  const settled = error === undefined && !resolving && (value === undefined || text.trim() !== '');
+  const reported = useRef<boolean>(undefined);
+  const report = useRef(onSettledChange);
+  useEffect(() => {
+    report.current = onSettledChange;
+  }, [onSettledChange]);
+  useEffect(() => {
+    if (settled === reported.current) return;
+    reported.current = settled;
+    report.current?.(settled);
+  }, [settled]);
+  useEffect(
+    () => () => {
+      if (reported.current === false) report.current?.(true);
+    },
+    [],
+  );
 
   // A location set elsewhere (the pin moved on the map, or cleared by the screen) shows here, and
   // wins over a short link still resolving.

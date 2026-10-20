@@ -161,10 +161,14 @@ export function FacilityForm({
     return true;
   }
 
+  // Discarding draws the location fields again, so a refused pasted text goes with the changes.
+  const [fieldsDrawn, setFieldsDrawn] = useState(0);
+
   function discardChanges() {
     setNotice(undefined);
     setChecking(false);
     discard();
+    setFieldsDrawn((count) => count + 1);
   }
 
   return (
@@ -186,7 +190,13 @@ export function FacilityForm({
               </FieldError>
             </Field>
           )}
-          <LocationFields draft={draft} onChange={change} errors={problems} disabled={!editable} />
+          <LocationFields
+            key={fieldsDrawn}
+            draft={draft}
+            onChange={change}
+            errors={problems}
+            disabled={!editable}
+          />
         </Card>
         <Card className="flex flex-col gap-6 p-6">
           <WeekFields draft={draft} onChange={change} errors={problems} disabled={!editable} />
