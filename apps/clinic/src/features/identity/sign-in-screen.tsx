@@ -420,7 +420,7 @@ function CredentialsStep({
             title={errorText(send.error)}
             description={
               code === 'RATE_LIMITED' && !phoneOnly
-                ? t('identity.signIn.lockedHint', { minutes: signInPolicy.lockMinutes })
+                ? t('identity.signIn.lockedHint', { count: signInPolicy.lockMinutes })
                 : undefined
             }
           />
@@ -519,7 +519,7 @@ function OtpStep({
             disabled={!online || wait > 0}
             onClick={() => resend.mutate()}
           >
-            {wait > 0 ? t('identity.otp.resendIn', { seconds: wait }) : t('identity.otp.resend')}
+            {wait > 0 ? t('identity.otp.resendIn', { count: wait }) : t('identity.otp.resend')}
           </Button>
         </FormActions>
         {spent && (

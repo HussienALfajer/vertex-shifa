@@ -7,6 +7,7 @@ import {
   type RevokeDevice,
   revokeDeviceSchema,
 } from '@vertex-shifa/contracts';
+import { formatDateTime } from '@vertex-shifa/i18n';
 import {
   AlertDialog,
   AlertDialogClose,
@@ -51,7 +52,6 @@ import { FieldGroup } from '../../components/field-group';
 import { OfflineNotice } from '../../components/offline-notice';
 import { QueryStates } from '../../components/query-states';
 import { useErrorText } from '../../lib/error-text';
-import { formatDateTime } from '../../lib/format';
 import { useOnline } from '../../lib/online';
 import { meQuery, useStaffAccess } from '../../lib/staff-access';
 import { NoAccessState, useBranches, useRoleNames } from '../staff/staff-labels';

@@ -281,7 +281,7 @@ function CredentialsStep({
             title={errorText(send.error)}
             description={
               apiErrorCode(send.error) === 'RATE_LIMITED'
-                ? t('signIn.lockedHint', { minutes: signInPolicy.lockMinutes })
+                ? t('signIn.lockedHint', { count: signInPolicy.lockMinutes })
                 : undefined
             }
           />
@@ -409,7 +409,7 @@ function TotpStep({
             role="alert"
             tone="danger"
             title={errorText(verify.error)}
-            description={t('signIn.lockedHint', { minutes: signInPolicy.lockMinutes })}
+            description={t('signIn.lockedHint', { count: signInPolicy.lockMinutes })}
           />
         )}
       </Card>

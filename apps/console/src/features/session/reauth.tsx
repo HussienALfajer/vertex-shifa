@@ -133,7 +133,7 @@ function ReauthDialog({
           <DialogHeader>
             <DialogTitle>{t('reauth.title')}</DialogTitle>
             <DialogDescription>
-              {t('reauth.description', { minutes: consolePolicy.reauthMinutes })}
+              {t('reauth.description', { count: consolePolicy.reauthMinutes })}
             </DialogDescription>
           </DialogHeader>
           <FormFields>
