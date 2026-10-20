@@ -1,0 +1,1 @@
+ALTER TABLE "whatsapp_session_credentials" DROP COLUMN "key";

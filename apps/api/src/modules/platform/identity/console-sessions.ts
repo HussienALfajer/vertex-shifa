@@ -12,6 +12,7 @@ import {
   type PlatformRole,
   platformRoleHolds,
 } from '@vertex-shifa/contracts';
+import { KeyedHash } from '@vertex-shifa/crypto';
 import { type Database, platformSessions, platformUsers, type Transaction } from '@vertex-shifa/db';
 import { and, eq, isNull, ne, type SQL } from 'drizzle-orm';
 import { map, type Observable } from 'rxjs';
@@ -23,7 +24,7 @@ import {
 } from '../../../core/access/session-verifier.js';
 import { DATABASE } from '../../../core/database/database.module.js';
 import { recordPlatformAudit } from '../audit/index.js';
-import { KeyedHash, randomToken } from './secrets.js';
+import { randomToken } from './secrets.js';
 
 const MINUTE_MS = 60_000;
 const HOUR_MS = 60 * MINUTE_MS;

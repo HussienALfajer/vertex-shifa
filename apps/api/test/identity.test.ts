@@ -5,6 +5,7 @@ import {
   type ErrorCode,
   otpPolicy,
 } from '@vertex-shifa/contracts';
+import { KeyedHash } from '@vertex-shifa/crypto';
 import {
   accounts,
   auditEntries,
@@ -28,7 +29,6 @@ import {
 } from '../src/modules/platform/identity/index.js';
 import { OtpChallenges } from '../src/modules/platform/identity/otp-challenges.js';
 import { leadingZeroBits, solves } from '../src/modules/platform/identity/proof-of-work.js';
-import { KeyedHash } from '../src/modules/platform/identity/secrets.js';
 import { createTestApp } from './app.js';
 import { newAddress, newKeys, newPhone, PASSWORD, StaffClient } from './staff.js';
 

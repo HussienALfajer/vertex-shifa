@@ -1,10 +1,10 @@
 import { randomInt } from 'node:crypto';
 import { DomainError, type ErrorCode, type OtpPurpose, otpPolicy } from '@vertex-shifa/contracts';
+import type { KeyedHash } from '@vertex-shifa/crypto';
 import { accounts, type Database, otpChallenges } from '@vertex-shifa/db';
 import { and, desc, eq, gt } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import type { OtpSender } from './otp-sender.js';
-import type { KeyedHash } from './secrets.js';
 
 const HOUR_MS = 3_600_000;
 

@@ -16,6 +16,7 @@ import {
   type SignInResult,
   signInPolicy,
 } from '@vertex-shifa/contracts';
+import { KeyedHash } from '@vertex-shifa/crypto';
 import {
   accounts,
   type Database,
@@ -46,7 +47,7 @@ import { readFacilitiesInUse, readTenant } from '../tenancy/index.js';
 import { DecoyLocks, signInLocked } from './decoy-locks.js';
 import { OtpChallenges } from './otp-challenges.js';
 import { ProofOfWork } from './proof-of-work.js';
-import { hashPassword, KeyedHash, verifyPassword } from './secrets.js';
+import { hashPassword, verifyPassword } from './secrets.js';
 import { findOrCreateAccount } from './staff-accounts.js';
 import { endSessions } from './staff-sessions.js';
 import { Tickets } from './tickets.js';

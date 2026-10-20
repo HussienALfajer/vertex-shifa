@@ -44,6 +44,7 @@ apps/
 packages/
   contracts/          Zod schemas, error codes, state tables, money and matching rules (exists)
   db/                 Drizzle schema, migrations, RLS policies, shared write paths (exists)
+  crypto/             keyed hashes and sealed values (ADR 0025) for the API, the worker and the WhatsApp gateway (exists, S03)
   sync/               command definitions, sync rules, conflict policies
   tokens/             design tokens from brand/identity.md, shared by web and native (exists)
   ui/                 web design system: Tailwind CSS v4 theme, Base UI components from Vertex Hub, adapted, logo (exists)

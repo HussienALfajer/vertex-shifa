@@ -25,11 +25,11 @@ Read these on demand. For a feature, read its spec, the ADRs it lists, and its s
 
 ## Stack (ADR 0002, 0003)
 
-pnpm workspaces + Turborepo · TypeScript (strict) · Node 24 · PostgreSQL 17. The workspace, shared configuration, `packages/db`, `packages/contracts`, `packages/i18n`, `packages/tokens`, `packages/ui`, `packages/ui-native` (base), `brand/`, `apps/api`, `apps/worker`, `apps/whatsapp-gateway`, `apps/clinic`, `apps/console`, `apps/site` and `apps/patient` (the last two shells only) exist; the other apps and packages arrive with their Phase 0 roadmap items.
+pnpm workspaces + Turborepo · TypeScript (strict) · Node 24 · PostgreSQL 17. The workspace, shared configuration, `packages/db`, `packages/contracts`, `packages/crypto`, `packages/i18n`, `packages/tokens`, `packages/ui`, `packages/ui-native` (base), `brand/`, `apps/api`, `apps/worker`, `apps/whatsapp-gateway`, `apps/clinic`, `apps/console`, `apps/site` and `apps/patient` (the last two shells only) exist; the other apps and packages arrive with their Phase 0 roadmap items.
 
 - `apps/api` NestJS core API · `apps/worker` NestJS jobs (pg-boss, outbox dispatcher) · `apps/whatsapp-gateway` WhatsApp sessions behind a transport interface
 - `apps/clinic` React + Vite, packaged with Electron, offline-first · `apps/console` platform back office (React + Vite) · `apps/site` Next.js public clinic pages · `apps/patient` React Native + Expo
-- `packages/contracts` Zod schemas and pure rules · `packages/db` Drizzle schema, migrations, RLS · `packages/sync` offline commands and sync rules · `packages/ui`, `packages/ui-native`, `packages/tokens` design system · `packages/i18n` · `packages/config`
+- `packages/contracts` Zod schemas and pure rules · `packages/db` Drizzle schema, migrations, RLS · `packages/crypto` keyed hashes and sealed values (server apps only) · `packages/sync` offline commands and sync rules · `packages/ui`, `packages/ui-native`, `packages/tokens` design system · `packages/i18n` · `packages/config`
 
 ## Commands
 

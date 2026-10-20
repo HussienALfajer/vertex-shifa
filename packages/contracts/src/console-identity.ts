@@ -30,11 +30,16 @@ export const platformPermissionKeys = [
   'tenants.manage-directory',
   'accounts.recover',
   'platform-users.manage',
+  'whatsapp-sessions.read',
+  'whatsapp-sessions.manage',
 ] as const;
 
 export type PlatformPermissionKey = (typeof platformPermissionKeys)[number];
 
-/** Admins hold everything; support holds the tenant registry and account recovery. */
+/**
+ * Admins hold everything; support holds the tenant registry, account recovery and reading the
+ * WhatsApp numbers (S03).
+ */
 export const platformRolePermissions = {
   admin: platformPermissionKeys,
   support: [
@@ -43,6 +48,7 @@ export const platformRolePermissions = {
     'tenants.change-status',
     'tenants.manage-directory',
     'accounts.recover',
+    'whatsapp-sessions.read',
   ],
 } as const satisfies Record<PlatformRole, readonly PlatformPermissionKey[]>;
 

@@ -56,4 +56,9 @@ export const audit = {
   'platform_user.reauthenticated': 'إعادة التحقق',
   'platform_user.password_changed': 'تغيير كلمة المرور',
   'platform_user.signed_out': 'تسجيل الخروج',
+  'whatsapp_session.created': 'إضافة رقم واتساب للمنصة',
+  'whatsapp_session.relinked': 'إعادة ربط رقم واتساب',
+  'whatsapp_session.paused': 'إيقاف رقم واتساب مؤقتاً',
+  'whatsapp_session.resumed': 'استئناف رقم واتساب',
+  'whatsapp_session.unlinked': 'فصل رقم واتساب',
 } satisfies Record<AuditAction, string>;

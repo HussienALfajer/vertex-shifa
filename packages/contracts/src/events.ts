@@ -9,6 +9,16 @@ import { z } from 'zod';
 export const eventCatalog = {
   /** An invitation was created or resent (spec S02); S03 sends the invitation message. */
   'staff.invitation_created.v1': z.object({ tenantId: z.uuid(), membershipId: z.uuid() }),
+  /**
+   * An invitation's WhatsApp message reached a final status (spec S03 rule 22), written by the
+   * gateway in the subject tenant's outbox; access updates `invitation_message_status`.
+   */
+  'whatsapp.message_finished.v1': z.object({
+    tenantId: z.uuid(),
+    messageId: z.uuid(),
+    subjectId: z.uuid(),
+    status: z.enum(['sent', 'failed', 'expired']),
+  }),
 } as const;
 
 export type EventType = keyof typeof eventCatalog;

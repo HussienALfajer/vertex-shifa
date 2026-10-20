@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import { DomainError, type ErrorCode } from '@vertex-shifa/contracts';
+import { KeyedHash } from '@vertex-shifa/crypto';
 import {
   accounts,
   accountTenantLinks,
@@ -15,7 +16,6 @@ import { v7 as uuidv7 } from 'uuid';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runPlatformUserCommand } from '../src/cli/platform-user-commands.js';
 import type { PlatformActor } from '../src/core/access/actor.js';
-import { KeyedHash } from '../src/modules/platform/identity/secrets.js';
 import { totpCode, totpStep } from '../src/modules/platform/identity/totp.js';
 import { createTestApp } from './app.js';
 import { CONSOLE_PASSWORD, ConsoleClient, type ConsoleUser, sessionCookie } from './console.js';

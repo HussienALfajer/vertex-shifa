@@ -19,10 +19,10 @@ describe('platform roles', () => {
     }
   });
 
-  it('give support everything but platform user management', () => {
+  it('give support everything but platform user and WhatsApp number management', () => {
     for (const permission of platformPermissionKeys) {
       expect(platformRoleHolds('support', permission), permission).toBe(
-        permission !== 'platform-users.manage',
+        permission !== 'platform-users.manage' && permission !== 'whatsapp-sessions.manage',
       );
     }
   });

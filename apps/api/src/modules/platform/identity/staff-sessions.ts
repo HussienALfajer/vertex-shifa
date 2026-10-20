@@ -4,12 +4,13 @@ import {
   type SessionTokens,
   staffSessionPolicy,
 } from '@vertex-shifa/contracts';
+import { type KeyedHash, safeEqual } from '@vertex-shifa/crypto';
 import { deviceEnrollments, staffSessions, type Transaction } from '@vertex-shifa/db';
 import { and, eq, isNull, type SQL } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { inScope, type Membership } from '../access/index.js';
 import type { readTenant } from '../tenancy/index.js';
-import { type KeyedHash, randomToken, safeEqual } from './secrets.js';
+import { randomToken } from './secrets.js';
 import type { TokenSigner } from './tokens.js';
 
 type TenantRow = Awaited<ReturnType<typeof readTenant>>;

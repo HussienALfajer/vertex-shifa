@@ -7,6 +7,7 @@ export * from './errors.js';
 export * from './events.js';
 export * from './health-check.js';
 export * from './identity.js';
+export * from './messaging.js';
 export * from './money.js';
 export * from './phone.js';
 export * from './practitioners.js';

@@ -55,8 +55,9 @@ export function assertMembershipAction(status: MembershipStatus, action: Members
 /** Invitations last 7 days after creation or the last resend; resend waits 10 minutes (rule 4). */
 export const invitationPolicy = { ttlDays: 7, resendCooldownMinutes: 10 } as const;
 
+/** The invitation's WhatsApp message; `opted_out`: the person stopped Vertex's messages (S03). */
 export const invitationMessageStatusSchema = z
-  .enum(['pending', 'sent', 'failed'])
+  .enum(['pending', 'sent', 'failed', 'opted_out'])
   .meta({ id: 'InvitationMessageStatus' });
 
 /** The name the owner typed for the person, until the person sets their own. */
