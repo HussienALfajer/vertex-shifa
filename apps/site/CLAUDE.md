@@ -19,4 +19,4 @@ The public clinic pages (layout ADR 0020): a Next.js App Router app, Arabic-firs
 - No `X-Powered-By`; security headers (CSP and the rest) are set by the host at the first deploy.
 - UI changes add or update the E2E RTL screenshots (desktop light and dark, tablet, phone) and are looked at before the PR.
 
-Run: `pnpm --filter @vertex-shifa/site test` · E2E (after `build`): `pnpm --filter @vertex-shifa/site test:e2e` · dev: `pnpm --filter @vertex-shifa/site dev`.
+Run: `pnpm --filter @vertex-shifa/site test` · E2E: `pnpm verify apps/site/e2e/<spec>.spec.ts [--grep <title>]` (builds first; the whole suite runs in CI on shards, `docs/testing.md`) · dev: `pnpm --filter @vertex-shifa/site dev`.

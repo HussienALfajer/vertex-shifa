@@ -3,6 +3,8 @@
   "ui": "stream",
   "globalDependencies": [".node-version"],
   "globalPassThroughEnv": ["CI", "NEXT_TELEMETRY_DISABLED"],
+  "futureFlags": { "longerSignatureKey": true },
+  "remoteCache": { "signature": true },
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -110,8 +112,7 @@
     },
     "test:e2e": {
       "dependsOn": ["build"],
-      "cache": false,
-      "outputs": []
+      "outputs": ["playwright-report/**", "test-results/**"]
     }
   }
 }

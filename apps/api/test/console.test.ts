@@ -11,7 +11,7 @@ import {
   staffMemberships,
   withTenant,
 } from '@vertex-shifa/db';
-import { and, eq, gte, ne } from 'drizzle-orm';
+import { and, asc, eq, gte, ne } from 'drizzle-orm';
 import { v7 as uuidv7 } from 'uuid';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { runPlatformUserCommand } from '../src/cli/platform-user-commands.js';
@@ -772,7 +772,8 @@ describe('owner recovery (rule 17)', () => {
       tx
         .select({ action: auditEntries.action, actorId: auditEntries.actorId })
         .from(auditEntries)
-        .where(eq(auditEntries.entityId, accountId)),
+        .where(eq(auditEntries.entityId, accountId))
+        .orderBy(asc(auditEntries.createdAt)),
     );
     expect(tenantAudit).toEqual([
       { action: 'account.password_reset_authorized', actorId: support.id },
@@ -887,7 +888,9 @@ describe('platform user CLI', () => {
           eq(platformAuditEntries.entityId, user.id),
           eq(platformAuditEntries.actorKind, 'system'),
         ),
-      );
+      )
+      // Without an order PostgreSQL returns the rows as it finds them, not as they were written.
+      .orderBy(asc(platformAuditEntries.createdAt));
     expect(actions).toEqual([
       { action: 'platform_user.created', actorKind: 'system' },
       { action: 'platform_user.reset', actorKind: 'system' },

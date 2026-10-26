@@ -51,7 +51,7 @@ packages/
   ui-native/          React Native theme provider and base components (exists)
   i18n/               Arabic catalog by namespace, error code texts, locale (Latin digits) (exists)
   config/             TypeScript, Biome and test presets (exists)
-scripts/              repository scripts; none yet, `CLAUDE.md` holds their rules (exists)
+scripts/              repository scripts: `verify.mjs` (`pnpm verify`, docs/testing.md); `CLAUDE.md` holds their rules (exists)
 .github/              CI and Dependabot (exists)
 brand/                identity, Vertex Shifa logo files (exists)
 deploy/               server configuration and release scripts

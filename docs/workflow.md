@@ -34,9 +34,9 @@ Steps inside a feature:
 
 1. **Spec** (`/spec`): the agent interviews the owner and writes `docs/specs/<id>-<name>.md` from `docs/specs/_template.md`: access, data, states, offline behavior and conflicts, clinical data and privacy, money, API and commands, screens, notifications, abuse, edge cases, acceptance.
 2. **Plan** (`/feature-slice`, first step): the PR split and `TASKS.md`; the owner approves before any code.
-3. **Implement:** layer by layer with a check gate through the `checker` subagent after each layer.
+3. **Implement:** layer by layer, each followed by a check gate on the layer's own tests (`pnpm verify <files>`, `docs/testing.md`).
 4. **Review:** the `reviewer` subagent (fresh context) checks the branch against the spec and the rules; blocking issues only.
-5. **Accept and open the PR:** the owner tries it; the agent follows "Finishing a task" in `AGENTS.md` in the same turn.
+5. **Accept and open the PR:** the owner tries it; the agent follows "Finishing a task" in `AGENTS.md` in the same turn: `pnpm verify` again if anything changed since its last green run, then the PR with auto-merge and, in the desktop app, Auto-fix. CI runs every check, the whole E2E suites on four shards.
 
 ## How the instructions are layered
 
@@ -49,8 +49,8 @@ Each rule lives in one place and loads only when it is needed.
 | Folder rules | `<app or package>/CLAUDE.md` | When the agent reads a file in that folder |
 | Product and decisions | `docs/product/`, `docs/decisions/`, `docs/specs/`, `docs/glossary.md` | On demand, the parts the task needs |
 | Workflows | `.claude/skills/`: `spec`, `feature-slice`, `db-migration` | When invoked |
-| Subagents | `.claude/agents/`: `checker` (Haiku 5.5), `reviewer` (Opus 5.5), `explorer` (Sonnet 5.5) | In their own context; only their summary returns |
-| Enforcement | Biome hook, architecture and convention tests, CI, gitleaks | Always, without costing context |
+| Subagents | `.claude/agents/`: `checker` (Haiku 5.5, runs `pnpm verify` and returns its summary), `reviewer` (Opus 5.5), `explorer` (Sonnet 5.5) | In their own context; only their summary returns |
+| Enforcement | Biome hook on every edit and the test guard on every shell command (`.claude/hooks/`: one test run at a time, no whole E2E suite locally, no `timeout` around tests), architecture and convention tests, CI, gitleaks | Always, without costing context |
 | Guard rails | `.claude/settings.json`: model and effort, permissions, denied reads of secrets and generated files | Always |
 
 A rule a machine can check belongs in a test, lint rule or hook, not in prose. A rule for one folder belongs in that folder's `CLAUDE.md`.
@@ -60,7 +60,7 @@ A rule a machine can check belongs in a test, lint rule or hook, not in prose. A
 - **Goal:** what to build.
 - **Reference:** which spec or ADR.
 - **Scope:** what may change and what must not.
-- **Finish line:** a checkable condition ("typecheck, lint and the module's tests pass; RTL screenshot attached").
+- **Finish line:** a checkable condition ("`pnpm verify` passes; RTL screenshot attached").
 - **Stop conditions:** only owner decisions, destructive or outward-facing actions, real WhatsApp messages, store publishing.
 
 Don't write "think hard" or "step by step": effort controls depth. To add something while the agent works, type it and press Enter; don't restart.
@@ -75,7 +75,7 @@ Don't write "think hard" or "step by step": effort controls depth. To add someth
 | A clearly specified feature outside those areas, screens | Opus 5.5 | `medium` |
 | Phase deploys, mechanical edits (renames, translation keys, applying a known pattern) | Opus 5.5 | `low` |
 | Searching code, docs or the web | `explorer` subagent (Sonnet 5.5) | — |
-| Running checks, reading logs and test output | `checker` subagent (Haiku 5.5) | — |
+| Running checks, reading logs and test output | `pnpm verify` (a short summary, logs in `.verify/`); the `checker` subagent (Haiku 5.5) for a long run beside other work | — |
 | A problem that failed twice at `xhigh` | Fable 5.1, for that problem only | — |
 
 Sonnet and Haiku never write code. Avoid `max` unless a gain is measured. Agent teams, fast mode and `opusplan` are not used by default. Haiku 5.5 costs five times more above 100K tokens of context: keep `checker` runs narrow.
@@ -89,7 +89,7 @@ Sonnet and Haiku never write code. Avoid `max` unless a gain is measured. Agent 
 5. After two failed corrections on the same issue, `/clear` and start again with a better request.
 6. Side questions: `/btw`, so they don't enter the context.
 7. Disconnect connectors the task doesn't need (Hostinger only for DNS or hosting work); keep the `ui-ux-pro-max` plugin off, since the identity is fixed (ADR 0018).
-8. Let the `checker` subagent run long checks, so their output never enters the main context.
+8. Run checks with `pnpm verify`: it prints a short summary and keeps the whole output in `.verify/`, so long output never enters the context. Delegate a long run to the `checker` when something else can go on meanwhile (the reviewer), never edits.
 9. Check `/usage` after each feature: cache share should be high; output should be small relative to the change.
 10. Run `/doctor prompt-audit` (Claude Code memory docs, "Audit your instruction files") once per phase to prune instruction files.
 11. Keep Claude Code updated (Haiku 5.5 subagents need v2.1.293 or later).

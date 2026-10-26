@@ -52,7 +52,9 @@ test.describe('clinic settings', () => {
     );
     await page.goto('/settings/clinic');
     const failed = page.getByRole('alert').filter({ hasText: 'تعذّر تحميل الشعار.' });
-    await expect(failed).toBeVisible();
+    // A network error is transient: the query tries twice more, 1 s and then 2 s later
+    // (src/lib/query-client.ts), before the screen may say the read failed.
+    await expect(failed).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText('لا يوجد شعار.', { exact: false })).toBeHidden();
     await screenshot(page, testInfo, 'settings-clinic-logo-failed');
 

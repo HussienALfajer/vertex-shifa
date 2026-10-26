@@ -15,7 +15,7 @@
     "@vertex-shifa/i18n": "workspace:*",
     "@vertex-shifa/ui": "workspace:*",
     "i18next": "^26.4.2",
-    "next": "^16.4.0",
+    "next": "^16.4.3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
