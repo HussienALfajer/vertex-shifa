@@ -251,7 +251,9 @@ test.describe('staff', () => {
     expect(membershipOf(invited).archivedAt).not.toBeNull();
   });
 
-  test('a receptionist cannot open staff or device settings (step 4)', async ({ page }) => {
+  test('a receptionist cannot open staff or device settings (step 4)', { tag: '@flow' }, async ({
+    page,
+  }) => {
     const api = await mockApi(page, {
       tenant: tenant({ status: 'active' }),
       facilities: [facility()],

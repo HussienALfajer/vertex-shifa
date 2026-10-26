@@ -55,7 +55,9 @@ test.describe('platform users', () => {
     await expect(page.getByText(created?.setupCode as string)).toHaveCount(0);
   });
 
-  test('changes a role, then asks again when the window closed on the way', async ({ page }) => {
+  test('changes a role, then asks again when the window closed on the way', {
+    tag: '@flow',
+  }, async ({ page }) => {
     const api = await mockConsoleApi(page, { signedIn: 'admin' });
     await page.goto('/platform-users');
     await row(page, 'دعم تجريبي').getByRole('button', { name: 'تغيير الدور' }).click();
@@ -86,7 +88,7 @@ test.describe('platform users', () => {
     await expect(row(page, 'دعم تجريبي')).toContainText('فعّال');
   });
 
-  test('resets a user: a new setup code, shown once', async ({ page }) => {
+  test('resets a user: a new setup code, shown once', { tag: '@flow' }, async ({ page }) => {
     const api = await mockConsoleApi(page, { signedIn: 'admin' });
     await page.goto('/platform-users');
     await row(page, 'دعم تجريبي').getByRole('button', { name: 'إعادة ضبط الدخول' }).click();
@@ -99,7 +101,7 @@ test.describe('platform users', () => {
     await expect(row(page, 'دعم تجريبي')).toContainText('بانتظار الإعداد');
   });
 
-  test('cancelling the TOTP leaves the change undone', async ({ page }) => {
+  test('cancelling the TOTP leaves the change undone', { tag: '@flow' }, async ({ page }) => {
     const api = await mockConsoleApi(page, { signedIn: 'admin' });
     await page.goto('/platform-users');
     await row(page, 'دعم تجريبي').getByRole('button', { name: 'تغيير الدور' }).click();

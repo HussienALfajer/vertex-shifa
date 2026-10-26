@@ -316,10 +316,9 @@ test.describe('lock screen', () => {
     await expect(page).toHaveURL('/');
   });
 
-  test('locks a session whose 7-day window passes while it is open (rule 24)', async ({
-    page,
-    context,
-  }) => {
+  test('locks a session whose 7-day window passes while it is open (rule 24)', {
+    tag: '@flow',
+  }, async ({ page, context }) => {
     const api = await mockApi(page, {
       tenant: tenant({ status: 'active' }),
       facilities: [facility()],
@@ -408,7 +407,7 @@ test.describe('lock screen', () => {
     await expect(page).toHaveURL('/');
   });
 
-  test('locks after the idle minutes (rule 25)', async ({ page }) => {
+  test('locks after the idle minutes (rule 25)', { tag: '@flow' }, async ({ page }) => {
     await page.clock.install();
     await mockApi(page, {
       tenant: tenant({ status: 'active', idleLockMinutes: 5 }),
@@ -422,7 +421,9 @@ test.describe('lock screen', () => {
     await expect(page).toHaveURL('/lock');
   });
 
-  test('replaces a forgotten PIN after a password sign-in (rule 22)', async ({ page }) => {
+  test('replaces a forgotten PIN after a password sign-in (rule 22)', { tag: '@flow' }, async ({
+    page,
+  }) => {
     await mockApi(page, { tenant: tenant({ status: 'active' }), facilities: [facility()] });
     await page.goto('/');
     await lock(page);
@@ -567,9 +568,9 @@ test.describe('forgotten password (rule 16)', () => {
     expect(receptionist.password).toBe(receptionistPassword);
   });
 
-  test('a first sign-in of an account with a password points to the right path', async ({
-    page,
-  }) => {
+  test('a first sign-in of an account with a password points to the right path', {
+    tag: '@flow',
+  }, async ({ page }) => {
     await mockApi(page, { tenant: tenant({ status: 'active' }), facilities: [facility()] });
     await page.goto('/');
     await lock(page);
@@ -587,9 +588,9 @@ test.describe('forgotten password (rule 16)', () => {
 });
 
 test.describe('several clinics on one computer', () => {
-  test('an answer for one clinic’s owner never reaches a member of another clinic unlocked after them', async ({
-    page,
-  }) => {
+  test('an answer for one clinic’s owner never reaches a member of another clinic unlocked after them', {
+    tag: '@flow',
+  }, async ({ page }) => {
     const api = await mockApi(page, {
       tenant: tenant({ status: 'active' }),
       facilities: [facility()],

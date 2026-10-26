@@ -47,9 +47,9 @@ test.describe('theme', () => {
 });
 
 test.describe('forms', () => {
-  test('move with Enter, go back with Shift+Enter, and save from the last field', async ({
-    page,
-  }) => {
+  test('move with Enter, go back with Shift+Enter, and save from the last field', {
+    tag: '@flow',
+  }, async ({ page }) => {
     const api = await mockApi(page, { tenant: tenant({ status: 'active' }), logo: true });
     await page.goto('/settings/clinic');
     const arabic = page.getByLabel('اسم العيادة بالعربية');
@@ -140,7 +140,9 @@ test.describe('forms', () => {
     await unload.accept();
   });
 
-  test('leave without asking once saved, and when the user chose to leave', async ({ page }) => {
+  test('leave without asking once saved, and when the user chose to leave', {
+    tag: '@flow',
+  }, async ({ page }) => {
     await mockApi(page, { tenant: tenant({ status: 'active' }), facilities: [facility()] });
     await page.goto('/settings/clinic');
     await page.getByLabel('اسم العيادة بالأحرف اللاتينية (اختياري)').fill('Test Clinic');
@@ -158,7 +160,9 @@ test.describe('forms', () => {
 });
 
 test.describe('redirects', () => {
-  test('are not held by a screen with unsaved changes that gave way to them', async ({ page }) => {
+  test('are not held by a screen with unsaved changes that gave way to them', {
+    tag: '@flow',
+  }, async ({ page }) => {
     await page.clock.install();
     const api = await mockApi(page, {
       tenant: tenant({ status: 'active' }),
@@ -179,9 +183,9 @@ test.describe('redirects', () => {
 });
 
 test.describe('navigation', () => {
-  test('goes back from sub-pages, and through history with Alt+Left and Alt+Right', async ({
-    page,
-  }) => {
+  test('goes back from sub-pages, and through history with Alt+Left and Alt+Right', {
+    tag: '@flow',
+  }, async ({ page }) => {
     const branch = facility({ name: 'فرع الشمال' });
     await mockApi(page, { tenant: tenant({ status: 'active' }), facilities: [facility(), branch] });
     await page.goto('/settings/branches');
@@ -235,9 +239,9 @@ test.describe('navigation', () => {
 });
 
 test.describe('fonts', () => {
-  test('preloads the first screen fonts and draws with them on the first paint', async ({
-    page,
-  }) => {
+  test('preloads the first screen fonts and draws with them on the first paint', {
+    tag: '@flow',
+  }, async ({ page }) => {
     const warnings: string[] = [];
     page.on('console', (message) => {
       if (message.type() === 'warning') warnings.push(message.text());

@@ -131,9 +131,9 @@ test.describe('onboarding wizard', () => {
     });
   });
 
-  test('resumes at the week step, asks for the currency again, and checks the whole branch', async ({
-    page,
-  }) => {
+  test('resumes at the week step, asks for the currency again, and checks the whole branch', {
+    tag: '@flow',
+  }, async ({ page }) => {
     // The saved currency may be the stand-in the location step sent.
     const api = await mockApi(page, {
       tenant: tenant(),
@@ -159,9 +159,9 @@ test.describe('onboarding wizard', () => {
     expect(api.writes).toEqual([]);
   });
 
-  test('shows the branch whose create answer was lost, never creating or overwriting', async ({
-    page,
-  }) => {
+  test('shows the branch whose create answer was lost, never creating or overwriting', {
+    tag: '@flow',
+  }, async ({ page }) => {
     const api = await mockApi(page, { tenant: tenant() });
     await page.goto('/setup');
     await page.getByRole('button', { name: 'التالي' }).click();
@@ -197,7 +197,9 @@ test.describe('onboarding wizard', () => {
     expect(api.writes.filter((write) => write.startsWith('POST /api/facilities'))).toHaveLength(1);
   });
 
-  test('shows a failed area list with a retry, keeping the step', async ({ page }) => {
+  test('shows a failed area list with a retry, keeping the step', { tag: '@flow' }, async ({
+    page,
+  }) => {
     const api = await mockApi(page, { tenant: tenant() });
     api.failAreas = true;
     await page.goto('/setup');
@@ -212,7 +214,9 @@ test.describe('onboarding wizard', () => {
     await expect(page.getByLabel('تفاصيل العنوان')).toHaveValue('شارع المدرسة');
   });
 
-  test('jumps to the missing step when the API finds onboarding incomplete', async ({ page }) => {
+  test('jumps to the missing step when the API finds onboarding incomplete', {
+    tag: '@flow',
+  }, async ({ page }) => {
     const api = await mockApi(page, { tenant: tenant(), facilities: [facility()] });
     api.failCompletion = true;
     await page.goto('/setup');

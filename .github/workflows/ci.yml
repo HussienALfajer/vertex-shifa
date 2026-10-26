@@ -206,8 +206,10 @@ jobs:
           key: turbo-${{ github.job }}-${{ matrix.shard }}-${{ github.sha }}
           restore-keys: turbo-${{ github.job }}-${{ matrix.shard }}-
       # One Chromium serves every app's E2E: they share the @playwright/test version and its cache.
+      # The runner image already has the system libraries Chrome needs; `--with-deps` would add them
+      # through apt, whose mirror once took 10 minutes on three shards out of four.
       - name: Playwright browser
-        run: pnpm --filter @vertex-shifa/clinic exec playwright install --with-deps chromium
+        run: pnpm --filter @vertex-shifa/clinic exec playwright install chromium
       - run: pnpm turbo run test:e2e -- --shard=${{ matrix.shard }}/4
       - name: E2E screenshots and traces
         if: ${{ !cancelled() }}
