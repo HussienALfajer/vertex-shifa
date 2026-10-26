@@ -36,3 +36,17 @@ Spec: `docs/specs/S03-whatsapp-gateway-and-otp.md` (Approved 2026-10-20). Five P
 - [ ] E2E with mocked API, RTL screenshots light and dark at every size
 - [ ] docs: ROADMAP, AGENTS commands table (gateway start)
 - [ ] checks, reviewer, owner acceptance (spec "Acceptance"), PR with auto-merge
+
+# TASKS — Test and CI speed (`chore/test-speed`)
+
+The S03 items above belong to S03 and stay open. Model: vertex-hub PR 172, adapted (`docs/testing.md`).
+
+- [x] Measure before: api, worker and db suites; each app's whole E2E suite
+- [x] Vitest: `isolate: false` and worker caps measured on api, db and worker (no gain, isolation kept); two unordered audit reads ordered; stale `shifa_test_*` databases dropped
+- [x] Playwright: traces on first retry in all four apps; the clinic logo test's wait covers the query's retries
+- [x] Matrix: flows in one project and screenshots in all measured; the owner decides
+- [x] turbo.json: `test:e2e` cached; remote cache signature
+- [x] `pnpm verify`, `.verify/` ignored; test-guard hook and permission
+- [x] Agent rules and docs: checker, feature-slice, db-migration, AGENTS, CLAUDE, workflow, folder rules, `docs/testing.md`
+- [x] CI: E2E on four shards, TURBO_* env on the turbo jobs, cache comment corrected
+- [x] Measure after, `pnpm verify`, reviewer, PR with auto-merge, Auto-fix

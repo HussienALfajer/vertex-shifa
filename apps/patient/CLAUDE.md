@@ -19,4 +19,4 @@ The Vertex Shifa patient app for Android and iOS (ADR 0003, layout ADR 0020): Re
 - Versions of Expo packages come from `pnpm exec expo install <package>`, which matches the SDK.
 - UI changes add or update the E2E RTL screenshots (phone light and dark, tablet) and are looked at before the PR.
 
-Run: `pnpm --filter @vertex-shifa/patient test` · E2E (after `build`): `pnpm --filter @vertex-shifa/patient test:e2e` · dev: `pnpm --filter @vertex-shifa/patient dev`.
+Run: `pnpm --filter @vertex-shifa/patient test` · E2E: `pnpm verify apps/patient/e2e/<spec>.spec.ts [--grep <title>]` (builds first; the whole suite runs in CI on shards, `docs/testing.md`) · dev: `pnpm --filter @vertex-shifa/patient dev`.

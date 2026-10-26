@@ -37,6 +37,7 @@ apps/patient/ios/
 apps/clinic/release/
 
 # Test output
+.verify/
 test-results/
 playwright-report/
 blob-report/

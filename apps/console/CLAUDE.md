@@ -23,4 +23,4 @@ The platform console, Vertex Shifa's back office for platform staff (layout ADR 
 - Security headers (CSP and the rest) are set by the host at the first deploy, which also serves the console and the API on one origin.
 - UI changes add or update the E2E RTL screenshots (desktop light and dark, tablet, phone) and are looked at before the PR.
 
-Run: `pnpm --filter @vertex-shifa/console test` · E2E (after `build`): `pnpm --filter @vertex-shifa/console test:e2e` · dev: `pnpm --filter @vertex-shifa/console dev`.
+Run: `pnpm --filter @vertex-shifa/console test` · E2E: `pnpm verify apps/console/e2e/<spec>.spec.ts [--grep <title>]` (builds first; the whole suite runs in CI on shards, `docs/testing.md`) · dev: `pnpm --filter @vertex-shifa/console dev`.

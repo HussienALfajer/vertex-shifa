@@ -35,7 +35,9 @@ export default defineConfig({
     baseURL: `http://localhost:${port}`,
     locale: 'ar',
     timezoneId: 'Asia/Damascus',
-    trace: 'retain-on-failure',
+    // Recording a trace for every test slowed the suite and kept the antivirus scanning each trace
+    // file (docs/testing.md). CI records the retry of a failed test; locally pass `--trace on`.
+    trace: 'on-first-retry',
   },
   projects: [
     { name: 'light', use: { ...devices['Pixel 7'], colorScheme: 'light' } },

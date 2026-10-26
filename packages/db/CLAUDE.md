@@ -9,7 +9,7 @@ Drizzle schema, migrations, RLS policies and the tenant context (ADR 0004, ADR 0
 - `src/client.ts`: `createDatabase(url, onError?)`, the pool every app uses, bounded by `DATABASE_TIMEOUTS` (connection, statement, lock wait, idle in transaction); a connection the server closes is reported to `onError` (idle) or fails its holder's next query (in use), never an unhandled `error` event. `src/tenant-context.ts`: `withTenant(db, tenantId, work)` and `enterTenant(tx, tenantId)`. `src/describe-for-log.ts`: `describeForLog(error)`, what an unexpected error may write to the log (no values, ADR 0016), used by the apps.
 - `migrations/`: generated SQL plus custom migrations (RLS, triggers, grants, backfills, reference seeds such as `0007_areas-seed.sql`, with fixed UUIDv7 ids). Never read or edit `migrations/meta/`.
 - `scripts/setup-local.ts`: the local PostgreSQL setup (`pnpm db:setup-local`).
-- `src/testing.ts` (`@vertex-shifa/db/testing`): `createTestDatabase()`, a fresh migrated database for one test run, used by this package's and the apps' test global setups.
+- `src/testing.ts` (`@vertex-shifa/db/testing`): `createTestDatabase()`, a fresh migrated database for one test run (it first drops the test databases killed runs left), used by this package's and the apps' test global setups.
 - `test/`: run against a fresh database per run (`test/global-setup.ts`); `conventions.test.ts` reads the rules below from the migrated database.
 
 ## Roles
@@ -34,6 +34,6 @@ Drizzle schema, migrations, RLS policies and the tenant context (ADR 0004, ADR 0
 2. Copy `.env.example` to `.env` at the repository root and set the five URLs: a superuser of your server for `DATABASE_ADMIN_URL`, passwords of your choice for the four roles.
 3. `pnpm db:setup-local` (creates or updates the roles and the `vertex_shifa` database; never drops anything), then `pnpm db:migrate`.
 
-The tests need only the owner, app, jobs and queue URLs: each run creates `shifa_test_<time>_<random>`, migrates it and drops it.
+The tests need only the owner, app, jobs and queue URLs: each run creates `shifa_test_<time>_<random>`, migrates it and drops it, after dropping the ones killed runs left (older than two hours).
 
 Run: `pnpm --filter @vertex-shifa/db test`.

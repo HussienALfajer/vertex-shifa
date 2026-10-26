@@ -11,7 +11,7 @@
 
 ## Delegation
 
-- `checker` subagent (Haiku 5.5): runs typecheck, lint and tests and returns only the failures. Use it instead of reading long check output in the main session.
+- `checker` subagent (Haiku 5.5): runs `pnpm verify` (the branch, or the test files you name) and returns its summary. `pnpm verify` already prints only a summary, so run it yourself when you wait for the result anyway; use the checker to keep a long run out of the main context, for example while the `reviewer` reads the branch. Edit nothing while a check runs, and start no second one (the `test-guard` hook refuses it). Give a foreground run a Bash timeout of 600000 ms, or run it in the background and wait for its notification.
 - `reviewer` subagent (Opus 5.5, fresh context): reviews the branch against its spec and the rules, with a tenant-isolation, medical-privacy, offline-sync and clinical-integrity checklist; blocking issues only. Use it at the review step of every feature.
 - `explorer` subagent (Sonnet 5.5): read-only searches across many files, docs or the web, when only the conclusion is needed. It never writes code.
 - Code is written by the main session on Opus 5.5, never by Sonnet or Haiku.
@@ -19,7 +19,7 @@
 ## Skills
 
 - `/spec <id>`: interview the owner, then write `docs/specs/<id>-<name>.md`.
-- `/feature-slice <id>`: implement an approved spec layer by layer with a check gate per layer, the reviewer and the owner's acceptance, then open the PR with auto-merge.
+- `/feature-slice <id>`: implement an approved spec layer by layer with a check gate per layer, the reviewer and the owner's acceptance, then open the PR with auto-merge. In the desktop app, turn on the PR's Auto-fix afterwards, so a failing CI run comes back to the session to fix.
 - `/db-migration <change>`: change the schema with RLS, generate and review the migration, test it.
 
 ## Context hygiene

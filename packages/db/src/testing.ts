@@ -27,10 +27,33 @@ function url(name: string): URL {
   return new URL(value);
 }
 
+/** Older than any run: a test database this old was left by a run that was killed before its drop. */
+const STALE_AFTER_MS = 2 * 60 * 60_000;
+
+/**
+ * Drops the test databases that killed runs left behind (`shifa_test_<time>_<random>`, older than
+ * `STALE_AFTER_MS`). One still in use is skipped: without `FORCE` the drop refuses it.
+ */
+async function dropStaleTestDatabases(admin: pg.Client): Promise<void> {
+  const { rows } = await admin.query<{ datname: string }>(
+    "SELECT datname FROM pg_database WHERE datname ~ '^shifa_test_[0-9]+_[0-9a-f]+$'",
+  );
+  const before = Date.now() - STALE_AFTER_MS;
+  for (const { datname } of rows) {
+    if (Number(datname.split('_')[2]) >= before) continue;
+    try {
+      await admin.query(`DROP DATABASE IF EXISTS ${datname}`);
+    } catch {
+      // Still in use, or another run dropped it first: the next run tries again.
+    }
+  }
+}
+
 /**
  * Creates a fresh database as the owner role (from `DATABASE_OWNER_URL`, `DATABASE_APP_URL`,
  * `DATABASE_JOBS_URL` and `DATABASE_QUEUE_URL`) and applies every migration to it, so test runs never share or leave data
- * behind. For a package's or app's test global setup; call `drop` when the run ends.
+ * behind. For a package's or app's test global setup; call `drop` when the run ends. Drops the
+ * databases killed runs left first.
  */
 export async function createTestDatabase(): Promise<TestDatabase> {
   const owner = url('DATABASE_OWNER_URL');
@@ -41,6 +64,7 @@ export async function createTestDatabase(): Promise<TestDatabase> {
 
   const admin = new pg.Client({ connectionString: owner.href });
   await admin.connect();
+  await dropStaleTestDatabases(admin);
   await admin.query(`CREATE DATABASE ${name} TEMPLATE template0 ENCODING 'UTF8'`);
   const drop = async () => {
     await admin.query(`DROP DATABASE ${name} WITH (FORCE)`);
