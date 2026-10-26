@@ -7,6 +7,11 @@ import { settled } from './settle.js';
  * "Responsive"): the page never scrolls sideways. Taken once the page has `settled`.
  */
 export async function screenshot(page: Page, testInfo: TestInfo, name: string): Promise<void> {
+  // A `@flow` test runs at two sizes only (playwright.config.ts): a screen it shows would miss the
+  // others.
+  expect(testInfo.tags, `${name}: a test that takes screenshots is not tagged @flow`).not.toContain(
+    '@flow',
+  );
   await settled(page);
   // A string: the E2E is typed for Node, without the DOM's globals.
   const overflow = await page.evaluate<number>(

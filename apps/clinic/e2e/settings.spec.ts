@@ -187,7 +187,9 @@ test.describe('branches', () => {
     expect(api.facilities.every((branch) => branch.archivedAt === null)).toBe(true);
   });
 
-  test('say when the clinic has more branches than the list shows', async ({ page }) => {
+  test('say when the clinic has more branches than the list shows', { tag: '@flow' }, async ({
+    page,
+  }) => {
     const facilities = Array.from({ length: 101 }, (_, index) =>
       facility({ name: `فرع ${index + 1}` }),
     );
@@ -199,7 +201,9 @@ test.describe('branches', () => {
 });
 
 test.describe('adding a branch', () => {
-  test('shows the branch whose first answer was lost, and saves on top of it', async ({ page }) => {
+  test('shows the branch whose first answer was lost, and saves on top of it', {
+    tag: '@flow',
+  }, async ({ page }) => {
     const api = await mockApi(page, {
       tenant: tenant({ status: 'active' }),
       facilities: [facility({ name: 'فرع السوق' })],
@@ -305,7 +309,9 @@ test.describe('read-only clinic', () => {
     await expect(banner).toBeVisible();
   });
 
-  test('turns read-only when the clinic is suspended during the wizard', async ({ page }) => {
+  test('turns read-only when the clinic is suspended during the wizard', { tag: '@flow' }, async ({
+    page,
+  }) => {
     const api = await mockApi(page, { tenant: tenant() });
     await page.goto('/setup');
     await expect(page.getByText('الخطوة 1 من 5')).toBeVisible();

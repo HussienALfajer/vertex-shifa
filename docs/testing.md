@@ -55,6 +55,7 @@ The hook is `.claude/hooks/test-guard.mjs` (PreToolUse on Bash and PowerShell). 
 
 - Every test mocks the API in memory (`e2e/mock-api.ts` in each app); the suites run against the production builds.
 - Every web screen is screenshotted in every project: desktop light and dark, tablet, and phones of 412, 375 and 320 px (patient: phone light and dark, tablet, 375 and 320 px). `screenshot()` fails a page that scrolls sideways (AGENTS.md "Responsive").
+- A clinic or console test that takes no screenshot is tagged `@flow` (`test(title, { tag: '@flow' }, …)`) and runs in two projects only: `light` (desktop: mouse, sidebar) and `phone` (412 px: touch, navigation sheet), the two paths a flow can take; the other projects would repeat it at another color or width, which the screenshots cover (`grepInvert` in `playwright.config.ts`). `screenshot()` fails in a `@flow` test, so a screen never loses its sizes. A new test without a screenshot gets the tag.
 - Traces are recorded on the first retry only (`trace: 'on-first-retry'`): CI retries a failed test once and keeps its trace. Debug locally with `--trace on`.
 - The clinic runs on a quarter of the cores locally (`workers: '25%'`): every test signs a member in with Argon2id (64 MiB), and more workers starve the preview server. Without traces, half the cores ran the suite in 83 s against 95 s (one run each, 2026-10-26): too small a gain to give up the margin under load.
 - A wait covers what the app really does before the state appears, at that assertion, never by a global timeout: the clinic's logo-failure test waits through the query's two retries (1 s, then 2 s).
@@ -77,7 +78,7 @@ Turborepo's cache is kept between runs with `actions/cache`, per job and shard. 
 
 ### Remote cache
 
-The workflow is ready for Turborepo's remote cache, which removes that repeat: `main` replays what its pull request ran, and a session can read what CI ran. It is off until the repository has:
+The workflow is ready for Turborepo's remote cache, which removes that repeat: `main` replays what its pull request ran, and a session can read what CI ran. Off for now (2026-10-26): the repeat costs only `main`'s run after a merge, which nobody waits for, while the cache would send every build output to a third party or need a server of our own, which waits on hosting (`docs/open-questions.md` Q1). It needs:
 
 1. A remote cache: Vercel's (create a token in the Vercel account settings; check Vercel's current terms) or a self-hosted server that implements the same API (for example `ducktors/turborepo-remote-cache`; then set the `TURBO_API` variable to its URL). Not behind Cloudflare (ADR 0015).
 2. Repository secrets `TURBO_TOKEN` and `TURBO_REMOTE_CACHE_SIGNATURE_KEY` (a random string of at least 32 bytes: `turbo.json` has `remoteCache.signature` and `futureFlags.longerSignatureKey`, so artifacts are signed and checked), and the repository variable `TURBO_TEAM` (the team slug).
@@ -100,10 +101,11 @@ Local: Intel i9-14900HX (24 cores, 32 threads), 32 GB, NVMe, Windows 11, Postgre
 | db suite (8 files, 420 tests) · worker suite (4 files, 15 tests) | 5.3–6.3 s · 14.1–15.1 s | unchanged |
 | clinic E2E (57 tests × 6 projects = 342 runs, 8 workers) | 295 s, 2 failed (the logo test, under load) | 129 s, none failed |
 | console E2E (102 runs) · site (18) · patient (15) | 54 s · 12 s · 10 s | 22 s · 11–13 s · 10 s |
-| Every app's whole E2E suite, one after another | 371 s | 174 s |
+| Every app's whole E2E suite, one after another | 371 s | 174 s; then about 120 s with the `@flow` split |
+| CI E2E | one job: median 5.3 min, p90 8.6 min | four shards of 3.1–3.9 min each (one run lost 10 min to the apt mirror of `--with-deps`, since dropped) |
 
 Before this change, sessions of this repository spent 6.3 hours in checks in twelve days (the longest 69 minutes), and CI's longest job was the unsharded E2E (median 5.3 minutes, p90 8.6 minutes), run even when no front end changed.
 
 ### The project matrix
 
-Every E2E test runs in every project. 18 of the clinic's 57 tests and 6 of the console's 17 take no screenshot (site and patient: none); running those in one project instead of six would save 120 of the 477 runs: 20% of the clinic's worker time (143 of 706 s) and 31% of the console's (48 of 156 s). Which flows run at which sizes is the owner's decision; the matrix stays whole until then.
+Before the split every test ran in every project. 18 of the clinic's 57 tests and 6 of the console's 17 take no screenshot (site and patient: none). Running them in `light` and `phone` only (2026-10-26) drops 96 of the 477 runs: the clinic's suite went from 342 runs to 270 (80 s, against 95–129 s for the whole matrix the same day) and the console's from 102 to 78 (16 s, against 21–22 s).

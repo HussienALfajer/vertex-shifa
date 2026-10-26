@@ -48,7 +48,7 @@ test.describe('console sign-in', () => {
     await screenshot(page, testInfo, 'signed-in');
   });
 
-  test('signs in with a recovery code, used once', async ({ page }) => {
+  test('signs in with a recovery code, used once', { tag: '@flow' }, async ({ page }) => {
     const api = await mockConsoleApi(page);
     const recovery = api.users[1]?.recoveryCodes[0]?.code as string;
     await page.goto('/sign-in');
@@ -126,7 +126,7 @@ test.describe('console sign-in', () => {
     expect(api.users.at(-1)?.status).toBe('active');
   });
 
-  test('a step left too long starts the sign-in again', async ({ page }) => {
+  test('a step left too long starts the sign-in again', { tag: '@flow' }, async ({ page }) => {
     const api = await mockConsoleApi(page);
     await page.goto('/sign-in');
     await page.getByLabel('رقم الهاتف').fill(adminPhone);
@@ -162,7 +162,7 @@ test.describe('console sign-in', () => {
     await expect(page).toHaveURL(/\/sign-in/);
   });
 
-  test('signs out', async ({ page }) => {
+  test('signs out', { tag: '@flow' }, async ({ page }) => {
     const api = await mockConsoleApi(page, { signedIn: 'admin' });
     await page.goto('/');
     await openUserMenu(page);

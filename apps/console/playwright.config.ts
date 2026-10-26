@@ -23,6 +23,9 @@ async function serverPort(): Promise<number> {
 
 const port = await serverPort();
 
+/** Tests without a screenshot, which run only in the `light` and `phone` projects. */
+const FLOW = /@flow/;
+
 // The app as built (`pnpm build`), served by `vite preview`, in Chromium, at desktop, tablet and phone sizes.
 // Screenshots are attached to each test's results (test-results/), which CI uploads.
 export default defineConfig({
@@ -39,12 +42,16 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   // Every screen at every size (AGENTS.md "Responsive"): a desktop in both color schemes, a tablet
-  // in portrait at the sidebar's breakpoint (768 px), and phones of 412, 375 and 320 px.
+  // in portrait at the sidebar's breakpoint (768 px), and phones of 412, 375 and 320 px. A test that
+  // takes no screenshot is tagged `@flow` and runs only on the desktop (mouse, sidebar) and the
+  // 412 px phone (touch, navigation sheet): the other projects repeat its path at another color or
+  // width, which the screenshots already cover (docs/testing.md).
   projects: [
     { name: 'light', use: { ...devices['Desktop Chrome'], colorScheme: 'light' } },
-    { name: 'dark', use: { ...devices['Desktop Chrome'], colorScheme: 'dark' } },
+    { name: 'dark', grepInvert: FLOW, use: { ...devices['Desktop Chrome'], colorScheme: 'dark' } },
     {
       name: 'tablet',
+      grepInvert: FLOW,
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 768, height: 1024 },
@@ -56,10 +63,12 @@ export default defineConfig({
     // The narrowest phones the apps support (AGENTS.md "Responsive"): 320 px and 375 px wide.
     {
       name: 'phone-320',
+      grepInvert: FLOW,
       use: { ...devices['Pixel 7'], viewport: { width: 320, height: 640 }, colorScheme: 'light' },
     },
     {
       name: 'phone-375',
+      grepInvert: FLOW,
       use: { ...devices['Pixel 7'], viewport: { width: 375, height: 812 }, colorScheme: 'dark' },
     },
   ],

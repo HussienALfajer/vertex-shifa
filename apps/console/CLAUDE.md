@@ -21,6 +21,6 @@ The platform console, Vertex Shifa's back office for platform staff (layout ADR 
 - Forms follow `packages/ui/CLAUDE.md` "Forms": `Form` + `FormFields` + `FormActions`, success as a toast, notices under the actions.
 - A change to `apps/api/openapi.json` fails `test/api-schema.test.ts` until the types are regenerated: `pnpm --filter @vertex-shifa/console exec vitest run -u test/api-schema.test.ts`.
 - Security headers (CSP and the rest) are set by the host at the first deploy, which also serves the console and the API on one origin.
-- UI changes add or update the E2E RTL screenshots (desktop light and dark, tablet, phone) and are looked at before the PR.
+- UI changes add or update the E2E RTL screenshots (desktop light and dark, tablet, phone) and are looked at before the PR. A test that takes no screenshot is tagged `@flow` and runs only on the desktop (`light`) and the phone (`phone`); `screenshot()` fails in a `@flow` test (`docs/testing.md`).
 
 Run: `pnpm --filter @vertex-shifa/console test` · E2E: `pnpm verify apps/console/e2e/<spec>.spec.ts [--grep <title>]` (builds first; the whole suite runs in CI on shards, `docs/testing.md`) · dev: `pnpm --filter @vertex-shifa/console dev`.
