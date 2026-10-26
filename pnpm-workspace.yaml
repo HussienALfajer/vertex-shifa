@@ -25,6 +25,10 @@ auditConfig:
   ignoreGhsas:
     # node-forge signature verification: @expo/cli (developer and EAS machines, code signing of updates).
     - GHSA-86w9-cpqp-85rv
+    # zod memory exhaustion on oversized constrained collections: @expo/cli's zod 3 (developer and EAS
+    # machines, its own config); fixed only in zod 4.6.6, and every @expo/cli depends on zod ^3. The
+    # apps and packages use zod ^4.6.7.
+    - GHSA-mrhx-c7xc-m3w5
     # braces stack exhaustion on nested patterns: Metro's file map (bundling only; patterns are ours).
     - GHSA-vfj7-8cjw-p6xm
     # decode-uri-component exponential decoding: expo-router > query-string@7 (the patient app's
@@ -33,6 +37,13 @@ auditConfig:
     # in the tree (apps/patient/test/query-decoding.test.ts).
     # Remove both when expo-router no longer depends on query-string@7 (Expo SDK 58).
     - GHSA-vcc3-ghjq-m6fr
+
+# Versions forced over what a dependency pins. Remove an entry once the dependency itself requires
+# the version.
+overrides:
+  # @nestjs/platform-express pins multer 2.4.0 (GHSA-q7qp-rjg7-q26m, a denial of service through an
+  # asynchronous fileFilter after the request ends): the API's logo and doctor photo uploads.
+  multer: ^2.5.0
 
 patchedDependencies:
   decode-uri-component@0.2.2: patches/decode-uri-component@0.2.2.patch
