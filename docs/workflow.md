@@ -102,7 +102,21 @@ Sonnet and Haiku never write code. Avoid `max` unless a gain is measured. Agent 
 
 ## Cloud sessions
 
-Cloud sessions (Claude Code on the web) get skills, subagents, hooks and settings from the repository. No setup or session scripts exist yet: a cloud session gets no local database, so it cannot run the database-backed tests or migration drift. Scripts that give it the same toolchain and a disposable database, as in the owner's Vertex Digital project, are open work. What always stays local: production deploys, the owner's acceptance tests, the Electron app on Windows, real WhatsApp sessions and anything with real secrets.
+Cloud sessions (Claude Code on the web) get skills, subagents, hooks and settings from the repository. Run them in the shared cloud environment `vertex`; this repository does not edit that environment.
+
+**What the environment provides.** Node 24 (default on `PATH`), Corepack with pnpm, Docker with the `postgres:17` image, Playwright Chromium in `PLAYWRIGHT_BROWSERS_PATH=/opt/ms-playwright`, full network, and telemetry turned off (Next.js, Turborepo, Expo), `ELECTRON_SKIP_BINARY_DOWNLOAD=1` and `NODE_OPTIONS=--max-old-space-size=6144`. Its command `vertex-session [repo-dir]` starts PostgreSQL 17 on `127.0.0.1:5432` (or reuses one already answering there), runs `pnpm install --frozen-lockfile`, creates `.env` from `.env.example` when missing (with the `postgres` admin password; the all-zero example keys are fine for dev and test), runs `pnpm db:setup-local` and `pnpm db:migrate`, and installs the clinic's Playwright Chromium. It prints `Vertex cloud session ready: ...` plus any problems, logs to `/tmp/vertex-session.log` and always exits 0.
+
+**Session start.** The `SessionStart` hook in `.claude/settings.json` runs `scripts/cloud-session.sh`. It does nothing unless `CLAUDE_CODE_REMOTE=true`, so it stays silent locally; in the cloud it runs `vertex-session`, or prints a one-line hint when the session is not in the `vertex` environment. A session with several repositories does not run repository hooks: run `vertex-session <repo-dir>` by hand before the first check.
+
+**What works.** `pnpm verify` and everything in it: lint, typecheck, the database-backed tests, build, migration drift and the E2E specs. The Electron clinic window cannot open (there is no display); the clinic runs in the browser (`dev`) and in the E2E.
+
+**Commands.** The shell is bash, so set variables inline: `VITE_API_URL=http://localhost:3000 pnpm --filter @vertex-shifa/clinic dev`. OTP codes of the fake sender appear in the API's output, as locally.
+
+**Pull requests.** `gh pr create` is refused in the cloud (GitHub's GraphQL API is blocked): push the branch and use the Create PR button instead.
+
+**What stays local.** Real keys and secrets, the owner's manual acceptance test, production deploys, the Electron app on Windows and real WhatsApp sessions.
+
+**Medical data.** The rules of `AGENTS.md` apply unchanged: synthetic data only, phone numbers under `+999`, no real patient, clinic or phone data in the session, its logs or its screenshots.
 
 ## References
 
