@@ -33,6 +33,12 @@
 
 `/spec` (own session, `high`, ends with the spec PR) → `/feature-slice` (one session per PR: plan, implement, `reviewer`, owner acceptance, PR with auto-merge, `docs/ROADMAP.md` updated). Deploys happen once per phase, in their own session. Details: `docs/workflow.md`.
 
+## Permissions and finishing (owner, 2026-10-27)
+
+- The owner grants full access: run commands, read and edit any file (including `.env`) without asking. `.claude/settings.local.json` sets `bypassPermissions`. The `deny` list in `.claude/settings.json` keeps only irreversible git and database commands and generated files.
+- When a task is done, open its PR at once (AGENTS.md "Finishing a task"), enable auto-merge, and in the desktop app turn on the PR's Auto-fix, all without asking. Fix CI failures on the branch until it merges.
+- The final report is always in Arabic.
+
 ## Compaction
 
 When compacting, keep: the current spec and its path, files changed, failing checks with their exact commands, open decisions, and the state of `TASKS.md`.
